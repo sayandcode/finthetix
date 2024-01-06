@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: SEE LICENSE IN LICENSE
-pragma solidity 0.8.21;
+pragma solidity 0.8.23;
 
 import {FinthetixRewardToken} from "src/FinthetixRewardToken.sol";
 import {Test} from "forge-std/Test.sol";

@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: SEE LICENSE IN LICENSE
-pragma solidity 0.8.21;
+pragma solidity 0.8.23;
 
-import {FinthetixStakingToken} from "src/FinthetixStakingToken.sol";
+import {FinthetixStakingToken, FSTEvents} from "src/FinthetixStakingToken.sol";
 import {Test} from "forge-std/Test.sol";
 
 contract StakingToken_UnitTest is Test {
     string private constant TOKEN_NAME = "FinthetixStakingToken";
     string private constant TOKEN_SYMBOL = "FST";
     uint256 private constant SAMPLE_TOKEN_QTY = 5 ether;
-
     FinthetixStakingToken private tokenContract;
 
     function setUp() public {
@@ -23,7 +22,11 @@ contract StakingToken_UnitTest is Test {
     function test_RequestSampleTokensFn() public {
         uint256 tokensBefore = tokenContract.balanceOf(address(this));
         assertEq(tokensBefore, 0);
+
+        vm.expectEmit(address(tokenContract));
+        emit FSTEvents.SampleTokenRequested(address(this));
         tokenContract.requestSampleTokens();
+
         uint256 tokensAfter = tokenContract.balanceOf(address(this));
         assertEq(tokensAfter, SAMPLE_TOKEN_QTY);
     }
