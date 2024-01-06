@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: SEE LICENSE IN LICENSE
 pragma solidity 0.8.21;
 
-import {FinthetixStakingToken} from "src/StakingToken.sol";
-import {Test, console} from "forge-std/Test.sol";
+import {FinthetixStakingToken} from "src/FinthetixStakingToken.sol";
+import {Test} from "forge-std/Test.sol";
 
 contract StakingToken_UnitTest is Test {
-    string constant TOKEN_NAME = "FinthetixStakingToken";
-    string constant TOKEN_SYMBOL = "FST";
-    uint256 constant SAMPLE_TOKEN_QTY = 5 ether;
+    string private constant TOKEN_NAME = "FinthetixStakingToken";
+    string private constant TOKEN_SYMBOL = "FST";
+    uint256 private constant SAMPLE_TOKEN_QTY = 5 ether;
 
-    FinthetixStakingToken tokenContract;
+    FinthetixStakingToken private tokenContract;
 
     function setUp() public {
         tokenContract = new FinthetixStakingToken();

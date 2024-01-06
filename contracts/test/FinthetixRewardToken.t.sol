@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: SEE LICENSE IN LICENSE
 pragma solidity 0.8.21;
 
-import {FinthetixRewardToken} from "src/RewardToken.sol";
+import {FinthetixRewardToken} from "src/FinthetixRewardToken.sol";
 import {Test} from "forge-std/Test.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract RewardToken_UnitTest is Test {
-    string constant TOKEN_SYMBOL = "FRT";
-    string constant TOKEN_NAME = "FinthetixRewardToken";
-    address immutable contractOwnerAddr = vm.addr(0xB0b);
+    string private constant TOKEN_SYMBOL = "FRT";
+    string private constant TOKEN_NAME = "FinthetixRewardToken";
+    address private immutable contractOwnerAddr = vm.addr(0xB0b);
 
-    FinthetixRewardToken tokenContract;
+    FinthetixRewardToken private tokenContract;
 
     function setUp() public {
         vm.prank(contractOwnerAddr);
