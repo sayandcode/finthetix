@@ -14,11 +14,18 @@ contract StakingToken_UnitTest is Test {
         tokenContract = new FinthetixStakingToken();
     }
 
+    /**
+     * @notice Tests whether symbol and name are set correctly on ERC20
+     */
     function test_HasCorrectLabels() public {
         assertEq(tokenContract.name(), TOKEN_NAME);
         assertEq(tokenContract.symbol(), TOKEN_SYMBOL);
     }
 
+    /**
+     * @notice Tests whether user has the ability to request sample tokens.
+     *  This is used to try out the staking dapp.
+     */
     function test_RequestSampleTokensFn() public {
         uint256 tokensBefore = tokenContract.balanceOf(address(this));
         assertEq(tokensBefore, 0);

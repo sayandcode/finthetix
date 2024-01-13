@@ -14,10 +14,21 @@ contract FinthetixStakingContract_UnitTest is Test {
         stakingToken = stakingContract.stakingToken();
     }
 
+    /**
+     * @notice Tests if the contract indeed has a token
+     *  associated with it for staking.
+     */
     function test_HasStakingTokens() public {
         assertEq(stakingToken.balanceOf(address(this)), 0, "FST balance of test contract is not accurate");
     }
 
+    /**
+     *
+     * @param amtToStake The amount of tokens to stake with the contract
+     * @param stakerAddr The address of the staker
+     * @notice Tests whether the token balances are updated on the ERC20
+     *  side whenever there is a staking action
+     */
     function test_StakingTransfersTokensFromStakerToStakingContract(uint248 amtToStake, address stakerAddr) public {
         // assumptions
         vm.assume(stakerAddr != address(0) && amtToStake != 0);
@@ -48,6 +59,9 @@ contract FinthetixStakingContract_UnitTest is Test {
         );
     }
 
+    /**
+     * @notice Tests that users cannot stake 0 amount
+     */
     function test_CanNotStakeInvalidAmt() public {
         // setup
         address stakerAddr = vm.addr(0xB0b);
@@ -62,6 +76,9 @@ contract FinthetixStakingContract_UnitTest is Test {
         vm.stopPrank();
     }
 
+    /**
+     * @notice Tests that zero address cannot stake
+     */
     function test_CanNotStakeFromInvalidAddr() public {
         // setup
         address stakerAddr = address(0);
@@ -76,11 +93,11 @@ contract FinthetixStakingContract_UnitTest is Test {
     }
 
     /**
-     * The balances of the staking user must be cumulatively updated when they stake. So we use a randomly
-     * generated array of numbers to stake iteratively, and then make sure balances are
-     * accurate.
      * @param stakerAddr The address used to stake
      * @param arrOfAmtsToStake An array of numbers which are used to alternatively stake and unstake
+     * @notice Tests whether the balances of the user are cumulatively updated when they stake. So we
+     *  use a randomly generated array of numbers to stake iteratively, and then make sure balances
+     *  are accurate.
      */
     function test_StakedBalancesOfStakerAreUpdated(address stakerAddr, uint248[] calldata arrOfAmtsToStake) public {
         // assumptions
@@ -104,10 +121,17 @@ contract FinthetixStakingContract_UnitTest is Test {
         }
     }
 
-    function _approveAndStake(address stakerAddr, uint248 amtToStake) private {
+    /**
+     *
+     * @param stakerAddr The address who wants to approve and stake with the staking contract
+     * @param amtToApproveAndStake The amount to approve and stake
+     * @dev This is used to simplify the verbose task of approving and staking with the
+     *  required contract
+     */
+    function _approveAndStake(address stakerAddr, uint248 amtToApproveAndStake) private {
         vm.startPrank(stakerAddr);
-        stakingToken.approve(address(stakingContract), amtToStake);
-        stakingContract.stake(amtToStake);
+        stakingToken.approve(address(stakingContract), amtToApproveAndStake);
+        stakingContract.stake(amtToApproveAndStake);
         vm.stopPrank();
     }
 }

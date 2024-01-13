@@ -17,11 +17,18 @@ contract RewardToken_UnitTest is Test {
         tokenContract = new FinthetixRewardToken();
     }
 
+    /**
+     * @notice Tests whether symbol and name are set correctly on ERC20
+     */
     function test_HasCorrectLabels() public {
         assertEq(tokenContract.symbol(), TOKEN_SYMBOL, "Incorrect Token Symbol");
         assertEq(tokenContract.name(), TOKEN_NAME, "Incorrect Token Name");
     }
 
+    /**
+     * @param amtToMint The amount of token to mint
+     * @notice Tests whether minting of token is possible, and updates user balance correctly
+     */
     function test_CanMintToken(uint256 amtToMint) public {
         address receiverAddr = address(1);
 
@@ -35,6 +42,10 @@ contract RewardToken_UnitTest is Test {
         assertEq(balanceAfter, amtToMint);
     }
 
+    /**
+     * @param senderAddr The address who sends the request to mint tokens
+     * @notice Tests whether non owners of the ERC20 are blocked from minting tokens
+     */
     function test_NonOwnersCannotMint(address senderAddr) public {
         vm.assume(senderAddr != contractOwnerAddr);
 
