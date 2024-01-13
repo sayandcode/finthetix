@@ -25,7 +25,7 @@ contract FinthetixStakingToken is ERC20, FSTEvents {
      * @notice Users can call this function to get a few sample tokens, in order to try out the
      *  staking contract
      */
-    function requestSampleTokens() public {
+    function requestSampleTokens() external {
         _mint(msg.sender, 5 ether);
         emit SampleTokenRequested(msg.sender);
     }

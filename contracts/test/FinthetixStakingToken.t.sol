@@ -7,7 +7,7 @@ import {Test} from "forge-std/Test.sol";
 contract StakingToken_UnitTest is Test {
     string private constant TOKEN_NAME = "FinthetixStakingToken";
     string private constant TOKEN_SYMBOL = "FST";
-    uint256 private constant SAMPLE_TOKEN_QTY = 5 ether;
+    uint64 private constant SAMPLE_TOKEN_QTY = 5 ether;
     FinthetixStakingToken private tokenContract;
 
     function setUp() public {
