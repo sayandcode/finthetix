@@ -7,47 +7,22 @@ import {Test, console} from "forge-std/Test.sol";
 
 contract FinthetixStakingContract_UnitTest is Test {
     FinthetixStakingContract stakingContract;
+    FinthetixStakingToken stakingToken;
 
     function setUp() public {
         stakingContract = new FinthetixStakingContract();
+        stakingToken = stakingContract.stakingToken();
     }
 
     function test_HasStakingTokens() public {
-        FinthetixStakingToken stakingToken = stakingContract.stakingToken();
         assertEq(stakingToken.balanceOf(address(this)), 0, "FST balance of test contract is not accurate");
     }
 
-    function test_StakingBalForStakerIsUpdatedInStakingContract(uint256 amtToStake, address stakerAddr) public {
+    function test_StakingTransfersTokensFromStakerToStakingContract(uint248 amtToStake, address stakerAddr) public {
         // assumptions
         vm.assume(stakerAddr != address(0) && amtToStake != 0);
 
         // definitions
-        address stakingTokenAddr = address(stakingContract.stakingToken());
-
-        // setup
-        uint256 expectedInitBal = 0;
-        uint256 initStakedBalance = stakingContract.getCurrStakedBalance();
-        assertEq(initStakedBalance, expectedInitBal, "Init Staked Balance of staker is not as expected");
-
-        // act
-        deal(stakingTokenAddr, stakerAddr, amtToStake, true);
-        vm.startPrank(stakerAddr);
-        stakingContract.stakingToken().approve(address(stakingContract), amtToStake);
-        stakingContract.stake(amtToStake);
-        vm.stopPrank();
-
-        // verify
-        vm.prank(stakerAddr);
-        uint256 finalStakedBalance = stakingContract.getCurrStakedBalance();
-        assertEq(finalStakedBalance, amtToStake, "Staking did not update staked balance of staker in staking contract");
-    }
-
-    function test_StakingTransfersTokensFromStakerToStakingContract(uint256 amtToStake, address stakerAddr) public {
-        // assumptions
-        vm.assume(stakerAddr != address(0) && amtToStake != 0);
-
-        // definitions
-        FinthetixStakingToken stakingToken = stakingContract.stakingToken();
         address stakingContractAddr = address(stakingContract);
 
         // setup
@@ -56,10 +31,7 @@ contract FinthetixStakingContract_UnitTest is Test {
         uint256 initTokenBalOfStaker = stakingToken.balanceOf(stakerAddr);
 
         // act
-        vm.startPrank(stakerAddr);
-        stakingToken.approve(stakingContractAddr, amtToStake);
-        stakingContract.stake(amtToStake);
-        vm.stopPrank();
+        _approveAndStake(stakerAddr, amtToStake);
 
         // verify
         uint256 finalTokenBalOfStakingContract = stakingToken.balanceOf(stakingContractAddr);
@@ -77,9 +49,6 @@ contract FinthetixStakingContract_UnitTest is Test {
     }
 
     function test_CanNotStakeInvalidAmt() public {
-        // definitions
-        FinthetixStakingToken stakingToken = stakingContract.stakingToken();
-
         // setup
         address stakerAddr = vm.addr(0xB0b);
         uint64 initTokenBalForStaker = 10 ether;
@@ -94,9 +63,6 @@ contract FinthetixStakingContract_UnitTest is Test {
     }
 
     function test_CanNotStakeFromInvalidAddr() public {
-        // definitions
-        FinthetixStakingToken stakingToken = stakingContract.stakingToken();
-
         // setup
         address stakerAddr = address(0);
         uint64 initTokenBalForStaker = 10 ether;
@@ -110,29 +76,35 @@ contract FinthetixStakingContract_UnitTest is Test {
     }
 
     /**
-     * The balances of the staking user must be cumulative. So we use a randomly
-     * generate array of numbers to stake iteratively, and then make sure balances are
+     * The balances of the staking user must be cumulatively updated when they stake. So we use a randomly
+     * generated array of numbers to stake iteratively, and then make sure balances are
      * accurate.
      * @param stakerAddr The address used to stake
      * @param arrOfAmtsToStake An array of numbers which are used to alternatively stake and unstake
      */
-    function test_StakingBalancesAreCumulative(address stakerAddr, uint248[] calldata arrOfAmtsToStake) public {
+    function test_StakedBalancesOfStakerAreUpdated(address stakerAddr, uint248[] calldata arrOfAmtsToStake) public {
+        // assumptions
         vm.assume(stakerAddr != address(0));
+
+        // setup
         uint256 totalAmtStaked = 0;
+
         for (uint256 i = 0; i < arrOfAmtsToStake.length; i++) {
+            // act
             uint248 amtToStake = arrOfAmtsToStake[i];
             if (amtToStake == 0) continue;
+            deal(address(stakingToken), stakerAddr, amtToStake, true);
             _approveAndStake(stakerAddr, amtToStake);
             totalAmtStaked += amtToStake;
+
+            // verify
             vm.prank(stakerAddr);
             uint256 newStakedBal = stakingContract.getCurrStakedBalance();
-            assertEq(newStakedBal, totalAmtStaked, "Staked balance is not cumulative");
+            assertEq(newStakedBal, totalAmtStaked, "Staked balance of staker is not updated");
         }
     }
 
     function _approveAndStake(address stakerAddr, uint248 amtToStake) private {
-        FinthetixStakingToken stakingToken = stakingContract.stakingToken();
-        deal(address(stakingToken), stakerAddr, amtToStake, true);
         vm.startPrank(stakerAddr);
         stakingToken.approve(address(stakingContract), amtToStake);
         stakingContract.stake(amtToStake);

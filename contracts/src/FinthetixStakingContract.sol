@@ -19,7 +19,7 @@ interface FSCErrors {
 contract FinthetixStakingContract is FSCErrors {
     FinthetixStakingToken public immutable stakingToken = new FinthetixStakingToken();
 
-    mapping(address => uint256) private mapAddrToStakedBal;
+    mapping(address => uint256) private amtStakedBy;
 
     function stake(uint256 amtToStake) external {
         // checks
@@ -27,13 +27,13 @@ contract FinthetixStakingContract is FSCErrors {
         if (amtToStake == 0) revert CannotStakeZeroAmount(msg.sender);
 
         // effects
-        mapAddrToStakedBal[msg.sender] += amtToStake;
+        amtStakedBy[msg.sender] += amtToStake;
 
         // interactions
         stakingToken.transferFrom(msg.sender, address(this), amtToStake);
     }
 
     function getCurrStakedBalance() external returns (uint256) {
-        return mapAddrToStakedBal[msg.sender];
+        return amtStakedBy[msg.sender];
     }
 }
