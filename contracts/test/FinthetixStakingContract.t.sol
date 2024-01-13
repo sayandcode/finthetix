@@ -108,4 +108,34 @@ contract FinthetixStakingContract_UnitTest is Test {
         stakingContract.stake(0);
         vm.stopPrank();
     }
+
+    /**
+     * The balances of the staking user must be cumulative. So we use a randomly
+     * generate array of numbers to stake iteratively, and then make sure balances are
+     * accurate.
+     * @param stakerAddr The address used to stake
+     * @param arrOfAmtsToStake An array of numbers which are used to alternatively stake and unstake
+     */
+    function test_StakingBalancesAreCumulative(address stakerAddr, uint248[] calldata arrOfAmtsToStake) public {
+        vm.assume(stakerAddr != address(0));
+        uint256 totalAmtStaked = 0;
+        for (uint256 i = 0; i < arrOfAmtsToStake.length; i++) {
+            uint248 amtToStake = arrOfAmtsToStake[i];
+            if (amtToStake == 0) continue;
+            _approveAndStake(stakerAddr, amtToStake);
+            totalAmtStaked += amtToStake;
+            vm.prank(stakerAddr);
+            uint256 newStakedBal = stakingContract.getCurrStakedBalance();
+            assertEq(newStakedBal, totalAmtStaked, "Staked balance is not cumulative");
+        }
+    }
+
+    function _approveAndStake(address stakerAddr, uint248 amtToStake) private {
+        FinthetixStakingToken stakingToken = stakingContract.stakingToken();
+        deal(address(stakingToken), stakerAddr, amtToStake, true);
+        vm.startPrank(stakerAddr);
+        stakingToken.approve(address(stakingContract), amtToStake);
+        stakingContract.stake(amtToStake);
+        vm.stopPrank();
+    }
 }
