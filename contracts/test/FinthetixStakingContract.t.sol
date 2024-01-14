@@ -6,6 +6,15 @@ import {FinthetixStakingToken} from "src/FinthetixStakingToken.sol";
 import {Test, console} from "forge-std/Test.sol";
 
 contract FinthetixStakingContract_UnitTest is Test {
+    /**
+     * @dev The random input used for test_IndividualAndTotalStakedBalancesAreUpdated
+     */
+    struct Arg0_IndividualAndTotalStakedBalancesAreUpdated {
+        address stakerAddr;
+        uint248 amtToStake;
+        uint248 amtToUnstake;
+    }
+
     FinthetixStakingContract stakingContract;
     FinthetixStakingToken stakingToken;
 
@@ -44,7 +53,7 @@ contract FinthetixStakingContract_UnitTest is Test {
         uint256 tokenBal1OfStaker = stakingToken.balanceOf(stakerAddr);
 
         // act 1 - stake
-        _approveAndStake(stakerAddr, amtToStake);
+        _approveAndStake(stakerAddr, amtToStake, false);
 
         // verify 1
         uint256 tokenBal2OfStakingContract = stakingToken.balanceOf(stakingContractAddr);
@@ -97,8 +106,7 @@ contract FinthetixStakingContract_UnitTest is Test {
         // setup
         address stakerAddr = vm.addr(0xB0b);
         uint64 initTokenBalForStaker = 10 ether;
-        deal(address(stakingToken), stakerAddr, initTokenBalForStaker, true);
-        _approveAndStake(stakerAddr, initTokenBalForStaker);
+        _approveAndStake(stakerAddr, initTokenBalForStaker, true);
 
         // act & verify
         vm.prank(stakerAddr);
@@ -122,8 +130,7 @@ contract FinthetixStakingContract_UnitTest is Test {
         // setup
         uint256 boundedAmtToStake = bound(_amtToStake, 1, type(uint256).max - 1);
         uint256 boundedAmtToUnstake = bound(_amtToUnstake, boundedAmtToStake + 1, type(uint256).max); // unstake more than staked amt
-        deal(address(stakingToken), stakerAddr, boundedAmtToStake, true);
-        _approveAndStake(stakerAddr, boundedAmtToStake);
+        _approveAndStake(stakerAddr, boundedAmtToStake, true);
 
         // act & verify
         vm.prank(stakerAddr);
@@ -165,39 +172,50 @@ contract FinthetixStakingContract_UnitTest is Test {
     }
 
     /**
-     * @param stakerAddr The address used to stake
-     * @param arrOfAmts An array of numbers which are used to alternatively stake and unstake
-     * @notice Tests whether the balances of the user are cumulatively updated when they stake/unstake. So we
-     *  use a randomly generated array of numbers to stake/unstake iteratively, and then make sure balances
-     *  are accurate.
+     *
+     * @param arg0 An array of inputs containing staker address, amount to stake and amount to unstake.
+     *  This gives us a random list of users to interact with the staking contract, using the given parameters.
+     * @notice This tests whether staking and unstaking actions of the users updates both the individual as well
+     *  as total staked balances maintained in the staking contract.
      */
-    function test_StakedBalancesOfStakerAreUpdated(address stakerAddr, uint248[] calldata arrOfAmts) public {
-        // assumptions
-        vm.assume(stakerAddr != address(0));
+    function test_IndividualAndTotalStakedBalancesAreUpdated(
+        Arg0_IndividualAndTotalStakedBalancesAreUpdated[] calldata arg0
+    ) public {
+        Arg0_IndividualAndTotalStakedBalancesAreUpdated[] memory refinedArg0 =
+            _refineArg0_IndividualAndTotalStakedbalancesAreUpdated(arg0);
 
         // setup
-        uint256 totalAmtStaked = 0;
-
-        for (uint256 i = 0; i < arrOfAmts.length; i++) {
-            // act
-            uint248 thisAmt = arrOfAmts[i];
-            if (thisAmt == 0) continue;
-            if (thisAmt > totalAmtStaked) {
-                // stake the amount
-                deal(address(stakingToken), stakerAddr, thisAmt, true);
-                _approveAndStake(stakerAddr, thisAmt);
-                totalAmtStaked += thisAmt;
-            } else {
-                // unstake it
-                vm.prank(stakerAddr);
-                stakingContract.unstake(thisAmt);
-                totalAmtStaked -= thisAmt;
-            }
-
-            // verify
+        uint256 expectedTotalStakedBal = 0;
+        for (uint256 i = 0; i < refinedArg0.length; i++) {
+            // setup
+            address stakerAddr = refinedArg0[i].stakerAddr;
+            uint248 amtToStake = refinedArg0[i].amtToStake;
+            uint248 amtToUnstake = refinedArg0[i].amtToUnstake;
             vm.prank(stakerAddr);
-            uint256 newStakedBal = stakingContract.getCurrStakedBalance();
-            assertEq(newStakedBal, totalAmtStaked, "Staked balance of staker is not updated");
+            uint256 preStakeBal = stakingContract.getCurrStakedBalance();
+
+            // act 1 - stake
+            _approveAndStake(stakerAddr, amtToStake, true);
+
+            // verify 1 - stake
+            expectedTotalStakedBal += amtToStake;
+            assertEq(stakingContract.totalAmtStaked(), expectedTotalStakedBal, "Total amt staked has not increased");
+            vm.prank(stakerAddr);
+            uint256 postStakeBal = stakingContract.getCurrStakedBalance();
+            uint256 expectedPostStakeBal = preStakeBal + amtToStake;
+            assertEq(postStakeBal, expectedPostStakeBal, "The post-staking balance for staker is accurate");
+
+            // act 2 - unstake
+            vm.prank(stakerAddr);
+            stakingContract.unstake(amtToUnstake);
+
+            // verify 2 - unstake
+            expectedTotalStakedBal -= amtToUnstake;
+            assertEq(stakingContract.totalAmtStaked(), expectedTotalStakedBal, "Total amt staked has not decreased");
+            vm.prank(stakerAddr);
+            uint256 postUnstakeBal = stakingContract.getCurrStakedBalance();
+            uint256 expectedStakerBal = expectedPostStakeBal - amtToUnstake;
+            assertEq(postUnstakeBal, expectedStakerBal, "The post-unstaking balance for staker is accurate");
         }
     }
 
@@ -205,13 +223,53 @@ contract FinthetixStakingContract_UnitTest is Test {
      *
      * @param stakerAddr The address who wants to approve and stake with the staking contract
      * @param amtToApproveAndStake The amount to approve and stake
+     * @param isDealRequired Whether we need to deal the account with prereq balance before initiating
+     *  approval and staking
      * @dev This is used to simplify the verbose task of approving and staking with the
      *  required contract
      */
-    function _approveAndStake(address stakerAddr, uint256 amtToApproveAndStake) private {
+    function _approveAndStake(address stakerAddr, uint256 amtToApproveAndStake, bool isDealRequired) private {
+        if (isDealRequired) {
+            deal(address(stakingToken), stakerAddr, amtToApproveAndStake, true);
+        }
         vm.startPrank(stakerAddr);
         stakingToken.approve(address(stakingContract), amtToApproveAndStake);
         stakingContract.stake(amtToApproveAndStake);
         vm.stopPrank();
+    }
+
+    /**
+     *
+     * @param arg0 The randomized arg0 for test_IndividualAndTotalStakedbalancesAreUpdated. This is
+     *  unrefined data.
+     * @dev This function refines the arg0 for test_IndividualAndTotalStakedbalancesAreUpdated.
+     *  It makes sure:
+     *  - no address is 0x0
+     *  - that staked amount is at least 1
+     *  - the unstaked amount is between 1 and the staked amount
+     * @dev We need to refine it this way because foundry doesn't support refining for each element
+     *  randomized input array
+     */
+    function _refineArg0_IndividualAndTotalStakedbalancesAreUpdated(
+        Arg0_IndividualAndTotalStakedBalancesAreUpdated[] calldata arg0
+    ) private pure returns (Arg0_IndividualAndTotalStakedBalancesAreUpdated[] memory) {
+        Arg0_IndividualAndTotalStakedBalancesAreUpdated[] memory refinedArg0 =
+            new Arg0_IndividualAndTotalStakedBalancesAreUpdated[](arg0.length);
+
+        for (uint256 i = 0; i < arg0.length; i++) {
+            Arg0_IndividualAndTotalStakedBalancesAreUpdated memory _randomInput = arg0[i];
+            address stakerAddr = _randomInput.stakerAddr == address(0) ? address(1) : _randomInput.stakerAddr;
+            uint248 amtToStake = _randomInput.amtToStake == 0 ? 1 : _randomInput.amtToStake;
+            uint248 amtToUnstake = uint248(bound(_randomInput.amtToUnstake, 1, amtToStake));
+
+            Arg0_IndividualAndTotalStakedBalancesAreUpdated memory newRandomInput =
+            Arg0_IndividualAndTotalStakedBalancesAreUpdated({
+                stakerAddr: stakerAddr,
+                amtToStake: amtToStake,
+                amtToUnstake: amtToUnstake
+            });
+            refinedArg0[i] = newRandomInput;
+        }
+        return refinedArg0;
     }
 }
