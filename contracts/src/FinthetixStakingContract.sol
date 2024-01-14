@@ -28,8 +28,8 @@ interface FSCErrors {
 
 contract FinthetixStakingContract is FSCErrors {
     FinthetixStakingToken public immutable stakingToken = new FinthetixStakingToken();
-    uint256 public totalAmtStaked;
-    mapping(address => uint256) private amtStakedBy;
+    uint256 public totalStakedAmt;
+    mapping(address => uint256) private mapAddrToStakedAmt;
 
     function stake(uint256 amtToStake) external {
         // checks
@@ -37,8 +37,8 @@ contract FinthetixStakingContract is FSCErrors {
         if (amtToStake == 0) revert CannotStakeZeroAmount(msg.sender);
 
         // effects
-        amtStakedBy[msg.sender] += amtToStake;
-        totalAmtStaked += amtToStake;
+        mapAddrToStakedAmt[msg.sender] += amtToStake;
+        totalStakedAmt += amtToStake;
 
         // interactions
         stakingToken.transferFrom(msg.sender, address(this), amtToStake);
@@ -48,20 +48,20 @@ contract FinthetixStakingContract is FSCErrors {
         // checks
         if (msg.sender == address(0)) revert InvalidUserAddress();
         if (amtToUnstake == 0) revert CannotUnstakeZeroAmount(msg.sender);
-        uint256 balanceOfSender = amtStakedBy[msg.sender];
+        uint256 balanceOfSender = mapAddrToStakedAmt[msg.sender];
         if (balanceOfSender < amtToUnstake) {
             revert CannotUnstakeMoreThanStakedAmount(msg.sender, amtToUnstake, balanceOfSender);
         }
 
         // effects
-        amtStakedBy[msg.sender] -= amtToUnstake;
-        totalAmtStaked -= amtToUnstake;
+        mapAddrToStakedAmt[msg.sender] -= amtToUnstake;
+        totalStakedAmt -= amtToUnstake;
 
         // interactions
         stakingToken.transfer(msg.sender, amtToUnstake);
     }
 
-    function getCurrStakedBalance() external view returns (uint256) {
-        return amtStakedBy[msg.sender];
+    function viewMyStakedAmt() external view returns (uint256) {
+        return mapAddrToStakedAmt[msg.sender];
     }
 }

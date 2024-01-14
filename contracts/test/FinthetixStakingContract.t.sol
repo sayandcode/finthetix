@@ -192,16 +192,16 @@ contract FinthetixStakingContract_UnitTest is Test {
             uint248 amtToStake = refinedArg0[i].amtToStake;
             uint248 amtToUnstake = refinedArg0[i].amtToUnstake;
             vm.prank(stakerAddr);
-            uint256 preStakeBal = stakingContract.getCurrStakedBalance();
+            uint256 preStakeBal = stakingContract.viewMyStakedAmt();
 
             // act 1 - stake
             _approveAndStake(stakerAddr, amtToStake, true);
 
             // verify 1 - stake
             expectedTotalStakedBal += amtToStake;
-            assertEq(stakingContract.totalAmtStaked(), expectedTotalStakedBal, "Total amt staked has not increased");
+            assertEq(stakingContract.totalStakedAmt(), expectedTotalStakedBal, "Total amt staked has not increased");
             vm.prank(stakerAddr);
-            uint256 postStakeBal = stakingContract.getCurrStakedBalance();
+            uint256 postStakeBal = stakingContract.viewMyStakedAmt();
             uint256 expectedPostStakeBal = preStakeBal + amtToStake;
             assertEq(postStakeBal, expectedPostStakeBal, "The post-staking balance for staker is accurate");
 
@@ -211,9 +211,9 @@ contract FinthetixStakingContract_UnitTest is Test {
 
             // verify 2 - unstake
             expectedTotalStakedBal -= amtToUnstake;
-            assertEq(stakingContract.totalAmtStaked(), expectedTotalStakedBal, "Total amt staked has not decreased");
+            assertEq(stakingContract.totalStakedAmt(), expectedTotalStakedBal, "Total amt staked has not decreased");
             vm.prank(stakerAddr);
-            uint256 postUnstakeBal = stakingContract.getCurrStakedBalance();
+            uint256 postUnstakeBal = stakingContract.viewMyStakedAmt();
             uint256 expectedStakerBal = expectedPostStakeBal - amtToUnstake;
             assertEq(postUnstakeBal, expectedStakerBal, "The post-unstaking balance for staker is accurate");
         }
