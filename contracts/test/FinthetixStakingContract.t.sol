@@ -225,6 +225,11 @@ contract FinthetixStakingContract_UnitTest is Test {
         }
     }
 
+    /**
+     *
+     * @param stakerAddr The address whose reward balance you wish to check
+     * @notice Tests whether addresses start off with zero rewards
+     */
     function test_InitialRewardsIsZero(address stakerAddr) public {
         // assumptions
         vm.assume(stakerAddr != address(0));
@@ -260,6 +265,11 @@ contract FinthetixStakingContract_UnitTest is Test {
         assertEq(accruedRewards, expectedRewards, "Accrued rewards not as expected");
     }
 
+    /**
+     *
+     * @param timeToWait The time to wait between staking interactions
+     * @notice Tests whether the ``lastUpdatedRewardAt`` timestamp is updated during staking
+     */
     function test_StakingUpdatesLastUpdatedTimestamp(uint128 timeToWait) public {
         // assumptions
         vm.assume(timeToWait > 0);
@@ -277,6 +287,11 @@ contract FinthetixStakingContract_UnitTest is Test {
         assertEq(stakingContract.lastUpdatedRewardAt(), newTime, "Staking doesn't update lastUpdatedRewardAt");
     }
 
+    /**
+     *
+     * @param timeToWait The time to wait before unstaking
+     * @notice Tests whether the ``lastUpdatedRewardAt`` timestamp is updated during unstaking
+     */
     function test_UnstakingUpdatesLastUpdatedTimestamp(uint128 timeToWait) public {
         // assumptions
         vm.assume(timeToWait > 0);
@@ -297,6 +312,12 @@ contract FinthetixStakingContract_UnitTest is Test {
         assertEq(stakingContract.lastUpdatedRewardAt(), newTime, "Staking doesn't update lastUpdatedRewardAt");
     }
 
+    /**
+     *
+     * @param initAmtToStake The first amount to stake
+     * @param timeToWait The time to wait before attempting staking once again
+     * @notice Tests whether staking is prevented during cooldown phase
+     */
     function test_CannotStakeInCoolDownPhase(uint128 initAmtToStake, uint128 timeToWait) public {
         // assumptions
         vm.assume(initAmtToStake > 0 && timeToWait > 0);
@@ -317,9 +338,15 @@ contract FinthetixStakingContract_UnitTest is Test {
         // act & verify
         vm.prank(stakerAddr);
         vm.expectRevert(abi.encodeWithSelector(FSCErrors.CannotInteractWhenCoolingDown.selector, newTime, initTime));
-        stakingContract.stake(initAmtToStake);
+        stakingContract.stake(1);
     }
 
+    /**
+     *
+     * @param initAmtToStake The first amount to stake
+     * @param timeToWait The time to wait before attempting staking once again
+     * @notice Tests whether unstaking is prevented during cooldown phase
+     */
     function test_CannotUnstakeInCooldownPhase(uint128 initAmtToStake, uint128 timeToWait) public {
         // assumptions
         vm.assume(initAmtToStake > 2 && timeToWait > 0);
@@ -331,7 +358,7 @@ contract FinthetixStakingContract_UnitTest is Test {
         uint256 initTime = block.timestamp;
         uint256 newTime = initTime + timeToWait;
         vm.warp(newTime);
-        uint256 amtToUnstake = initAmtToStake / 2;
+        uint256 amtToUnstake = 1;
 
         // act & verify
         vm.expectRevert(abi.encodeWithSelector(FSCErrors.CannotInteractWhenCoolingDown.selector, newTime, initTime));
@@ -339,23 +366,30 @@ contract FinthetixStakingContract_UnitTest is Test {
         stakingContract.unstake(amtToUnstake);
     }
 
-    function test_StakingUpdatesAlphaNow(uint128[2] calldata amtToStake, uint128 timeToWait) public {
+    /**
+     *
+     * @param initAmtToStake The first amount to stake. This decides
+     *  the ``timeToWait`` as well as the computed ``alphaNow`` value
+     * @param timeToWait The time to wait before staking again with the staking contract
+     */
+    function test_StakingUpdatesAlphaNow(uint128 initAmtToStake, uint128 timeToWait) public {
         // assumptions
-        vm.assume(amtToStake[0] != 0 && amtToStake[1] != 0);
-        vm.assume((stakingContract.COOLDOWN_CONSTANT() * timeToWait > amtToStake[0]));
+        vm.assume(initAmtToStake != 0);
+        vm.assume((stakingContract.COOLDOWN_CONSTANT() * timeToWait > initAmtToStake));
 
         // setup
         address stakerAddr1 = vm.addr(0xB0b);
         address stakerAddr2 = vm.addr(0xAbe);
-        _approveAndStake(stakerAddr1, amtToStake[0], true);
+        _approveAndStake(stakerAddr1, initAmtToStake, true);
         uint256 initAlphaNow = stakingContract.alphaNow();
         vm.warp(block.timestamp + timeToWait);
 
         // act
-        _approveAndStake(stakerAddr2, amtToStake[1], true);
+        uint256 secondAmtToStake = 1;
+        _approveAndStake(stakerAddr2, secondAmtToStake, true);
 
         // verify
-        uint256 expectedAlphaNow = initAlphaNow + (stakingContract.COOLDOWN_CONSTANT() * timeToWait) / amtToStake[0]; // the reward is updated sans new stake info
+        uint256 expectedAlphaNow = initAlphaNow + (stakingContract.COOLDOWN_CONSTANT() * timeToWait) / initAmtToStake; // the reward is updated without including balance from new stake info
         assertEq(stakingContract.alphaNow(), expectedAlphaNow, "Staking doesn't update alphaNow");
     }
 
@@ -413,6 +447,10 @@ contract FinthetixStakingContract_UnitTest is Test {
         return refinedArg0;
     }
 
+    /**
+     * @dev This function warps the time until the ``stakingContract`` cools down and
+     *  allows interactions again
+     */
     function _waitForCoolDown() private {
         uint256 cooldownTime = (stakingContract.totalStakedAmt() / stakingContract.COOLDOWN_CONSTANT()) + 1;
         vm.warp(block.timestamp + cooldownTime);
