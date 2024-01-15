@@ -24,12 +24,32 @@ interface FSCErrors {
      * @notice User should not be able to unstake more than they have staked
      */
     error CannotUnstakeMoreThanStakedAmount(address stakerAddr, uint256 amtToUnstake, uint256 availableStakedBal);
+
+    /**
+     * @param currTimestamp The timestamp at which user has attempted to interact with contract.
+     * @param lastUpdatedRewardAt The timestamp at which reward was last updated. i.e. last interaction timestamp.
+     * @notice Users cannot interact with contract in cool-down period.
+     *  The contract will unlock at ``lastUpdatedRewardAt + max(COOLDOWN_CONSTANT/totalStakedAmt, 1)`` timestamp
+     */
+    error CannotInteractWhenCoolingDown(uint256 currTimestamp, uint256 lastUpdatedRewardAt);
 }
 
 contract FinthetixStakingContract is FSCErrors {
+    uint256 public constant TOTAL_REWARDS_PER_SECOND = 0.5 ether;
+    /**
+     * @notice The required total staked amount in the contract, for a cooldown period of 1 second.
+     *  The cooldown time will be proportional to the number of tokens staked in the contract (Total Value Locked)
+     *
+     * @dev To calculate the cooldown time, get the TVL(totalStakedAmt) and divide by COOLDOWN_CONSTANT
+     */
+    uint256 public constant COOLDOWN_CONSTANT = 10 ether;
     FinthetixStakingToken public immutable stakingToken = new FinthetixStakingToken();
     uint256 public totalStakedAmt;
+    uint256 public lastUpdatedRewardAt;
+    uint256 public alphaNow;
+
     mapping(address => uint256) private mapAddrToStakedAmt;
+    mapping(address => uint256) private mapAddrToAccruedReward;
 
     function stake(uint256 amtToStake) external {
         // checks
@@ -37,6 +57,7 @@ contract FinthetixStakingContract is FSCErrors {
         if (amtToStake == 0) revert CannotStakeZeroAmount(msg.sender);
 
         // effects
+        _updateRewardFor();
         mapAddrToStakedAmt[msg.sender] += amtToStake;
         totalStakedAmt += amtToStake;
 
@@ -54,6 +75,7 @@ contract FinthetixStakingContract is FSCErrors {
         }
 
         // effects
+        _updateRewardFor();
         mapAddrToStakedAmt[msg.sender] -= amtToUnstake;
         totalStakedAmt -= amtToUnstake;
 
@@ -63,5 +85,21 @@ contract FinthetixStakingContract is FSCErrors {
 
     function viewMyStakedAmt() external view returns (uint256) {
         return mapAddrToStakedAmt[msg.sender];
+    }
+
+    function viewMyAccruedRewards() external view returns (uint256) {
+        return mapAddrToAccruedReward[msg.sender];
+    }
+
+    function _updateRewardFor() private {
+        // update alpha
+        if (totalStakedAmt > 0) {
+            uint256 numerator = (block.timestamp - lastUpdatedRewardAt) * COOLDOWN_CONSTANT;
+            if (numerator < totalStakedAmt) revert CannotInteractWhenCoolingDown(block.timestamp, lastUpdatedRewardAt);
+
+            uint256 alphaAccrued = numerator / totalStakedAmt;
+            alphaNow = alphaNow + alphaAccrued;
+        }
+        lastUpdatedRewardAt = block.timestamp;
     }
 }

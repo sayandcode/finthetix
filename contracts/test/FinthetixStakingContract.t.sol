@@ -67,6 +67,10 @@ contract FinthetixStakingContract_UnitTest is Test {
         );
         assertEq(tokenBal2OfStaker, expectedTokenBal2OfStaker, "Staking did not decrease token balance of staker");
 
+        // setup 2
+        uint256 cooldownTime = (stakingContract.totalStakedAmt() / stakingContract.COOLDOWN_CONSTANT()) + 1;
+        vm.warp(block.timestamp + cooldownTime);
+
         // act 2 - unstake
         vm.prank(stakerAddr);
         stakingContract.unstake(amtToStake);
@@ -181,13 +185,13 @@ contract FinthetixStakingContract_UnitTest is Test {
     function test_IndividualAndTotalStakedBalancesAreUpdated(
         Arg0_IndividualAndTotalStakedBalancesAreUpdated[] calldata arg0
     ) public {
+        // assumptions
         Arg0_IndividualAndTotalStakedBalancesAreUpdated[] memory refinedArg0 =
             _refineArg0_IndividualAndTotalStakedbalancesAreUpdated(arg0);
 
-        // setup
         uint256 expectedTotalStakedBal = 0;
         for (uint256 i = 0; i < refinedArg0.length; i++) {
-            // setup
+            // setup 1
             address stakerAddr = refinedArg0[i].stakerAddr;
             uint248 amtToStake = refinedArg0[i].amtToStake;
             uint248 amtToUnstake = refinedArg0[i].amtToUnstake;
@@ -205,6 +209,9 @@ contract FinthetixStakingContract_UnitTest is Test {
             uint256 expectedPostStakeBal = preStakeBal + amtToStake;
             assertEq(postStakeBal, expectedPostStakeBal, "The post-staking balance for staker is accurate");
 
+            // cleanup 1 - stake
+            _waitForCoolDown();
+
             // act 2 - unstake
             vm.prank(stakerAddr);
             stakingContract.unstake(amtToUnstake);
@@ -216,7 +223,139 @@ contract FinthetixStakingContract_UnitTest is Test {
             uint256 postUnstakeBal = stakingContract.viewMyStakedAmt();
             uint256 expectedStakerBal = expectedPostStakeBal - amtToUnstake;
             assertEq(postUnstakeBal, expectedStakerBal, "The post-unstaking balance for staker is accurate");
+
+            // cleanup 2 - unstake
+            _waitForCoolDown();
         }
+    }
+
+    function test_InitialRewardsIsZero(address stakerAddr) public {
+        // assumptions
+        vm.assume(stakerAddr != address(0));
+
+        // act
+        vm.prank(stakerAddr);
+        uint256 accruedRewards = stakingContract.viewMyAccruedRewards();
+
+        // verify
+        assertEq(accruedRewards, 0, "Initial accrued rewards should be 0");
+    }
+
+    function test_CanAccrueRewards(address stakerAddr, uint256 amtToStake, uint256 timeToWait) private {
+        vm.assume(stakerAddr != address(0));
+        vm.assume(amtToStake != 0);
+        uint256 currTime = block.timestamp;
+        vm.assume(
+            (timeToWait > 0) && (timeToWait < (type(uint256).max - currTime))
+                && (timeToWait < type(uint256).max / stakingContract.TOTAL_REWARDS_PER_SECOND())
+        );
+        _approveAndStake(stakerAddr, amtToStake, true);
+        vm.warp(currTime + timeToWait);
+        vm.startPrank(stakerAddr);
+        stakingContract.unstake(amtToStake);
+        uint256 accruedRewards = stakingContract.viewMyAccruedRewards();
+        vm.stopPrank();
+        uint256 expectedRewards = stakingContract.TOTAL_REWARDS_PER_SECOND() * timeToWait;
+        assertEq(accruedRewards, expectedRewards, "Accrued rewards not as expected");
+    }
+
+    function test_StakingUpdatesLastUpdatedTimestamp(address stakerAddr, uint128 amtToStake, uint128 timeToWait)
+        public
+    {
+        // assumptions
+        vm.assume(stakerAddr != address(0));
+        vm.assume(amtToStake > 0);
+        vm.assume(timeToWait > 0);
+
+        // setup
+        uint256 newTime = block.timestamp + timeToWait;
+        vm.warp(newTime);
+
+        // act
+        _approveAndStake(stakerAddr, amtToStake, true);
+
+        // verify
+        assertEq(stakingContract.lastUpdatedRewardAt(), newTime, "Staking doesn't update lastUpdatedRewardAt");
+    }
+
+    function test_UnstakingUpdatesLastUpdatedTimestamp(uint128 amtToUnstake, uint128 timeToWait) public {
+        // assumptions
+        vm.assume(amtToUnstake > 0 && timeToWait > 0);
+        uint256 amtToStake = 2 * uint256(amtToUnstake);
+        vm.assume(uint256(timeToWait) * stakingContract.COOLDOWN_CONSTANT() > amtToStake);
+
+        // setup
+        address stakerAddr = vm.addr(0xB0b);
+        _approveAndStake(stakerAddr, amtToStake, true);
+        uint256 newTime = block.timestamp + timeToWait;
+        vm.warp(newTime);
+
+        // act
+        vm.prank(stakerAddr);
+        stakingContract.unstake(amtToUnstake);
+
+        // verify
+        assertEq(stakingContract.lastUpdatedRewardAt(), newTime, "Staking doesn't update lastUpdatedRewardAt");
+    }
+
+    function test_CannotStakeInCoolDownPhase(uint128 amtToStake, uint128 timeToWait) public {
+        vm.assume(amtToStake > 0 && timeToWait > 0);
+        vm.assume(stakingContract.COOLDOWN_CONSTANT() * uint256(timeToWait) < uint256(amtToStake));
+        address stakerAddr = vm.addr(0xB0b);
+
+        uint256 amtToApprove = type(uint256).max;
+        deal(address(stakingToken), stakerAddr, amtToApprove, true);
+        vm.prank(stakerAddr);
+        stakingToken.approve(address(stakingContract), amtToApprove);
+
+        vm.prank(stakerAddr);
+        stakingContract.stake(amtToStake);
+
+        uint256 initTime = block.timestamp;
+        uint256 newTime = initTime + timeToWait;
+        vm.warp(newTime);
+
+        vm.prank(stakerAddr);
+        vm.expectRevert(abi.encodeWithSelector(FSCErrors.CannotInteractWhenCoolingDown.selector, newTime, initTime));
+        stakingContract.stake(amtToStake);
+    }
+
+    function test_CannotUnstakeInCooldownPhase(uint128 amtToUnstake, uint128 timeToWait) public {
+        // assumptions
+        vm.assume(amtToUnstake > 0 && timeToWait > 0);
+        uint256 amtToStake = 2 * uint256(amtToUnstake);
+        vm.assume(uint256(timeToWait) * stakingContract.COOLDOWN_CONSTANT() < amtToStake);
+
+        address stakerAddr = vm.addr(0xB0b);
+        _approveAndStake(stakerAddr, amtToStake, true);
+        uint256 initTime = block.timestamp;
+        uint256 newTime = initTime + timeToWait;
+        vm.warp(newTime);
+
+        // verify
+        vm.expectRevert(abi.encodeWithSelector(FSCErrors.CannotInteractWhenCoolingDown.selector, newTime, initTime));
+        vm.prank(stakerAddr);
+        stakingContract.unstake(amtToUnstake);
+    }
+
+    function test_StakingUpdatesAlphaNow(uint128[2] calldata amtToStake, uint128 timeToWait) public {
+        // assumptions
+        vm.assume(amtToStake[0] != 0 && amtToStake[1] != 0);
+        vm.assume((stakingContract.COOLDOWN_CONSTANT() * timeToWait > amtToStake[0]));
+
+        // setup
+        address stakerAddr1 = vm.addr(0xB0b);
+        address stakerAddr2 = vm.addr(0xAbe);
+        _approveAndStake(stakerAddr1, amtToStake[0], true);
+        uint256 initAlphaNow = stakingContract.alphaNow();
+        vm.warp(block.timestamp + timeToWait);
+
+        // act
+        _approveAndStake(stakerAddr2, amtToStake[1], true);
+
+        // verify
+        uint256 expectedAlphaNow = initAlphaNow + (stakingContract.COOLDOWN_CONSTANT() * timeToWait) / amtToStake[0]; // the reward is updated sans new stake info
+        assertEq(stakingContract.alphaNow(), expectedAlphaNow, "Staking doesn't update alphaNow");
     }
 
     /**
@@ -271,5 +410,10 @@ contract FinthetixStakingContract_UnitTest is Test {
             refinedArg0[i] = newRandomInput;
         }
         return refinedArg0;
+    }
+
+    function _waitForCoolDown() private {
+        uint256 cooldownTime = (stakingContract.totalStakedAmt() / stakingContract.COOLDOWN_CONSTANT()) + 1;
+        vm.warp(block.timestamp + cooldownTime);
     }
 }
