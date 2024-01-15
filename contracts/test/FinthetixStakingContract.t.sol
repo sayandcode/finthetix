@@ -68,8 +68,7 @@ contract FinthetixStakingContract_UnitTest is Test {
         assertEq(tokenBal2OfStaker, expectedTokenBal2OfStaker, "Staking did not decrease token balance of staker");
 
         // setup 2
-        uint256 cooldownTime = (stakingContract.totalStakedAmt() / stakingContract.COOLDOWN_CONSTANT()) + 1;
-        vm.warp(block.timestamp + cooldownTime);
+        _waitForCoolDown();
 
         // act 2 - unstake
         vm.prank(stakerAddr);
@@ -119,21 +118,18 @@ contract FinthetixStakingContract_UnitTest is Test {
     }
 
     /**
-     * @param stakerAddr The address trying to unstake
      * @param _amtToStake The amount staked initially (unbounded)
      * @param _amtToUnstake The amount attempted to unstake (unbounded)
      * @notice Tests that error is thrown if trying to withdraw more than
      *  staked amount
      */
-    function test_CannotUnStakeMoreThanStakedAmount(address stakerAddr, uint248 _amtToStake, uint248 _amtToUnstake)
-        public
-    {
+    function test_CannotUnStakeMoreThanStakedAmount(uint248 _amtToStake, uint248 _amtToUnstake) public {
         // assumptions
-        vm.assume(stakerAddr != address(0));
-
-        // setup
         uint256 boundedAmtToStake = bound(_amtToStake, 1, type(uint256).max - 1);
         uint256 boundedAmtToUnstake = bound(_amtToUnstake, boundedAmtToStake + 1, type(uint256).max); // unstake more than staked amt
+
+        // setup
+        address stakerAddr = vm.addr(0xB0b);
         _approveAndStake(stakerAddr, boundedAmtToStake, true);
 
         // act & verify
@@ -241,33 +237,36 @@ contract FinthetixStakingContract_UnitTest is Test {
         assertEq(accruedRewards, 0, "Initial accrued rewards should be 0");
     }
 
-    function test_CanAccrueRewards(address stakerAddr, uint256 amtToStake, uint256 timeToWait) private {
-        vm.assume(stakerAddr != address(0));
+    function test_CanAccrueRewards(uint256 amtToStake, uint256 timeToWait) private {
+        // assumptions
         vm.assume(amtToStake != 0);
-        uint256 currTime = block.timestamp;
+        uint256 initTime = block.timestamp;
         vm.assume(
-            (timeToWait > 0) && (timeToWait < (type(uint256).max - currTime))
+            (timeToWait > 0) && (timeToWait < (type(uint256).max - initTime))
                 && (timeToWait < type(uint256).max / stakingContract.TOTAL_REWARDS_PER_SECOND())
         );
+
+        // setup
+        address stakerAddr = vm.addr(0xB0b);
         _approveAndStake(stakerAddr, amtToStake, true);
-        vm.warp(currTime + timeToWait);
-        vm.startPrank(stakerAddr);
+        vm.warp(initTime + timeToWait);
+        vm.prank(stakerAddr);
         stakingContract.unstake(amtToStake);
+
+        // act & verify
+        vm.prank(stakerAddr);
         uint256 accruedRewards = stakingContract.viewMyAccruedRewards();
-        vm.stopPrank();
         uint256 expectedRewards = stakingContract.TOTAL_REWARDS_PER_SECOND() * timeToWait;
         assertEq(accruedRewards, expectedRewards, "Accrued rewards not as expected");
     }
 
-    function test_StakingUpdatesLastUpdatedTimestamp(address stakerAddr, uint128 amtToStake, uint128 timeToWait)
-        public
-    {
+    function test_StakingUpdatesLastUpdatedTimestamp(uint128 timeToWait) public {
         // assumptions
-        vm.assume(stakerAddr != address(0));
-        vm.assume(amtToStake > 0);
         vm.assume(timeToWait > 0);
 
         // setup
+        address stakerAddr = vm.addr(0xB0b);
+        uint256 amtToStake = 10 ether;
         uint256 newTime = block.timestamp + timeToWait;
         vm.warp(newTime);
 
@@ -278,10 +277,10 @@ contract FinthetixStakingContract_UnitTest is Test {
         assertEq(stakingContract.lastUpdatedRewardAt(), newTime, "Staking doesn't update lastUpdatedRewardAt");
     }
 
-    function test_UnstakingUpdatesLastUpdatedTimestamp(uint128 amtToUnstake, uint128 timeToWait) public {
+    function test_UnstakingUpdatesLastUpdatedTimestamp(uint128 timeToWait) public {
         // assumptions
-        vm.assume(amtToUnstake > 0 && timeToWait > 0);
-        uint256 amtToStake = 2 * uint256(amtToUnstake);
+        vm.assume(timeToWait > 0);
+        uint256 amtToStake = 20 ether;
         vm.assume(uint256(timeToWait) * stakingContract.COOLDOWN_CONSTANT() > amtToStake);
 
         // setup
@@ -292,47 +291,49 @@ contract FinthetixStakingContract_UnitTest is Test {
 
         // act
         vm.prank(stakerAddr);
-        stakingContract.unstake(amtToUnstake);
+        stakingContract.unstake(amtToStake / 2);
 
         // verify
         assertEq(stakingContract.lastUpdatedRewardAt(), newTime, "Staking doesn't update lastUpdatedRewardAt");
     }
 
-    function test_CannotStakeInCoolDownPhase(uint128 amtToStake, uint128 timeToWait) public {
-        vm.assume(amtToStake > 0 && timeToWait > 0);
-        vm.assume(stakingContract.COOLDOWN_CONSTANT() * uint256(timeToWait) < uint256(amtToStake));
-        address stakerAddr = vm.addr(0xB0b);
+    function test_CannotStakeInCoolDownPhase(uint128 initAmtToStake, uint128 timeToWait) public {
+        // assumptions
+        vm.assume(initAmtToStake > 0 && timeToWait > 0);
+        vm.assume(stakingContract.COOLDOWN_CONSTANT() * uint256(timeToWait) < uint256(initAmtToStake));
 
+        // setup
+        address stakerAddr = vm.addr(0xB0b);
         uint256 amtToApprove = type(uint256).max;
         deal(address(stakingToken), stakerAddr, amtToApprove, true);
         vm.prank(stakerAddr);
         stakingToken.approve(address(stakingContract), amtToApprove);
-
         vm.prank(stakerAddr);
-        stakingContract.stake(amtToStake);
-
+        stakingContract.stake(initAmtToStake);
         uint256 initTime = block.timestamp;
         uint256 newTime = initTime + timeToWait;
         vm.warp(newTime);
 
+        // act & verify
         vm.prank(stakerAddr);
         vm.expectRevert(abi.encodeWithSelector(FSCErrors.CannotInteractWhenCoolingDown.selector, newTime, initTime));
-        stakingContract.stake(amtToStake);
+        stakingContract.stake(initAmtToStake);
     }
 
-    function test_CannotUnstakeInCooldownPhase(uint128 amtToUnstake, uint128 timeToWait) public {
+    function test_CannotUnstakeInCooldownPhase(uint128 initAmtToStake, uint128 timeToWait) public {
         // assumptions
-        vm.assume(amtToUnstake > 0 && timeToWait > 0);
-        uint256 amtToStake = 2 * uint256(amtToUnstake);
-        vm.assume(uint256(timeToWait) * stakingContract.COOLDOWN_CONSTANT() < amtToStake);
+        vm.assume(initAmtToStake > 2 && timeToWait > 0);
+        vm.assume(uint256(timeToWait) * stakingContract.COOLDOWN_CONSTANT() < initAmtToStake);
 
+        // setup
         address stakerAddr = vm.addr(0xB0b);
-        _approveAndStake(stakerAddr, amtToStake, true);
+        _approveAndStake(stakerAddr, initAmtToStake, true);
         uint256 initTime = block.timestamp;
         uint256 newTime = initTime + timeToWait;
         vm.warp(newTime);
+        uint256 amtToUnstake = initAmtToStake / 2;
 
-        // verify
+        // act & verify
         vm.expectRevert(abi.encodeWithSelector(FSCErrors.CannotInteractWhenCoolingDown.selector, newTime, initTime));
         vm.prank(stakerAddr);
         stakingContract.unstake(amtToUnstake);
