@@ -11,10 +11,16 @@ contract FinthetixStakingContract_UnitTest is Test {
      */
     struct Arg0_IndividualAndTotalStakedBalancesAreUpdated {
         address stakerAddr;
-        uint248 amtToStake;
-        uint248 amtToUnstake;
+        uint128 amtToStake;
+        uint128 amtToUnstake;
     }
 
+    /**
+     * @notice This is 10x larger than the TOTAL_REWARDS_PER_SECOND variable.
+     *  The obtained rewards will never be bigger than the rewards owed.
+     *  i.e. The precision loss is downwards
+     */
+    uint256 REWARD_PRECISION = 1e18;
     FinthetixStakingContract stakingContract;
     FinthetixStakingToken stakingToken;
 
@@ -38,7 +44,7 @@ contract FinthetixStakingContract_UnitTest is Test {
      * @notice Tests whether the token balances are updated on the ERC20
      *  side whenever there is a staking/unstaking action
      */
-    function test_StakingTransfersTokensBetweenStakerAndStakingContract(uint248 amtToStake, address stakerAddr)
+    function test_StakingTransfersTokensBetweenStakerAndStakingContract(uint128 amtToStake, address stakerAddr)
         public
     {
         // assumptions
@@ -189,8 +195,8 @@ contract FinthetixStakingContract_UnitTest is Test {
         for (uint256 i = 0; i < refinedArg0.length; i++) {
             // setup 1
             address stakerAddr = refinedArg0[i].stakerAddr;
-            uint248 amtToStake = refinedArg0[i].amtToStake;
-            uint248 amtToUnstake = refinedArg0[i].amtToUnstake;
+            uint256 amtToStake = refinedArg0[i].amtToStake;
+            uint256 amtToUnstake = refinedArg0[i].amtToUnstake;
             vm.prank(stakerAddr);
             uint256 preStakeBal = stakingContract.viewMyStakedAmt();
 
@@ -236,33 +242,49 @@ contract FinthetixStakingContract_UnitTest is Test {
 
         // act
         vm.prank(stakerAddr);
-        uint256 accruedRewards = stakingContract.viewMyAccruedRewards();
+        uint256 accruedRewards = stakingContract.viewMyPublishedRewards();
 
         // verify
         assertEq(accruedRewards, 0, "Initial accrued rewards should be 0");
     }
 
-    function test_CanAccrueRewards(uint256 amtToStake, uint256 timeToWait) private {
+    function test_CanAccrueRewards(uint128 _amtToStake1, uint128 _amtToStake2) public {
         // assumptions
-        vm.assume(amtToStake != 0);
-        uint256 initTime = block.timestamp;
-        vm.assume(
-            (timeToWait > 0) && (timeToWait < (type(uint256).max - initTime))
-                && (timeToWait < type(uint256).max / stakingContract.TOTAL_REWARDS_PER_SECOND())
-        );
+        vm.assume(_amtToStake1 > 0 && _amtToStake2 > 0);
+        uint256 amtToStake1 = uint256(_amtToStake1);
+        uint256 amtToStake2 = uint256(_amtToStake2);
+
+        // definitions
+        uint256 expectedRewardsForUser1;
 
         // setup
-        address stakerAddr = vm.addr(0xB0b);
-        _approveAndStake(stakerAddr, amtToStake, true);
-        vm.warp(initTime + timeToWait);
-        vm.prank(stakerAddr);
-        stakingContract.unstake(amtToStake);
+        /// user 1 stakes
+        uint256 lastInteractedTime = block.timestamp;
+        address stakerAddr1 = vm.addr(0xB0b);
+        address stakerAddr2 = vm.addr(0xAbe);
+        _approveAndStake(stakerAddr1, amtToStake1, true);
+        _waitForCoolDown();
+
+        /// user 2 stakes
+        _approveAndStake(stakerAddr2, amtToStake2, true);
+        expectedRewardsForUser1 += stakingContract.TOTAL_REWARDS_PER_SECOND() * (block.timestamp - lastInteractedTime);
+        lastInteractedTime = block.timestamp;
+        _waitForCoolDown();
+
+        /// user 1 unstakes
+        vm.prank(stakerAddr1);
+        stakingContract.unstake(amtToStake1);
+        uint256 totalStakedAmt = amtToStake1 + amtToStake2;
+        expectedRewardsForUser1 += (
+            amtToStake1 * stakingContract.TOTAL_REWARDS_PER_SECOND() * (block.timestamp - lastInteractedTime)
+        ) / (totalStakedAmt);
+        lastInteractedTime = block.timestamp;
 
         // act & verify
-        vm.prank(stakerAddr);
-        uint256 accruedRewards = stakingContract.viewMyAccruedRewards();
-        uint256 expectedRewards = stakingContract.TOTAL_REWARDS_PER_SECOND() * timeToWait;
-        assertEq(accruedRewards, expectedRewards, "Accrued rewards not as expected");
+        vm.prank(stakerAddr1);
+        uint256 accruedRewards = stakingContract.viewMyPublishedRewards();
+
+        assert(expectedRewardsForUser1 - accruedRewards < 1e18);
     }
 
     /**
@@ -379,19 +401,49 @@ contract FinthetixStakingContract_UnitTest is Test {
 
         // setup
         address stakerAddr1 = vm.addr(0xB0b);
-        address stakerAddr2 = vm.addr(0xAbe);
         _approveAndStake(stakerAddr1, initAmtToStake, true);
         uint256 initAlphaNow = stakingContract.alphaNow();
         vm.warp(block.timestamp + timeToWait);
 
         // act
         uint256 secondAmtToStake = 1;
-        _approveAndStake(stakerAddr2, secondAmtToStake, true);
+        _approveAndStake(stakerAddr1, secondAmtToStake, true);
 
         // verify
         uint256 expectedAlphaNow = initAlphaNow + (stakingContract.COOLDOWN_CONSTANT() * timeToWait) / initAmtToStake; // the reward is updated without including balance from new stake info
         assertEq(stakingContract.alphaNow(), expectedAlphaNow, "Staking doesn't update alphaNow");
     }
+
+    /**
+     *
+     * @param initAmtToStake The first amount to stake. This decides
+     *  the ``timeToWait`` as well as the computed ``alphaNow`` value
+     * @param timeToWait The time to wait before staking again with the staking contract
+     */
+    function test_UnstakingUpdatesAlphaNow(uint128 initAmtToStake, uint128 timeToWait) public {
+        // assumptions
+        uint256 secondAmtToStake = 1;
+        vm.assume(initAmtToStake > secondAmtToStake);
+        vm.assume((stakingContract.COOLDOWN_CONSTANT() * timeToWait > initAmtToStake));
+
+        // setup
+        address stakerAddr1 = vm.addr(0xB0b);
+        _approveAndStake(stakerAddr1, initAmtToStake, true);
+        uint256 initAlphaNow = stakingContract.alphaNow();
+        vm.warp(block.timestamp + timeToWait);
+
+        // act
+        vm.prank(stakerAddr1);
+        stakingContract.unstake(1);
+
+        // verify
+        uint256 expectedAlphaNow = initAlphaNow + (stakingContract.COOLDOWN_CONSTANT() * timeToWait) / initAmtToStake; // the reward is updated without including balance from new stake info
+        assertEq(stakingContract.alphaNow(), expectedAlphaNow, "Staking doesn't update alphaNow");
+    }
+
+    /**
+     * **********  PRIVATE FUNCTIONS **********
+     */
 
     /**
      *
@@ -433,8 +485,8 @@ contract FinthetixStakingContract_UnitTest is Test {
         for (uint256 i = 0; i < arg0.length; i++) {
             Arg0_IndividualAndTotalStakedBalancesAreUpdated memory _randomInput = arg0[i];
             address stakerAddr = _randomInput.stakerAddr == address(0) ? address(1) : _randomInput.stakerAddr;
-            uint248 amtToStake = _randomInput.amtToStake == 0 ? 1 : _randomInput.amtToStake;
-            uint248 amtToUnstake = uint248(bound(_randomInput.amtToUnstake, 1, amtToStake));
+            uint128 amtToStake = _randomInput.amtToStake == 0 ? 1 : _randomInput.amtToStake;
+            uint128 amtToUnstake = uint128(bound(_randomInput.amtToUnstake, 1, amtToStake));
 
             Arg0_IndividualAndTotalStakedBalancesAreUpdated memory newRandomInput =
             Arg0_IndividualAndTotalStakedBalancesAreUpdated({

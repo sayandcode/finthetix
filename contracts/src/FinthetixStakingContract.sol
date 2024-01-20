@@ -42,14 +42,15 @@ contract FinthetixStakingContract is FSCErrors {
      *
      * @dev To calculate the cooldown time, get the TVL(totalStakedAmt) and divide by COOLDOWN_CONSTANT
      */
-    uint256 public constant COOLDOWN_CONSTANT = 10 ether;
+    uint256 public constant COOLDOWN_CONSTANT = 100 ether;
     FinthetixStakingToken public immutable stakingToken = new FinthetixStakingToken();
     uint256 public totalStakedAmt;
     uint256 public lastUpdatedRewardAt;
     uint256 public alphaNow;
 
     mapping(address => uint256) private mapAddrToStakedAmt;
-    mapping(address => uint256) private mapAddrToAccruedReward;
+    mapping(address => uint256) private mapAddrToPublishedReward;
+    mapping(address => uint256) private mapAddrToAlphaAtLastUserInteraction;
 
     function stake(uint256 amtToStake) external {
         // checks
@@ -57,7 +58,7 @@ contract FinthetixStakingContract is FSCErrors {
         if (amtToStake == 0) revert CannotStakeZeroAmount(msg.sender);
 
         // effects
-        _updateRewardFor();
+        _updateReward();
         mapAddrToStakedAmt[msg.sender] += amtToStake;
         totalStakedAmt += amtToStake;
 
@@ -75,7 +76,7 @@ contract FinthetixStakingContract is FSCErrors {
         }
 
         // effects
-        _updateRewardFor();
+        _updateReward();
         mapAddrToStakedAmt[msg.sender] -= amtToUnstake;
         totalStakedAmt -= amtToUnstake;
 
@@ -87,11 +88,11 @@ contract FinthetixStakingContract is FSCErrors {
         return mapAddrToStakedAmt[msg.sender];
     }
 
-    function viewMyAccruedRewards() external view returns (uint256) {
-        return mapAddrToAccruedReward[msg.sender];
+    function viewMyPublishedRewards() external view returns (uint256) {
+        return mapAddrToPublishedReward[msg.sender];
     }
 
-    function _updateRewardFor() private {
+    function _updateReward() private {
         // update alpha
         if (totalStakedAmt > 0) {
             uint256 numerator = (block.timestamp - lastUpdatedRewardAt) * COOLDOWN_CONSTANT;
@@ -100,6 +101,10 @@ contract FinthetixStakingContract is FSCErrors {
             uint256 alphaAccrued = numerator / totalStakedAmt;
             alphaNow = alphaNow + alphaAccrued;
         }
+
+        uint256 accruedRewards = mapAddrToStakedAmt[msg.sender] * TOTAL_REWARDS_PER_SECOND
+            * (alphaNow - mapAddrToAlphaAtLastUserInteraction[msg.sender]) / COOLDOWN_CONSTANT;
+        mapAddrToPublishedReward[msg.sender] += accruedRewards;
         lastUpdatedRewardAt = block.timestamp;
     }
 }
