@@ -442,6 +442,99 @@ contract FinthetixStakingContract_UnitTest is Test {
     }
 
     /**
+     * @notice Tests whether phantom overflow in reward calculation is handled.
+     * @dev By setting the amount staked high enough, we manage to trigger overflow on
+     * the first product in rewards calculation
+     */
+    function test_CanHandlePhantomOverflowInRewardCalc() public {
+        uint256 amtToStake = type(uint256).max / stakingContract.TOTAL_REWARDS_PER_SECOND() + 1; // makes the first product (mapAddrToStakedAmt[msg.sender] * TOTAL_REWARDS_PER_SECOND) overflow
+
+        address stakerAddr = vm.addr(0xB0b);
+        _approveAndStake(stakerAddr, amtToStake, true);
+        _waitForCoolDown();
+
+        uint256 minUnstakeAmt = 1;
+        vm.prank(stakerAddr);
+        stakingContract.unstake(minUnstakeAmt);
+    }
+
+    /**
+     * @notice Tests the overflow handling in alpha calculation
+     * @dev This test has been disabled (private), as the required time period
+     *  to trigger the overflow for the current COOLDOWN_CONSTANT of 1e20 is more
+     *  than 1e57 (>3 times the age of the universe!), which doesn't need to be
+     *  accounted for
+     */
+    function test_CanHandleActualOverflowInAlphaCalc() private {
+        uint256 amtToStake = 1;
+        address stakerAddr = vm.addr(0xB0b);
+        _approveAndStake(stakerAddr, amtToStake, true);
+        uint256 minWaitTimeToOverflowAlphaCalc = type(uint256).max / stakingContract.COOLDOWN_CONSTANT() + 1;
+        vm.warp(block.timestamp + minWaitTimeToOverflowAlphaCalc);
+
+        uint256 minUnstakeAmt = 1;
+        vm.expectRevert(abi.encodeWithSelector(FSCErrors.HighValueTransaction.selector, stakerAddr));
+        vm.prank(stakerAddr);
+        stakingContract.unstake(minUnstakeAmt);
+    }
+
+    /**
+     * @notice Tests the overflow handling in rewards calculation, under the
+     *  constraints of minimum staked amount required to trigger. Obviously that
+     *  means alpha which depends on the time is leading the overflow trigger
+     * @dev This test has been disabled (private), as the required time period
+     *  to trigger the overflow for the current TOTAL_REWARDS_PER_SECOND of 5e17
+     *  is more than 2e59 (3 times the age of the universe!), which doesn't need
+     *  to be accounted for
+     */
+    function test_CanHandleActualOverflowInRewardCalc_AlphaLeads() private {
+        uint256 amtToStake = type(uint256).max / stakingContract.TOTAL_REWARDS_PER_SECOND() + 1; // overflows prod1
+
+        address stakerAddr = vm.addr(0xB0b);
+        _approveAndStake(stakerAddr, amtToStake, true);
+
+        // To overflow reward calculation wait until
+        // alphaDiff * op1 > type(uint256).max
+        // alphaDiff * ((type(uint256).max/ TOTAL_REWARDS_PER_SECOND) * TOTAL_REWARDS_PER_SECOND / COOLDOWN_CONSTANT) > type(uint256).max
+        // alphaDiff * ((type(uint256).max) / COOLDOWN_CONSTANT) > type(uint256).max
+        // alphaDiff * ((1 / COOLDOWN_CONSTANT) > 1
+        // alphaDiff > COOLDOWN_CONSTANT
+        // (t * COOLDOWN_CONSTANT / amtStaked) > COOLDOWN_CONSTANT
+        // t > amtStaked
+        uint256 timeToWaitToOverflowAlpha = amtToStake + 1;
+        vm.warp(block.timestamp + timeToWaitToOverflowAlpha);
+
+        uint256 minUnstakeAmt = 1;
+        vm.expectRevert(abi.encodeWithSelector(FSCErrors.HighValueTransaction.selector, stakerAddr));
+        vm.prank(stakerAddr);
+        stakingContract.unstake(minUnstakeAmt);
+    }
+
+    /**
+     * @notice Tests the overflow handling in rewards calculation, under the
+     *  constraints of minimum alpha (or by extension, time) required to trigger.
+     *  Obviously that means staked amount by user is leading the overflow
+     *  trigger
+     * @dev This test has been disabled (private), as the required time period
+     *  to trigger the overflow for the current TOTAL_REWARDS_PER_SECOND of 5e17
+     *  is more than 2e59 seconds (3 times the age of the universe!), which doesn't
+     *  need to be accounted for
+     */
+    function test_CanHandleActualOverflowInRewardCalc_StakedAmtLeads() private {
+        // the max possible staked amount is used
+        uint256 amtToStake = type(uint256).max;
+
+        address stakerAddr = vm.addr(0xB0b);
+        _approveAndStake(stakerAddr, amtToStake, true);
+        _waitForCoolDown();
+
+        uint256 minUnstakeAmt = 1;
+        vm.expectRevert(abi.encodeWithSelector(FSCErrors.HighValueTransaction.selector, stakerAddr));
+        vm.prank(stakerAddr);
+        stakingContract.unstake(minUnstakeAmt);
+    }
+
+    /**
      * **********  PRIVATE FUNCTIONS **********
      */
 

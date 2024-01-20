@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import {FinthetixStakingToken} from "./FinthetixStakingToken.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 interface FSCErrors {
     /**
@@ -32,6 +33,14 @@ interface FSCErrors {
      *  The contract will unlock at ``lastUpdatedRewardAt + max(COOLDOWN_CONSTANT/totalStakedAmt, 1)`` timestamp
      */
     error CannotInteractWhenCoolingDown(uint256 currTimestamp, uint256 lastUpdatedRewardAt);
+
+    /**
+     * @param stakerAddr The address of the staker who has triggered this error.
+     * @notice This error occurs when the calculation of reward owed to the
+     *  staker triggers an overflow. Such high value users are requested to call
+     *  the ``updateHighValueReward`` function
+     */
+    error HighValueTransaction(address stakerAddr);
 }
 
 contract FinthetixStakingContract is FSCErrors {
@@ -95,6 +104,7 @@ contract FinthetixStakingContract is FSCErrors {
     function _updateReward() private {
         // update alpha
         if (totalStakedAmt > 0) {
+            // unless time > 1e57 (~3x age of universe!), we are safe from overflow
             uint256 numerator = (block.timestamp - lastUpdatedRewardAt) * COOLDOWN_CONSTANT;
             if (numerator < totalStakedAmt) revert CannotInteractWhenCoolingDown(block.timestamp, lastUpdatedRewardAt);
 
@@ -102,9 +112,27 @@ contract FinthetixStakingContract is FSCErrors {
             alphaNow = alphaNow + alphaAccrued;
         }
 
-        uint256 accruedRewards = mapAddrToStakedAmt[msg.sender] * TOTAL_REWARDS_PER_SECOND
-            * (alphaNow - mapAddrToAlphaAtLastUserInteraction[msg.sender]) / COOLDOWN_CONSTANT;
+        uint256 accruedRewards = _calculateAccruedRewards();
         mapAddrToPublishedReward[msg.sender] += accruedRewards;
         lastUpdatedRewardAt = block.timestamp;
+    }
+
+    function _calculateAccruedRewards() private view returns (uint256 result) {
+        uint256 userStakedAmt = mapAddrToStakedAmt[msg.sender];
+
+        (bool isProd1Safe, uint256 prod1) = Math.tryMul(userStakedAmt, TOTAL_REWARDS_PER_SECOND);
+        if (!isProd1Safe) {
+            // Ignoring the overflow possibility in the following two lines allows us to save some gas.
+
+            /*  current TOTAL_REWARDS_PER_SECOND (ie. 5e17) and COOLDOWN_CONSTANT (ie. 1e20) cause their mutual 
+                division to result in 5e-3. So even if the userStakedAmt is type(uint256).max, we will get a 
+                smaller number on multiplying with the former.  */
+            uint256 op1Result = Math.mulDiv(userStakedAmt, TOTAL_REWARDS_PER_SECOND, COOLDOWN_CONSTANT);
+            /*  The below line will never overflow as the minimum alpha difference required to trigger overflow, 
+                for the current COOLDOWN_CONSTANT is 2e59 seconds(>3 times the age of the universe) */
+            return op1Result * (alphaNow - mapAddrToAlphaAtLastUserInteraction[msg.sender]);
+        }
+
+        return (Math.mulDiv(prod1, (alphaNow - mapAddrToAlphaAtLastUserInteraction[msg.sender]), COOLDOWN_CONSTANT));
     }
 }
