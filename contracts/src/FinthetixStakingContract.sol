@@ -104,20 +104,22 @@ contract FinthetixStakingContract is FSCErrors {
     }
 
     function _updateReward() private {
-        // update alpha
+        _updateAlpha();
+        mapAddrToPublishedReward[msg.sender] += _calculateAccruedRewards();
+        lastUpdatedRewardAt = block.timestamp;
+        mapAddrToAlphaAtLastUserInteraction[msg.sender] = alphaNow;
+    }
+
+    function _updateAlpha() private {
         if (totalStakedAmt > 0) {
-            // unless time > 1e57 (>3x age of universe!), we are safe from overflow [Why 1e57? type(uint256).max / COOLDOWN_CONSTANT]
+            // unless time > 1e57 (>3x age of universe!), we are safe from overflow
+            // [Why 1e57? type(uint256).max / COOLDOWN_CONSTANT]
             uint256 numerator = (block.timestamp - lastUpdatedRewardAt) * COOLDOWN_CONSTANT;
             if (numerator < totalStakedAmt) revert CannotInteractWhenCoolingDown(block.timestamp, lastUpdatedRewardAt);
 
             uint256 alphaAccrued = numerator / totalStakedAmt;
             alphaNow = alphaNow + alphaAccrued;
         }
-
-        uint256 accruedRewards = _calculateAccruedRewards();
-        mapAddrToPublishedReward[msg.sender] += accruedRewards;
-        lastUpdatedRewardAt = block.timestamp;
-        mapAddrToAlphaAtLastUserInteraction[msg.sender] = alphaNow;
     }
 
     function _calculateAccruedRewards() private view returns (uint256 result) {
