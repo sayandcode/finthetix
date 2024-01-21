@@ -9,12 +9,12 @@ interface FSCErrors {
      * @notice Zero is not a valid amount of tokens to stake. If you
      *  wish to withdraw tokens, use the dedicated function.
      */
-    error CannotStakeZeroAmount(address stakerAddr);
+    error CannotStakeZeroAmount(address userAddr);
 
     /**
      * @notice Zero is not a valid amount of tokens to unstake.
      */
-    error CannotUnstakeZeroAmount(address stakerAddr);
+    error CannotUnstakeZeroAmount(address userAddr);
 
     /**
      * @notice Zero address is not supported
@@ -24,7 +24,7 @@ interface FSCErrors {
     /**
      * @notice User should not be able to unstake more than they have staked
      */
-    error CannotUnstakeMoreThanStakedAmount(address stakerAddr, uint256 amtToUnstake, uint256 availableStakedBal);
+    error CannotUnstakeMoreThanStakedAmount(address userAddr, uint256 amtToUnstake, uint256 availableStakedBal);
 
     /**
      * @param currTimestamp The timestamp at which user has attempted to interact with contract.
@@ -37,12 +37,12 @@ interface FSCErrors {
     // Commented out, since the boundary conditions required for this to be met are not reasonable (block.timestamp = 2e59 seconds)
     // You may uncomment and use this by deploying a new contract, once that day arises
     // /**
-    //  * @param stakerAddr The address of the staker who has triggered this error.
+    //  * @param userAddr The address of the user who has triggered this error.
     //  * @notice This error occurs when the calculation of reward owed to the
-    //  *  staker triggers an overflow. Such high value users are requested to call
+    //  *  user triggers an overflow. Such high value users are requested to call
     //  *  the ``updateHighValueReward`` function
     //  */
-    // error HighValueTransaction(address stakerAddr);
+    // error HighValueTransaction(address userAddr);
 }
 
 contract FinthetixStakingContract is FSCErrors {

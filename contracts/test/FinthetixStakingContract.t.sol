@@ -10,7 +10,7 @@ contract FinthetixStakingContract_UnitTest is Test {
      * @dev The random input used for test_IndividualAndTotalStakedBalancesAreUpdated
      */
     struct Arg0_IndividualAndTotalStakedBalancesAreUpdated {
-        address stakerAddr;
+        address userAddr;
         uint128 amtToStake;
         uint128 amtToUnstake;
     }
@@ -25,12 +25,12 @@ contract FinthetixStakingContract_UnitTest is Test {
     FinthetixStakingToken stakingToken;
 
     /**
-     * @param stakerAddr The address of the staker who has triggered this error.
+     * @param userAddr The address of the user who has triggered this error.
      * @notice This error occurs when the calculation of reward owed to the
-     *  staker triggers an overflow. Such high value users are requested to call
+     *  user triggers an overflow. Such high value users are requested to call
      *  the ``updateHighValueReward`` function
      */
-    error HighValueTransaction(address stakerAddr);
+    error HighValueTransaction(address userAddr);
 
     function setUp() public {
         stakingContract = new FinthetixStakingContract();
@@ -48,55 +48,53 @@ contract FinthetixStakingContract_UnitTest is Test {
     /**
      *
      * @param amtToStake The amount of tokens to stake with the contract
-     * @param stakerAddr The address of the staker
+     * @param userAddr The address of the user
      * @notice Tests whether the token balances are updated on the ERC20
      *  side whenever there is a staking/unstaking action
      */
-    function test_StakingTransfersTokensBetweenStakerAndStakingContract(uint128 amtToStake, address stakerAddr)
-        public
-    {
+    function test_StakingTransfersTokensBetweenUserAndStakingContract(uint128 amtToStake, address userAddr) public {
         // assumptions
-        vm.assume(stakerAddr != address(0) && amtToStake != 0);
+        vm.assume(userAddr != address(0) && amtToStake != 0);
 
         // definitions
         address stakingContractAddr = address(stakingContract);
 
         // setup
-        deal(address(stakingToken), stakerAddr, amtToStake, true);
+        deal(address(stakingToken), userAddr, amtToStake, true);
         uint256 tokenBal1OfStakingContract = stakingToken.balanceOf(stakingContractAddr);
-        uint256 tokenBal1OfStaker = stakingToken.balanceOf(stakerAddr);
+        uint256 tokenBal1OfUser = stakingToken.balanceOf(userAddr);
 
         // act 1 - stake
-        _approveAndStake(stakerAddr, amtToStake, false);
+        _approveAndStake(userAddr, amtToStake, false);
 
         // verify 1
         uint256 tokenBal2OfStakingContract = stakingToken.balanceOf(stakingContractAddr);
-        uint256 tokenBal2OfStaker = stakingToken.balanceOf(stakerAddr);
+        uint256 tokenBal2OfUser = stakingToken.balanceOf(userAddr);
         uint256 expectedTokenBal2OfStakingContract = tokenBal1OfStakingContract + amtToStake;
-        uint256 expectedTokenBal2OfStaker = tokenBal1OfStaker - amtToStake;
+        uint256 expectedTokenBal2OfUser = tokenBal1OfUser - amtToStake;
         assertEq(
             tokenBal2OfStakingContract,
             expectedTokenBal2OfStakingContract,
             "Staking did not increase token balance of staking contract"
         );
-        assertEq(tokenBal2OfStaker, expectedTokenBal2OfStaker, "Staking did not decrease token balance of staker");
+        assertEq(tokenBal2OfUser, expectedTokenBal2OfUser, "Staking did not decrease token balance of user");
 
         // setup 2
         _waitForCoolDown();
 
         // act 2 - unstake
-        vm.prank(stakerAddr);
+        vm.prank(userAddr);
         stakingContract.unstake(amtToStake);
 
         // verify 2
         uint256 tokenBal3OfStakingContract = stakingToken.balanceOf(stakingContractAddr);
-        uint256 tokenBal3OfStaker = stakingToken.balanceOf(stakerAddr);
+        uint256 tokenBal3OfUser = stakingToken.balanceOf(userAddr);
         assertEq(
             tokenBal3OfStakingContract,
             tokenBal1OfStakingContract,
             "Unstaking did not decrease token balance of staking contract"
         );
-        assertEq(tokenBal3OfStaker, tokenBal1OfStaker, "Unstaking did not increase token balance of staker");
+        assertEq(tokenBal3OfUser, tokenBal1OfUser, "Unstaking did not increase token balance of user");
     }
 
     /**
@@ -104,14 +102,14 @@ contract FinthetixStakingContract_UnitTest is Test {
      */
     function test_CanNotStakeInvalidAmt() public {
         // setup
-        address stakerAddr = vm.addr(0xB0b);
-        uint64 initTokenBalForStaker = 10 ether;
-        deal(address(stakingToken), stakerAddr, initTokenBalForStaker, true);
-        vm.startPrank(stakerAddr);
-        stakingToken.approve(address(stakingContract), initTokenBalForStaker);
+        address userAddr = vm.addr(0xB0b);
+        uint64 initTokenBalForUser = 10 ether;
+        deal(address(stakingToken), userAddr, initTokenBalForUser, true);
+        vm.startPrank(userAddr);
+        stakingToken.approve(address(stakingContract), initTokenBalForUser);
 
         // act & verify
-        vm.expectRevert(abi.encodeWithSelector(FSCErrors.CannotStakeZeroAmount.selector, stakerAddr));
+        vm.expectRevert(abi.encodeWithSelector(FSCErrors.CannotStakeZeroAmount.selector, userAddr));
         stakingContract.stake(0);
         vm.stopPrank();
     }
@@ -121,13 +119,13 @@ contract FinthetixStakingContract_UnitTest is Test {
      */
     function test_CanNotUnstakeInvalidAmt() public {
         // setup
-        address stakerAddr = vm.addr(0xB0b);
-        uint64 initTokenBalForStaker = 10 ether;
-        _approveAndStake(stakerAddr, initTokenBalForStaker, true);
+        address userAddr = vm.addr(0xB0b);
+        uint64 initTokenBalForUser = 10 ether;
+        _approveAndStake(userAddr, initTokenBalForUser, true);
 
         // act & verify
-        vm.prank(stakerAddr);
-        vm.expectRevert(abi.encodeWithSelector(FSCErrors.CannotUnstakeZeroAmount.selector, stakerAddr));
+        vm.prank(userAddr);
+        vm.expectRevert(abi.encodeWithSelector(FSCErrors.CannotUnstakeZeroAmount.selector, userAddr));
         stakingContract.unstake(0);
     }
 
@@ -143,14 +141,14 @@ contract FinthetixStakingContract_UnitTest is Test {
         uint256 boundedAmtToUnstake = bound(_amtToUnstake, boundedAmtToStake + 1, type(uint256).max); // unstake more than staked amt
 
         // setup
-        address stakerAddr = vm.addr(0xB0b);
-        _approveAndStake(stakerAddr, boundedAmtToStake, true);
+        address userAddr = vm.addr(0xB0b);
+        _approveAndStake(userAddr, boundedAmtToStake, true);
 
         // act & verify
-        vm.prank(stakerAddr);
+        vm.prank(userAddr);
         vm.expectRevert(
             abi.encodeWithSelector(
-                FSCErrors.CannotUnstakeMoreThanStakedAmount.selector, stakerAddr, boundedAmtToUnstake, boundedAmtToStake
+                FSCErrors.CannotUnstakeMoreThanStakedAmount.selector, userAddr, boundedAmtToUnstake, boundedAmtToStake
             )
         );
         stakingContract.unstake(boundedAmtToUnstake);
@@ -161,10 +159,10 @@ contract FinthetixStakingContract_UnitTest is Test {
      */
     function test_CanNotStakeFromInvalidAddr() public {
         // setup
-        address stakerAddr = address(0);
-        uint64 initTokenBalForStaker = 10 ether;
-        deal(address(stakingToken), stakerAddr, initTokenBalForStaker, true);
-        vm.startPrank(stakerAddr);
+        address userAddr = address(0);
+        uint64 initTokenBalForUser = 10 ether;
+        deal(address(stakingToken), userAddr, initTokenBalForUser, true);
+        vm.startPrank(userAddr);
 
         // act & verify
         vm.expectRevert(FSCErrors.InvalidUserAddress.selector);
@@ -187,7 +185,7 @@ contract FinthetixStakingContract_UnitTest is Test {
 
     /**
      *
-     * @param arg0 An array of inputs containing staker address, amount to stake and amount to unstake.
+     * @param arg0 An array of inputs containing user address, amount to stake and amount to unstake.
      *  This gives us a random list of users to interact with the staking contract, using the given parameters.
      * @notice This tests whether staking and unstaking actions of the users updates both the individual as well
      *  as total staked balances maintained in the staking contract.
@@ -202,37 +200,37 @@ contract FinthetixStakingContract_UnitTest is Test {
         uint256 expectedTotalStakedBal = 0;
         for (uint256 i = 0; i < refinedArg0.length; i++) {
             // setup 1
-            address stakerAddr = refinedArg0[i].stakerAddr;
+            address userAddr = refinedArg0[i].userAddr;
             uint256 amtToStake = refinedArg0[i].amtToStake;
             uint256 amtToUnstake = refinedArg0[i].amtToUnstake;
-            vm.prank(stakerAddr);
+            vm.prank(userAddr);
             uint256 preStakeBal = stakingContract.viewMyStakedAmt();
 
             // act 1 - stake
-            _approveAndStake(stakerAddr, amtToStake, true);
+            _approveAndStake(userAddr, amtToStake, true);
 
             // verify 1 - stake
             expectedTotalStakedBal += amtToStake;
             assertEq(stakingContract.totalStakedAmt(), expectedTotalStakedBal, "Total amt staked has not increased");
-            vm.prank(stakerAddr);
+            vm.prank(userAddr);
             uint256 postStakeBal = stakingContract.viewMyStakedAmt();
             uint256 expectedPostStakeBal = preStakeBal + amtToStake;
-            assertEq(postStakeBal, expectedPostStakeBal, "The post-staking balance for staker is accurate");
+            assertEq(postStakeBal, expectedPostStakeBal, "The post-staking balance for user is accurate");
 
             // cleanup 1 - stake
             _waitForCoolDown();
 
             // act 2 - unstake
-            vm.prank(stakerAddr);
+            vm.prank(userAddr);
             stakingContract.unstake(amtToUnstake);
 
             // verify 2 - unstake
             expectedTotalStakedBal -= amtToUnstake;
             assertEq(stakingContract.totalStakedAmt(), expectedTotalStakedBal, "Total amt staked has not decreased");
-            vm.prank(stakerAddr);
+            vm.prank(userAddr);
             uint256 postUnstakeBal = stakingContract.viewMyStakedAmt();
-            uint256 expectedStakerBal = expectedPostStakeBal - amtToUnstake;
-            assertEq(postUnstakeBal, expectedStakerBal, "The post-unstaking balance for staker is accurate");
+            uint256 expectedUserBal = expectedPostStakeBal - amtToUnstake;
+            assertEq(postUnstakeBal, expectedUserBal, "The post-unstaking balance for user is accurate");
 
             // cleanup 2 - unstake
             _waitForCoolDown();
@@ -241,15 +239,15 @@ contract FinthetixStakingContract_UnitTest is Test {
 
     /**
      *
-     * @param stakerAddr The address whose reward balance you wish to check
+     * @param userAddr The address whose reward balance you wish to check
      * @notice Tests whether addresses start off with zero rewards
      */
-    function test_InitialRewardsIsZero(address stakerAddr) public {
+    function test_InitialRewardsIsZero(address userAddr) public {
         // assumptions
-        vm.assume(stakerAddr != address(0));
+        vm.assume(userAddr != address(0));
 
         // act
-        vm.prank(stakerAddr);
+        vm.prank(userAddr);
         uint256 accruedRewards = stakingContract.viewMyPublishedRewards();
 
         // verify
@@ -268,19 +266,19 @@ contract FinthetixStakingContract_UnitTest is Test {
         // setup
         /// user 1 stakes
         uint256 lastInteractedTime = block.timestamp;
-        address stakerAddr1 = vm.addr(0xB0b);
-        address stakerAddr2 = vm.addr(0xAbe);
-        _approveAndStake(stakerAddr1, amtToStake1, true);
+        address userAddr1 = vm.addr(0xB0b);
+        address userAddr2 = vm.addr(0xAbe);
+        _approveAndStake(userAddr1, amtToStake1, true);
         _waitForCoolDown();
 
         /// user 2 stakes
-        _approveAndStake(stakerAddr2, amtToStake2, true);
+        _approveAndStake(userAddr2, amtToStake2, true);
         expectedRewardsForUser1 += stakingContract.TOTAL_REWARDS_PER_SECOND() * (block.timestamp - lastInteractedTime);
         lastInteractedTime = block.timestamp;
         _waitForCoolDown();
 
         /// user 1 unstakes
-        vm.prank(stakerAddr1);
+        vm.prank(userAddr1);
         stakingContract.unstake(amtToStake1);
         uint256 totalStakedAmt = amtToStake1 + amtToStake2;
         expectedRewardsForUser1 += (
@@ -289,7 +287,7 @@ contract FinthetixStakingContract_UnitTest is Test {
         lastInteractedTime = block.timestamp;
 
         // act & verify
-        vm.prank(stakerAddr1);
+        vm.prank(userAddr1);
         uint256 accruedRewards = stakingContract.viewMyPublishedRewards();
 
         assert(expectedRewardsForUser1 - accruedRewards < 1e18);
@@ -305,13 +303,13 @@ contract FinthetixStakingContract_UnitTest is Test {
         vm.assume(timeToWait > 0);
 
         // setup
-        address stakerAddr = vm.addr(0xB0b);
+        address userAddr = vm.addr(0xB0b);
         uint256 amtToStake = 10 ether;
         uint256 newTime = block.timestamp + timeToWait;
         vm.warp(newTime);
 
         // act
-        _approveAndStake(stakerAddr, amtToStake, true);
+        _approveAndStake(userAddr, amtToStake, true);
 
         // verify
         assertEq(stakingContract.lastUpdatedRewardAt(), newTime, "Staking doesn't update lastUpdatedRewardAt");
@@ -329,13 +327,13 @@ contract FinthetixStakingContract_UnitTest is Test {
         vm.assume(uint256(timeToWait) * stakingContract.COOLDOWN_CONSTANT() > amtToStake);
 
         // setup
-        address stakerAddr = vm.addr(0xB0b);
-        _approveAndStake(stakerAddr, amtToStake, true);
+        address userAddr = vm.addr(0xB0b);
+        _approveAndStake(userAddr, amtToStake, true);
         uint256 newTime = block.timestamp + timeToWait;
         vm.warp(newTime);
 
         // act
-        vm.prank(stakerAddr);
+        vm.prank(userAddr);
         stakingContract.unstake(amtToStake / 2);
 
         // verify
@@ -354,19 +352,19 @@ contract FinthetixStakingContract_UnitTest is Test {
         vm.assume(stakingContract.COOLDOWN_CONSTANT() * uint256(timeToWait) < uint256(initAmtToStake));
 
         // setup
-        address stakerAddr = vm.addr(0xB0b);
+        address userAddr = vm.addr(0xB0b);
         uint256 amtToApprove = type(uint256).max;
-        deal(address(stakingToken), stakerAddr, amtToApprove, true);
-        vm.prank(stakerAddr);
+        deal(address(stakingToken), userAddr, amtToApprove, true);
+        vm.prank(userAddr);
         stakingToken.approve(address(stakingContract), amtToApprove);
-        vm.prank(stakerAddr);
+        vm.prank(userAddr);
         stakingContract.stake(initAmtToStake);
         uint256 initTime = block.timestamp;
         uint256 newTime = initTime + timeToWait;
         vm.warp(newTime);
 
         // act & verify
-        vm.prank(stakerAddr);
+        vm.prank(userAddr);
         vm.expectRevert(abi.encodeWithSelector(FSCErrors.CannotInteractWhenCoolingDown.selector, newTime, initTime));
         stakingContract.stake(1);
     }
@@ -383,8 +381,8 @@ contract FinthetixStakingContract_UnitTest is Test {
         vm.assume(uint256(timeToWait) * stakingContract.COOLDOWN_CONSTANT() < initAmtToStake);
 
         // setup
-        address stakerAddr = vm.addr(0xB0b);
-        _approveAndStake(stakerAddr, initAmtToStake, true);
+        address userAddr = vm.addr(0xB0b);
+        _approveAndStake(userAddr, initAmtToStake, true);
         uint256 initTime = block.timestamp;
         uint256 newTime = initTime + timeToWait;
         vm.warp(newTime);
@@ -392,7 +390,7 @@ contract FinthetixStakingContract_UnitTest is Test {
 
         // act & verify
         vm.expectRevert(abi.encodeWithSelector(FSCErrors.CannotInteractWhenCoolingDown.selector, newTime, initTime));
-        vm.prank(stakerAddr);
+        vm.prank(userAddr);
         stakingContract.unstake(amtToUnstake);
     }
 
@@ -408,14 +406,14 @@ contract FinthetixStakingContract_UnitTest is Test {
         vm.assume((stakingContract.COOLDOWN_CONSTANT() * timeToWait > initAmtToStake));
 
         // setup
-        address stakerAddr1 = vm.addr(0xB0b);
-        _approveAndStake(stakerAddr1, initAmtToStake, true);
+        address userAddr1 = vm.addr(0xB0b);
+        _approveAndStake(userAddr1, initAmtToStake, true);
         uint256 initAlphaNow = stakingContract.alphaNow();
         vm.warp(block.timestamp + timeToWait);
 
         // act
         uint256 secondAmtToStake = 1;
-        _approveAndStake(stakerAddr1, secondAmtToStake, true);
+        _approveAndStake(userAddr1, secondAmtToStake, true);
 
         // verify
         uint256 expectedAlphaNow = initAlphaNow + (stakingContract.COOLDOWN_CONSTANT() * timeToWait) / initAmtToStake; // the reward is updated without including balance from new stake info
@@ -435,13 +433,13 @@ contract FinthetixStakingContract_UnitTest is Test {
         vm.assume((stakingContract.COOLDOWN_CONSTANT() * timeToWait > initAmtToStake));
 
         // setup
-        address stakerAddr1 = vm.addr(0xB0b);
-        _approveAndStake(stakerAddr1, initAmtToStake, true);
+        address userAddr1 = vm.addr(0xB0b);
+        _approveAndStake(userAddr1, initAmtToStake, true);
         uint256 initAlphaNow = stakingContract.alphaNow();
         vm.warp(block.timestamp + timeToWait);
 
         // act
-        vm.prank(stakerAddr1);
+        vm.prank(userAddr1);
         stakingContract.unstake(1);
 
         // verify
@@ -457,12 +455,12 @@ contract FinthetixStakingContract_UnitTest is Test {
     function test_CanHandlePhantomOverflowInRewardCalc() public {
         uint256 amtToStake = type(uint256).max / stakingContract.TOTAL_REWARDS_PER_SECOND() + 1; // makes the first product (mapAddrToStakedAmt[msg.sender] * TOTAL_REWARDS_PER_SECOND) overflow
 
-        address stakerAddr = vm.addr(0xB0b);
-        _approveAndStake(stakerAddr, amtToStake, true);
+        address userAddr = vm.addr(0xB0b);
+        _approveAndStake(userAddr, amtToStake, true);
         _waitForCoolDown();
 
         uint256 minUnstakeAmt = 1;
-        vm.prank(stakerAddr);
+        vm.prank(userAddr);
         stakingContract.unstake(minUnstakeAmt);
     }
 
@@ -477,14 +475,14 @@ contract FinthetixStakingContract_UnitTest is Test {
         // minimum amount of stake, as we are trying to accomodate highest
         // possible alpha value. The two are inversely proportional
         uint256 amtToStake = 1;
-        address stakerAddr = vm.addr(0xB0b);
-        _approveAndStake(stakerAddr, amtToStake, true);
+        address userAddr = vm.addr(0xB0b);
+        _approveAndStake(userAddr, amtToStake, true);
         uint256 minWaitTimeToOverflowAlphaCalc = type(uint256).max / stakingContract.COOLDOWN_CONSTANT() + 1;
         vm.warp(block.timestamp + minWaitTimeToOverflowAlphaCalc);
 
         uint256 minUnstakeAmtToTriggerAlphaCalc = 1;
-        vm.expectRevert(abi.encodeWithSelector(HighValueTransaction.selector, stakerAddr));
-        vm.prank(stakerAddr);
+        vm.expectRevert(abi.encodeWithSelector(HighValueTransaction.selector, userAddr));
+        vm.prank(userAddr);
         stakingContract.unstake(minUnstakeAmtToTriggerAlphaCalc);
     }
 
@@ -500,8 +498,8 @@ contract FinthetixStakingContract_UnitTest is Test {
     function test_CanHandleActualOverflowInRewardCalc_AlphaLeads() private {
         uint256 amtToStake = type(uint256).max / stakingContract.TOTAL_REWARDS_PER_SECOND() + 1; // overflows prod1
 
-        address stakerAddr = vm.addr(0xB0b);
-        _approveAndStake(stakerAddr, amtToStake, true);
+        address userAddr = vm.addr(0xB0b);
+        _approveAndStake(userAddr, amtToStake, true);
 
         // To overflow the reward calculation wait until
         // alphaDiff * op1 > type(uint256).max
@@ -515,8 +513,8 @@ contract FinthetixStakingContract_UnitTest is Test {
         vm.warp(block.timestamp + timeToWaitToOverflowAlpha);
 
         uint256 minUnstakeAmtToTriggerRewardCalc = 1;
-        vm.expectRevert(abi.encodeWithSelector(HighValueTransaction.selector, stakerAddr));
-        vm.prank(stakerAddr);
+        vm.expectRevert(abi.encodeWithSelector(HighValueTransaction.selector, userAddr));
+        vm.prank(userAddr);
         stakingContract.unstake(minUnstakeAmtToTriggerRewardCalc);
     }
 
@@ -534,13 +532,13 @@ contract FinthetixStakingContract_UnitTest is Test {
         // the max possible staked amount is used
         uint256 amtToStake = type(uint256).max;
 
-        address stakerAddr = vm.addr(0xB0b);
-        _approveAndStake(stakerAddr, amtToStake, true);
+        address userAddr = vm.addr(0xB0b);
+        _approveAndStake(userAddr, amtToStake, true);
         _waitForCoolDown();
 
         uint256 minUnstakeAmtToTriggerRewardCalc = 1;
-        vm.expectRevert(abi.encodeWithSelector(HighValueTransaction.selector, stakerAddr));
-        vm.prank(stakerAddr);
+        vm.expectRevert(abi.encodeWithSelector(HighValueTransaction.selector, userAddr));
+        vm.prank(userAddr);
         stakingContract.unstake(minUnstakeAmtToTriggerRewardCalc);
     }
 
@@ -554,8 +552,8 @@ contract FinthetixStakingContract_UnitTest is Test {
      */
     function test_CanHandleActualOverflowInRewardCalc_OverallRewardExceedsBounds() private {
         uint256 amtToStake = type(uint256).max / stakingContract.TOTAL_REWARDS_PER_SECOND(); // *doesn't* overflow prod1
-        address stakerAddr = vm.addr(0xB0b);
-        _approveAndStake(stakerAddr, amtToStake, true);
+        address userAddr = vm.addr(0xB0b);
+        _approveAndStake(userAddr, amtToStake, true);
 
         // To overflow the reward calculation
         // (amtToStake * TOTAL_REWARD_PER_SECOND * alphaDiff) / COOLDOWN_CONSTANT > type(uint256).max
@@ -568,8 +566,8 @@ contract FinthetixStakingContract_UnitTest is Test {
         uint256 timeToWait = amtToStake + 1;
         vm.warp(block.timestamp + timeToWait + 1);
         uint256 minAmtToUnstakeToTriggerRewardCalc = 1; // the minimum amount is fine, as we just want to trigger reward calc
-        vm.expectRevert(abi.encodeWithSelector(HighValueTransaction.selector, stakerAddr));
-        vm.prank(stakerAddr);
+        vm.expectRevert(abi.encodeWithSelector(HighValueTransaction.selector, userAddr));
+        vm.prank(userAddr);
         stakingContract.unstake(minAmtToUnstakeToTriggerRewardCalc);
     }
 
@@ -579,18 +577,18 @@ contract FinthetixStakingContract_UnitTest is Test {
 
     /**
      *
-     * @param stakerAddr The address who wants to approve and stake with the staking contract
+     * @param userAddr The address who wants to approve and stake with the staking contract
      * @param amtToApproveAndStake The amount to approve and stake
      * @param isDealRequired Whether we need to deal the account with prereq balance before initiating
      *  approval and staking
      * @dev This is used to simplify the verbose task of approving and staking with the
      *  required contract
      */
-    function _approveAndStake(address stakerAddr, uint256 amtToApproveAndStake, bool isDealRequired) private {
+    function _approveAndStake(address userAddr, uint256 amtToApproveAndStake, bool isDealRequired) private {
         if (isDealRequired) {
-            deal(address(stakingToken), stakerAddr, amtToApproveAndStake, true);
+            deal(address(stakingToken), userAddr, amtToApproveAndStake, true);
         }
-        vm.startPrank(stakerAddr);
+        vm.startPrank(userAddr);
         stakingToken.approve(address(stakingContract), amtToApproveAndStake);
         stakingContract.stake(amtToApproveAndStake);
         vm.stopPrank();
@@ -616,13 +614,13 @@ contract FinthetixStakingContract_UnitTest is Test {
 
         for (uint256 i = 0; i < arg0.length; i++) {
             Arg0_IndividualAndTotalStakedBalancesAreUpdated memory _randomInput = arg0[i];
-            address stakerAddr = _randomInput.stakerAddr == address(0) ? address(1) : _randomInput.stakerAddr;
+            address userAddr = _randomInput.userAddr == address(0) ? address(1) : _randomInput.userAddr;
             uint128 amtToStake = _randomInput.amtToStake == 0 ? 1 : _randomInput.amtToStake;
             uint128 amtToUnstake = uint128(bound(_randomInput.amtToUnstake, 1, amtToStake));
 
             Arg0_IndividualAndTotalStakedBalancesAreUpdated memory newRandomInput =
             Arg0_IndividualAndTotalStakedBalancesAreUpdated({
-                stakerAddr: stakerAddr,
+                userAddr: userAddr,
                 amtToStake: amtToStake,
                 amtToUnstake: amtToUnstake
             });
