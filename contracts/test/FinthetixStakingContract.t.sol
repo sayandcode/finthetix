@@ -16,11 +16,10 @@ contract FinthetixStakingContract_UnitTest is Test {
     }
 
     /**
-     * @notice This is 10x larger than the TOTAL_REWARDS_PER_SECOND variable.
-     *  The obtained rewards will never be bigger than the rewards owed.
+     * @dev The obtained rewards will never be bigger than the rewards owed.
      *  i.e. The precision loss is downwards
      */
-    uint256 REWARD_PRECISION = 1e18;
+    uint256 REWARD_PRECISION;
     FinthetixStakingContract stakingContract;
     FinthetixStakingToken stakingToken;
 
@@ -35,6 +34,7 @@ contract FinthetixStakingContract_UnitTest is Test {
     function setUp() public {
         stakingContract = new FinthetixStakingContract();
         stakingToken = stakingContract.stakingToken();
+        REWARD_PRECISION = stakingContract.TOTAL_REWARDS_PER_SECOND() * 2;
     }
 
     /**
@@ -290,7 +290,7 @@ contract FinthetixStakingContract_UnitTest is Test {
         vm.prank(userAddr1);
         uint256 accruedRewards = stakingContract.viewMyPublishedRewards();
 
-        assert(expectedRewardsForUser1 - accruedRewards < 1e18);
+        assert(expectedRewardsForUser1 - accruedRewards < REWARD_PRECISION);
     }
 
     /**
