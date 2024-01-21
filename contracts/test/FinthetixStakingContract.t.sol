@@ -261,11 +261,13 @@ contract FinthetixStakingContract_UnitTest is Test {
         uint256 amtToStake2 = uint256(_amtToStake2);
 
         // definitions
-        uint256 expectedRewardsForUser1;
+        /// We check rewards for user2 so that user1 is used to set up the env
+        /// Namely we want the alphaAtLastUserInteraction to be updated correctly
+        uint256 expectedRewardsForUser2;
+        uint256 lastInteractedTime;
 
         // setup
         /// user 1 stakes
-        uint256 lastInteractedTime = block.timestamp;
         address userAddr1 = vm.addr(0xB0b);
         address userAddr2 = vm.addr(0xAbe);
         _approveAndStake(userAddr1, amtToStake1, true);
@@ -273,7 +275,6 @@ contract FinthetixStakingContract_UnitTest is Test {
 
         /// user 2 stakes
         _approveAndStake(userAddr2, amtToStake2, true);
-        expectedRewardsForUser1 += stakingContract.TOTAL_REWARDS_PER_SECOND() * (block.timestamp - lastInteractedTime);
         lastInteractedTime = block.timestamp;
         _waitForCoolDown();
 
@@ -281,16 +282,23 @@ contract FinthetixStakingContract_UnitTest is Test {
         vm.prank(userAddr1);
         stakingContract.unstake(amtToStake1);
         uint256 totalStakedAmt = amtToStake1 + amtToStake2;
-        expectedRewardsForUser1 += (
-            amtToStake1 * stakingContract.TOTAL_REWARDS_PER_SECOND() * (block.timestamp - lastInteractedTime)
+        expectedRewardsForUser2 += (
+            amtToStake2 * stakingContract.TOTAL_REWARDS_PER_SECOND() * (block.timestamp - lastInteractedTime)
         ) / (totalStakedAmt);
         lastInteractedTime = block.timestamp;
+        _waitForCoolDown();
+
+        /// user2 unstakes
+        vm.prank(userAddr2);
+        stakingContract.unstake(amtToStake2);
+        expectedRewardsForUser2 += stakingContract.TOTAL_REWARDS_PER_SECOND() * (block.timestamp - lastInteractedTime);
+        _waitForCoolDown();
 
         // act & verify
-        vm.prank(userAddr1);
+        vm.prank(userAddr2);
         uint256 accruedRewards = stakingContract.viewMyPublishedRewards();
 
-        assert(expectedRewardsForUser1 - accruedRewards < REWARD_PRECISION);
+        assert(expectedRewardsForUser2 - accruedRewards < REWARD_PRECISION);
     }
 
     /**

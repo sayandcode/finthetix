@@ -117,6 +117,7 @@ contract FinthetixStakingContract is FSCErrors {
         uint256 accruedRewards = _calculateAccruedRewards();
         mapAddrToPublishedReward[msg.sender] += accruedRewards;
         lastUpdatedRewardAt = block.timestamp;
+        mapAddrToAlphaAtLastUserInteraction[msg.sender] = alphaNow;
     }
 
     function _calculateAccruedRewards() private view returns (uint256 result) {
