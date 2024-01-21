@@ -7,18 +7,25 @@ import {Test} from "forge-std/Test.sol";
 contract StakingToken_UnitTest is Test {
     string private constant TOKEN_NAME = "FinthetixStakingToken";
     string private constant TOKEN_SYMBOL = "FST";
-    uint256 private constant SAMPLE_TOKEN_QTY = 5 ether;
+    uint64 private constant SAMPLE_TOKEN_QTY = 5 ether;
     FinthetixStakingToken private tokenContract;
 
     function setUp() public {
         tokenContract = new FinthetixStakingToken();
     }
 
+    /**
+     * @notice Tests whether symbol and name are set correctly on ERC20
+     */
     function test_HasCorrectLabels() public {
         assertEq(tokenContract.name(), TOKEN_NAME);
         assertEq(tokenContract.symbol(), TOKEN_SYMBOL);
     }
 
+    /**
+     * @notice Tests whether user has the ability to request sample tokens.
+     *  This is used to try out the staking dapp.
+     */
     function test_RequestSampleTokensFn() public {
         uint256 tokensBefore = tokenContract.balanceOf(address(this));
         assertEq(tokensBefore, 0);
