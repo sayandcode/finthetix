@@ -112,7 +112,7 @@ contract FinthetixStakingContract_UnitTest is Test {
         stakingToken.approve(address(stakingContract), initTokenBalForUser);
 
         // act & verify
-        vm.expectRevert(abi.encodeWithSelector(FSCErrors.CannotStakeZeroAmount.selector, userAddr));
+        vm.expectRevert(abi.encodeWithSelector(FSCErrors.CannotInteractWithZeroAmount.selector, userAddr));
         stakingContract.stake(0);
         vm.stopPrank();
     }
@@ -128,7 +128,7 @@ contract FinthetixStakingContract_UnitTest is Test {
 
         // act & verify
         vm.prank(userAddr);
-        vm.expectRevert(abi.encodeWithSelector(FSCErrors.CannotUnstakeZeroAmount.selector, userAddr));
+        vm.expectRevert(abi.encodeWithSelector(FSCErrors.CannotInteractWithZeroAmount.selector, userAddr));
         stakingContract.unstake(0);
     }
 
@@ -618,6 +618,33 @@ contract FinthetixStakingContract_UnitTest is Test {
         assertEq(stakingContract.viewMyPublishedRewards(), 0, "Rewards have not been reset post withdrawal");
 
         vm.stopPrank();
+    }
+
+    /**
+     * @notice Tests whether user is given error when withdrawing non existent
+     *  reward
+     */
+    function test_CannotWithdrawWithoutRewards() public {
+        address userAddr = vm.addr(0xB0b);
+        vm.expectRevert(abi.encodeWithSelector(FSCErrors.NoRewardsAvailable.selector, userAddr));
+        vm.prank(userAddr);
+        stakingContract.withdrawRewards();
+    }
+
+    /**
+     * @notice Tests whether zero address is allowed to withdraw rewards
+     * @dev This test has been disabled (private) because it is not necessary to
+     *  include this check.
+     *  Why? The zero address is anyway blocked from staking and unstaking, so it
+     *  will never accrue any rewards. Hence calling from zero address would mean
+     *  trying to withdraw a zero reward, and would hence be caught by the reward
+     *  amt check function.
+     */
+    function test_CannotWithdrawRewardsFromInvalidAddress() private {
+        address userAddr = address(0);
+        vm.expectRevert(FSCErrors.InvalidUserAddress.selector);
+        vm.prank(userAddr);
+        stakingContract.withdrawRewards();
     }
 
     /**

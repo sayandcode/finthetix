@@ -7,15 +7,14 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 interface FSCErrors {
     /**
-     * @notice Zero is not a valid amount of tokens to stake. If you
-     *  wish to withdraw tokens, use the dedicated function.
+     * @notice Zero is not a valid amount of tokens to stake/unstake.
      */
-    error CannotStakeZeroAmount(address userAddr);
+    error CannotInteractWithZeroAmount(address userAddr);
 
     /**
-     * @notice Zero is not a valid amount of tokens to unstake.
+     * @notice Cannot withdraw when no rewards are available for user
      */
-    error CannotUnstakeZeroAmount(address userAddr);
+    error NoRewardsAvailable(address userAddr);
 
     /**
      * @notice Zero address is not supported
@@ -65,14 +64,21 @@ contract FinthetixStakingContract is FSCErrors {
     mapping(address => uint256) private mapAddrToPublishedReward;
     mapping(address => uint256) private mapAddrToAlphaAtLastUserInteraction;
 
-    function stake(uint256 amtToStake) external {
-        // checks
+    modifier onlyValidSender() {
         if (msg.sender == address(0)) revert InvalidUserAddress();
+        _;
+    }
+
+    modifier nonZeroAmt(uint256 amt) {
+        if (amt == 0) revert CannotInteractWithZeroAmount(msg.sender);
+        _;
+    }
 
     constructor(address stakingTokenAddr) {
         stakingToken = FinthetixStakingToken(stakingTokenAddr);
     }
 
+    function stake(uint256 amtToStake) external /* checks */ onlyValidSender nonZeroAmt(amtToStake) {
         // effects
         _updateReward();
         mapAddrToStakedAmt[msg.sender] += amtToStake;
@@ -82,10 +88,8 @@ contract FinthetixStakingContract is FSCErrors {
         stakingToken.transferFrom(msg.sender, address(this), amtToStake);
     }
 
-    function unstake(uint256 amtToUnstake) external {
+    function unstake(uint256 amtToUnstake) external /* checks */ onlyValidSender nonZeroAmt(amtToUnstake) {
         // checks
-        if (msg.sender == address(0)) revert InvalidUserAddress();
-        if (amtToUnstake == 0) revert CannotUnstakeZeroAmount(msg.sender);
         uint256 balanceOfSender = mapAddrToStakedAmt[msg.sender];
         if (balanceOfSender < amtToUnstake) {
             revert CannotUnstakeMoreThanStakedAmount(msg.sender, amtToUnstake, balanceOfSender);
@@ -100,13 +104,23 @@ contract FinthetixStakingContract is FSCErrors {
         stakingToken.transfer(msg.sender, amtToUnstake);
     }
 
-    function withdrawRewards() external {
+    /**
+     * @dev The modifier ``onlyValidSender`` has been commented out as a gas
+     *  optimization. Since zero address is blocked from staking and unstaking,
+     *  they will never accrue any rewards. Hence the zero-reward check error
+     *  will catch this scenario as well.
+     */
+    function withdrawRewards() external /* onlyValidSender */ {
+        uint256 rewardBal = mapAddrToPublishedReward[msg.sender];
+
+        // checks
+        if (rewardBal == 0) revert NoRewardsAvailable(msg.sender);
+
         // effects
-        uint256 tokensToSend = mapAddrToPublishedReward[msg.sender];
         mapAddrToPublishedReward[msg.sender] = 0;
 
         // interactions
-        rewardToken.mint(msg.sender, tokensToSend);
+        rewardToken.mint(msg.sender, rewardBal);
     }
 
     function viewMyStakedAmt() external view returns (uint256) {
