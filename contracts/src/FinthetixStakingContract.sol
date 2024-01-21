@@ -55,7 +55,7 @@ contract FinthetixStakingContract is FSCErrors {
      * @dev To calculate the cooldown time, get the TVL(totalStakedAmt) and divide by COOLDOWN_CONSTANT
      */
     uint256 public constant COOLDOWN_CONSTANT = 100 ether;
-    FinthetixStakingToken public immutable stakingToken = new FinthetixStakingToken();
+    FinthetixStakingToken public immutable stakingToken;
     FinthetixRewardToken public immutable rewardToken = new FinthetixRewardToken();
     uint256 public totalStakedAmt;
     uint256 public lastUpdatedRewardAt;
@@ -68,7 +68,10 @@ contract FinthetixStakingContract is FSCErrors {
     function stake(uint256 amtToStake) external {
         // checks
         if (msg.sender == address(0)) revert InvalidUserAddress();
-        if (amtToStake == 0) revert CannotStakeZeroAmount(msg.sender);
+
+    constructor(address stakingTokenAddr) {
+        stakingToken = FinthetixStakingToken(stakingTokenAddr);
+    }
 
         // effects
         _updateReward();

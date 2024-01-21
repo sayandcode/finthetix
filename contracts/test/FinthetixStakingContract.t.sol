@@ -34,8 +34,8 @@ contract FinthetixStakingContract_UnitTest is Test {
     error HighValueTransaction(address userAddr);
 
     function setUp() public {
-        stakingContract = new FinthetixStakingContract();
-        stakingToken = stakingContract.stakingToken();
+        stakingToken = new FinthetixStakingToken();
+        stakingContract = new FinthetixStakingContract(address(stakingToken));
         rewardToken = stakingContract.rewardToken();
         REWARD_PRECISION = stakingContract.TOTAL_REWARDS_PER_SECOND() * 2;
     }
