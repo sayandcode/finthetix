@@ -34,13 +34,15 @@ interface FSCErrors {
      */
     error CannotInteractWhenCoolingDown(uint256 currTimestamp, uint256 lastUpdatedRewardAt);
 
-    /**
-     * @param stakerAddr The address of the staker who has triggered this error.
-     * @notice This error occurs when the calculation of reward owed to the
-     *  staker triggers an overflow. Such high value users are requested to call
-     *  the ``updateHighValueReward`` function
-     */
-    error HighValueTransaction(address stakerAddr);
+    // Commented out, since the boundary conditions required for this to be met are not reasonable (block.timestamp = 2e59 seconds)
+    // You may uncomment and use this by deploying a new contract, once that day arises
+    // /**
+    //  * @param stakerAddr The address of the staker who has triggered this error.
+    //  * @notice This error occurs when the calculation of reward owed to the
+    //  *  staker triggers an overflow. Such high value users are requested to call
+    //  *  the ``updateHighValueReward`` function
+    //  */
+    // error HighValueTransaction(address stakerAddr);
 }
 
 contract FinthetixStakingContract is FSCErrors {
@@ -104,7 +106,7 @@ contract FinthetixStakingContract is FSCErrors {
     function _updateReward() private {
         // update alpha
         if (totalStakedAmt > 0) {
-            // unless time > 1e57 (~3x age of universe!), we are safe from overflow
+            // unless time > 1e57 (>3x age of universe!), we are safe from overflow [Why 1e57? type(uint256).max / COOLDOWN_CONSTANT]
             uint256 numerator = (block.timestamp - lastUpdatedRewardAt) * COOLDOWN_CONSTANT;
             if (numerator < totalStakedAmt) revert CannotInteractWhenCoolingDown(block.timestamp, lastUpdatedRewardAt);
 
@@ -133,6 +135,8 @@ contract FinthetixStakingContract is FSCErrors {
             return op1Result * (alphaNow - mapAddrToAlphaAtLastUserInteraction[msg.sender]);
         }
 
-        return (Math.mulDiv(prod1, (alphaNow - mapAddrToAlphaAtLastUserInteraction[msg.sender]), COOLDOWN_CONSTANT));
+        /*  The below line will never overflow as the minimum alpha difference required to trigger overflow, 
+            for the current COOLDOWN_CONSTANT is 2e59 seconds(>3 times the age of the universe) */
+        return Math.mulDiv(prod1, (alphaNow - mapAddrToAlphaAtLastUserInteraction[msg.sender]), COOLDOWN_CONSTANT);
     }
 }

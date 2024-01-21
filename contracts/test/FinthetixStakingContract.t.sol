@@ -24,6 +24,14 @@ contract FinthetixStakingContract_UnitTest is Test {
     FinthetixStakingContract stakingContract;
     FinthetixStakingToken stakingToken;
 
+    /**
+     * @param stakerAddr The address of the staker who has triggered this error.
+     * @notice This error occurs when the calculation of reward owed to the
+     *  staker triggers an overflow. Such high value users are requested to call
+     *  the ``updateHighValueReward`` function
+     */
+    error HighValueTransaction(address stakerAddr);
+
     function setUp() public {
         stakingContract = new FinthetixStakingContract();
         stakingToken = stakingContract.stakingToken();
@@ -380,7 +388,7 @@ contract FinthetixStakingContract_UnitTest is Test {
         uint256 initTime = block.timestamp;
         uint256 newTime = initTime + timeToWait;
         vm.warp(newTime);
-        uint256 amtToUnstake = 1;
+        uint256 amtToUnstake = 1; // the minimum amount is fine, as we just want to trigger the checks
 
         // act & verify
         vm.expectRevert(abi.encodeWithSelector(FSCErrors.CannotInteractWhenCoolingDown.selector, newTime, initTime));
@@ -466,16 +474,18 @@ contract FinthetixStakingContract_UnitTest is Test {
      *  accounted for
      */
     function test_CanHandleActualOverflowInAlphaCalc() private {
+        // minimum amount of stake, as we are trying to accomodate highest
+        // possible alpha value. The two are inversely proportional
         uint256 amtToStake = 1;
         address stakerAddr = vm.addr(0xB0b);
         _approveAndStake(stakerAddr, amtToStake, true);
         uint256 minWaitTimeToOverflowAlphaCalc = type(uint256).max / stakingContract.COOLDOWN_CONSTANT() + 1;
         vm.warp(block.timestamp + minWaitTimeToOverflowAlphaCalc);
 
-        uint256 minUnstakeAmt = 1;
-        vm.expectRevert(abi.encodeWithSelector(FSCErrors.HighValueTransaction.selector, stakerAddr));
+        uint256 minUnstakeAmtToTriggerAlphaCalc = 1;
+        vm.expectRevert(abi.encodeWithSelector(HighValueTransaction.selector, stakerAddr));
         vm.prank(stakerAddr);
-        stakingContract.unstake(minUnstakeAmt);
+        stakingContract.unstake(minUnstakeAmtToTriggerAlphaCalc);
     }
 
     /**
@@ -493,7 +503,7 @@ contract FinthetixStakingContract_UnitTest is Test {
         address stakerAddr = vm.addr(0xB0b);
         _approveAndStake(stakerAddr, amtToStake, true);
 
-        // To overflow reward calculation wait until
+        // To overflow the reward calculation wait until
         // alphaDiff * op1 > type(uint256).max
         // alphaDiff * ((type(uint256).max/ TOTAL_REWARDS_PER_SECOND) * TOTAL_REWARDS_PER_SECOND / COOLDOWN_CONSTANT) > type(uint256).max
         // alphaDiff * ((type(uint256).max) / COOLDOWN_CONSTANT) > type(uint256).max
@@ -504,10 +514,10 @@ contract FinthetixStakingContract_UnitTest is Test {
         uint256 timeToWaitToOverflowAlpha = amtToStake + 1;
         vm.warp(block.timestamp + timeToWaitToOverflowAlpha);
 
-        uint256 minUnstakeAmt = 1;
-        vm.expectRevert(abi.encodeWithSelector(FSCErrors.HighValueTransaction.selector, stakerAddr));
+        uint256 minUnstakeAmtToTriggerRewardCalc = 1;
+        vm.expectRevert(abi.encodeWithSelector(HighValueTransaction.selector, stakerAddr));
         vm.prank(stakerAddr);
-        stakingContract.unstake(minUnstakeAmt);
+        stakingContract.unstake(minUnstakeAmtToTriggerRewardCalc);
     }
 
     /**
@@ -528,10 +538,39 @@ contract FinthetixStakingContract_UnitTest is Test {
         _approveAndStake(stakerAddr, amtToStake, true);
         _waitForCoolDown();
 
-        uint256 minUnstakeAmt = 1;
-        vm.expectRevert(abi.encodeWithSelector(FSCErrors.HighValueTransaction.selector, stakerAddr));
+        uint256 minUnstakeAmtToTriggerRewardCalc = 1;
+        vm.expectRevert(abi.encodeWithSelector(HighValueTransaction.selector, stakerAddr));
         vm.prank(stakerAddr);
-        stakingContract.unstake(minUnstakeAmt);
+        stakingContract.unstake(minUnstakeAmtToTriggerRewardCalc);
+    }
+
+    /**
+     * @notice Tests the overflow handling in rewards calculation, under the expectation that total earned
+     * rewards will exceed type(uint256).max.
+     * @dev This test has been disabled (private), as the required time period
+     *  to trigger the overflow for the current TOTAL_REWARDS_PER_SECOND of 5e17
+     *  is more than 2e59 seconds (>3 times the age of the universe!), which doesn't
+     *  need to be accounted for
+     */
+    function test_CanHandleActualOverflowInRewardCalc_OverallRewardExceedsBounds() private {
+        uint256 amtToStake = type(uint256).max / stakingContract.TOTAL_REWARDS_PER_SECOND(); // *doesn't* overflow prod1
+        address stakerAddr = vm.addr(0xB0b);
+        _approveAndStake(stakerAddr, amtToStake, true);
+
+        // To overflow the reward calculation
+        // (amtToStake * TOTAL_REWARD_PER_SECOND * alphaDiff) / COOLDOWN_CONSTANT > type(uint256).max
+        // (type(uint256).max * alphaDiff) / COOLDOWN > type(uint256).max
+        // (1 * alphaDiff) / COOLDOWN > 1
+        // (alphaDiff) > COOLDOWN
+        // (t * COOLDOWN_CONSTANT / amtToStake) > COOLDOWN_CONSTANT
+        // (t * 1 / amtToStake) > 1
+        // t > amtToStake
+        uint256 timeToWait = amtToStake + 1;
+        vm.warp(block.timestamp + timeToWait + 1);
+        uint256 minAmtToUnstakeToTriggerRewardCalc = 1; // the minimum amount is fine, as we just want to trigger reward calc
+        vm.expectRevert(abi.encodeWithSelector(HighValueTransaction.selector, stakerAddr));
+        vm.prank(stakerAddr);
+        stakingContract.unstake(minAmtToUnstakeToTriggerRewardCalc);
     }
 
     /**
