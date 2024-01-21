@@ -453,12 +453,13 @@ contract FinthetixStakingContract_UnitTest is Test {
      * the first product in rewards calculation
      */
     function test_CanHandlePhantomOverflowInRewardCalc() public {
+        // setup
         uint256 amtToStake = type(uint256).max / stakingContract.TOTAL_REWARDS_PER_SECOND() + 1; // makes the first product (mapAddrToStakedAmt[msg.sender] * TOTAL_REWARDS_PER_SECOND) overflow
-
         address userAddr = vm.addr(0xB0b);
         _approveAndStake(userAddr, amtToStake, true);
         _waitForCoolDown();
 
+        // act & verify
         uint256 minUnstakeAmt = 1;
         vm.prank(userAddr);
         stakingContract.unstake(minUnstakeAmt);
@@ -472,14 +473,16 @@ contract FinthetixStakingContract_UnitTest is Test {
      *  accounted for
      */
     function test_CanHandleActualOverflowInAlphaCalc() private {
-        // minimum amount of stake, as we are trying to accomodate highest
-        // possible alpha value. The two are inversely proportional
+        // setup
+        /// minimum amount of stake, as we are trying to accomodate highest
+        /// possible alpha value. The two are inversely proportional
         uint256 amtToStake = 1;
         address userAddr = vm.addr(0xB0b);
         _approveAndStake(userAddr, amtToStake, true);
         uint256 minWaitTimeToOverflowAlphaCalc = type(uint256).max / stakingContract.COOLDOWN_CONSTANT() + 1;
         vm.warp(block.timestamp + minWaitTimeToOverflowAlphaCalc);
 
+        // act & verify
         uint256 minUnstakeAmtToTriggerAlphaCalc = 1;
         vm.expectRevert(abi.encodeWithSelector(HighValueTransaction.selector, userAddr));
         vm.prank(userAddr);
@@ -496,22 +499,23 @@ contract FinthetixStakingContract_UnitTest is Test {
      *  to be accounted for
      */
     function test_CanHandleActualOverflowInRewardCalc_AlphaLeads() private {
+        // setup
         uint256 amtToStake = type(uint256).max / stakingContract.TOTAL_REWARDS_PER_SECOND() + 1; // overflows prod1
-
         address userAddr = vm.addr(0xB0b);
         _approveAndStake(userAddr, amtToStake, true);
 
-        // To overflow the reward calculation wait until
-        // alphaDiff * op1 > type(uint256).max
-        // alphaDiff * ((type(uint256).max/ TOTAL_REWARDS_PER_SECOND) * TOTAL_REWARDS_PER_SECOND / COOLDOWN_CONSTANT) > type(uint256).max
-        // alphaDiff * ((type(uint256).max) / COOLDOWN_CONSTANT) > type(uint256).max
-        // alphaDiff * ((1 / COOLDOWN_CONSTANT) > 1
-        // alphaDiff > COOLDOWN_CONSTANT
-        // (t * COOLDOWN_CONSTANT / amtStaked) > COOLDOWN_CONSTANT
-        // t > amtStaked
+        /// To overflow the reward calculation wait until
+        /// alphaDiff * op1 > type(uint256).max
+        /// alphaDiff * ((type(uint256).max/ TOTAL_REWARDS_PER_SECOND) * TOTAL_REWARDS_PER_SECOND / COOLDOWN_CONSTANT) > type(uint256).max
+        /// alphaDiff * ((type(uint256).max) / COOLDOWN_CONSTANT) > type(uint256).max
+        /// alphaDiff * ((1 / COOLDOWN_CONSTANT) > 1
+        /// alphaDiff > COOLDOWN_CONSTANT
+        /// (t * COOLDOWN_CONSTANT / amtStaked) > COOLDOWN_CONSTANT
+        /// t > amtStaked
         uint256 timeToWaitToOverflowAlpha = amtToStake + 1;
         vm.warp(block.timestamp + timeToWaitToOverflowAlpha);
 
+        // act & verify
         uint256 minUnstakeAmtToTriggerRewardCalc = 1;
         vm.expectRevert(abi.encodeWithSelector(HighValueTransaction.selector, userAddr));
         vm.prank(userAddr);
@@ -529,13 +533,13 @@ contract FinthetixStakingContract_UnitTest is Test {
      *  need to be accounted for
      */
     function test_CanHandleActualOverflowInRewardCalc_StakedAmtLeads() private {
-        // the max possible staked amount is used
-        uint256 amtToStake = type(uint256).max;
-
+        // setup
+        uint256 amtToStake = type(uint256).max; // the max possible staked amount is used
         address userAddr = vm.addr(0xB0b);
         _approveAndStake(userAddr, amtToStake, true);
         _waitForCoolDown();
 
+        // act & verify
         uint256 minUnstakeAmtToTriggerRewardCalc = 1;
         vm.expectRevert(abi.encodeWithSelector(HighValueTransaction.selector, userAddr));
         vm.prank(userAddr);
@@ -551,20 +555,23 @@ contract FinthetixStakingContract_UnitTest is Test {
      *  need to be accounted for
      */
     function test_CanHandleActualOverflowInRewardCalc_OverallRewardExceedsBounds() private {
+        // setup
         uint256 amtToStake = type(uint256).max / stakingContract.TOTAL_REWARDS_PER_SECOND(); // *doesn't* overflow prod1
         address userAddr = vm.addr(0xB0b);
         _approveAndStake(userAddr, amtToStake, true);
 
-        // To overflow the reward calculation
-        // (amtToStake * TOTAL_REWARD_PER_SECOND * alphaDiff) / COOLDOWN_CONSTANT > type(uint256).max
-        // (type(uint256).max * alphaDiff) / COOLDOWN > type(uint256).max
-        // (1 * alphaDiff) / COOLDOWN > 1
-        // (alphaDiff) > COOLDOWN
-        // (t * COOLDOWN_CONSTANT / amtToStake) > COOLDOWN_CONSTANT
-        // (t * 1 / amtToStake) > 1
-        // t > amtToStake
+        /// To overflow the reward calculation
+        /// (amtToStake * TOTAL_REWARD_PER_SECOND * alphaDiff) / COOLDOWN_CONSTANT > type(uint256).max
+        /// (type(uint256).max * alphaDiff) / COOLDOWN > type(uint256).max
+        /// (1 * alphaDiff) / COOLDOWN > 1
+        /// (alphaDiff) > COOLDOWN
+        /// (t * COOLDOWN_CONSTANT / amtToStake) > COOLDOWN_CONSTANT
+        /// (t * 1 / amtToStake) > 1
+        /// t > amtToStake
         uint256 timeToWait = amtToStake + 1;
         vm.warp(block.timestamp + timeToWait + 1);
+
+        // act & verify
         uint256 minAmtToUnstakeToTriggerRewardCalc = 1; // the minimum amount is fine, as we just want to trigger reward calc
         vm.expectRevert(abi.encodeWithSelector(HighValueTransaction.selector, userAddr));
         vm.prank(userAddr);
