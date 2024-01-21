@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: SEE LICENSE IN LICENSE
 pragma solidity 0.8.23;
 
-import {FinthetixStakingToken} from "./FinthetixStakingToken.sol";
+import {FinthetixStakingToken} from "src/FinthetixStakingToken.sol";
+import {FinthetixRewardToken} from "src/FinthetixRewardToken.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 interface FSCErrors {
@@ -55,6 +56,7 @@ contract FinthetixStakingContract is FSCErrors {
      */
     uint256 public constant COOLDOWN_CONSTANT = 100 ether;
     FinthetixStakingToken public immutable stakingToken = new FinthetixStakingToken();
+    FinthetixRewardToken public immutable rewardToken = new FinthetixRewardToken();
     uint256 public totalStakedAmt;
     uint256 public lastUpdatedRewardAt;
     uint256 public alphaNow;
@@ -93,6 +95,15 @@ contract FinthetixStakingContract is FSCErrors {
 
         // interactions
         stakingToken.transfer(msg.sender, amtToUnstake);
+    }
+
+    function withdrawRewards() external {
+        // effects
+        uint256 tokensToSend = mapAddrToPublishedReward[msg.sender];
+        mapAddrToPublishedReward[msg.sender] = 0;
+
+        // interactions
+        rewardToken.mint(msg.sender, tokensToSend);
     }
 
     function viewMyStakedAmt() external view returns (uint256) {

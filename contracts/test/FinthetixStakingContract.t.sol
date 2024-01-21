@@ -3,6 +3,7 @@ pragma solidity 0.8.23;
 
 import {FinthetixStakingContract, FSCErrors} from "src/FinthetixStakingContract.sol";
 import {FinthetixStakingToken} from "src/FinthetixStakingToken.sol";
+import {FinthetixRewardToken} from "src/FinthetixRewardToken.sol";
 import {Test, console} from "forge-std/Test.sol";
 
 contract FinthetixStakingContract_UnitTest is Test {
@@ -22,6 +23,7 @@ contract FinthetixStakingContract_UnitTest is Test {
     uint256 REWARD_PRECISION;
     FinthetixStakingContract stakingContract;
     FinthetixStakingToken stakingToken;
+    FinthetixRewardToken rewardToken;
 
     /**
      * @param userAddr The address of the user who has triggered this error.
@@ -34,6 +36,7 @@ contract FinthetixStakingContract_UnitTest is Test {
     function setUp() public {
         stakingContract = new FinthetixStakingContract();
         stakingToken = stakingContract.stakingToken();
+        rewardToken = stakingContract.rewardToken();
         REWARD_PRECISION = stakingContract.TOTAL_REWARDS_PER_SECOND() * 2;
     }
 
@@ -584,6 +587,37 @@ contract FinthetixStakingContract_UnitTest is Test {
         vm.expectRevert(abi.encodeWithSelector(HighValueTransaction.selector, userAddr));
         vm.prank(userAddr);
         stakingContract.unstake(minAmtToUnstakeToTriggerRewardCalc);
+    }
+
+    /**
+     * @notice Tests whether reward can be withdrawn as reward tokens (FRT)
+     * @dev The ``amtToStake`` has been limited to uint248 as we don't want to
+     *  trigger the overflow in alpha calculation. The overflow in alpha
+     *  calculation is not relevant as the associated block timestamp is greater
+     *  than the age of the universe.
+     */
+    function test_CanWithdrawRewards(uint248 amtToStake) public {
+        // assume
+        vm.assume(amtToStake > 0);
+
+        // setup
+        address userAddr = vm.addr(0xB0b);
+        _approveAndStake(userAddr, amtToStake, true);
+        _waitForCoolDown();
+        vm.startPrank(userAddr);
+        stakingContract.unstake(amtToStake);
+        uint256 expectedRewards = stakingContract.viewMyPublishedRewards(); // calculation accuracy is handled by a different test (`test_CanAccrueRewards`)
+        uint256 initFRTBal = rewardToken.balanceOf(userAddr);
+
+        // act
+        stakingContract.withdrawRewards();
+
+        // verify
+        uint256 finalFRTBal = rewardToken.balanceOf(userAddr);
+        assertEq(finalFRTBal - initFRTBal, expectedRewards, "Reward tokens received are not as expected");
+        assertEq(stakingContract.viewMyPublishedRewards(), 0, "Rewards have not been reset post withdrawal");
+
+        vm.stopPrank();
     }
 
     /**
