@@ -632,19 +632,39 @@ contract FinthetixStakingContract_UnitTest is Test {
     }
 
     /**
-     * @notice Tests whether zero address is allowed to withdraw rewards
-     * @dev This test has been disabled (private) because it is not necessary to
-     *  include this check.
-     *  Why? The zero address is anyway blocked from staking and unstaking, so it
-     *  will never accrue any rewards. Hence calling from zero address would mean
-     *  trying to withdraw a zero reward, and would hence be caught by the reward
-     *  amt check function.
+     * @notice Tests that zero address is not allowed to withdraw rewards
      */
-    function test_CannotWithdrawRewardsFromInvalidAddress() private {
+    function test_CannotWithdrawRewardsFromInvalidAddress() public {
         address userAddr = address(0);
         vm.expectRevert(FSCErrors.InvalidUserAddress.selector);
         vm.prank(userAddr);
         stakingContract.withdrawRewards();
+    }
+
+    /**
+     * @notice Tests that on requesting a withdrawal, user receives the latest
+     *  reward balance. This means the reward needs to be updated internally
+     *  before withdrawal is initiated.
+     */
+    function test_WithdrawalObtainsLatestRewards(uint128 amtToStake) public {
+        // assume
+        vm.assume(amtToStake > 0);
+
+        // setup
+        address userAddr = vm.addr(0xB0b);
+        _approveAndStake(userAddr, amtToStake, true);
+        uint256 timeOfStaking = block.timestamp;
+        _waitForCoolDown();
+        uint256 initFRTBal = rewardToken.balanceOf(userAddr);
+
+        // act
+        vm.prank(userAddr);
+        stakingContract.withdrawRewards();
+
+        // verify
+        uint256 expectedRewards = stakingContract.TOTAL_REWARDS_PER_SECOND() * (block.timestamp - timeOfStaking);
+        uint256 obtainedRewards = rewardToken.balanceOf(userAddr) - initFRTBal;
+        assert(expectedRewards - obtainedRewards < REWARD_PRECISION); // else "Reward tokens were not updated when withdrawing"
     }
 
     /**

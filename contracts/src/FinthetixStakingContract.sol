@@ -104,13 +104,8 @@ contract FinthetixStakingContract is FSCErrors {
         stakingToken.transfer(msg.sender, amtToUnstake);
     }
 
-    /**
-     * @dev The modifier ``onlyValidSender`` has been commented out as a gas
-     *  optimization. Since zero address is blocked from staking and unstaking,
-     *  they will never accrue any rewards. Hence the zero-reward check error
-     *  will catch this scenario as well.
-     */
-    function withdrawRewards() external /* onlyValidSender */ {
+    function withdrawRewards() external onlyValidSender {
+        _updateReward();
         uint256 rewardBal = mapAddrToPublishedReward[msg.sender];
 
         // checks
