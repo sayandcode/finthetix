@@ -746,6 +746,27 @@ contract FinthetixStakingContract_UnitTest is Test {
         stakingContract.unstake(amtToUnstake);
     }
 
+    function test_RewardWithdrawalHasEvents(address userAddr, uint248 amtToStake, uint128 timeToWait) public {
+        vm.assume(userAddr != address(0) && amtToStake > 0);
+        _approveAndStake(userAddr, amtToStake, true);
+        _waitForCoolDown();
+        vm.warp(block.timestamp + timeToWait);
+
+        uint256 expectedNewAlpha = _getExpectedNewAlpha();
+        vm.expectEmit(false, false, false, true, address(stakingContract));
+        emit FSCEvents.AlphaUpdated(expectedNewAlpha);
+
+        uint256 expectedNewUserReward = _getExpectedNewUserReward(userAddr);
+        vm.expectEmit(true, false, false, true, address(stakingContract));
+        emit FSCEvents.RewardUpdated(userAddr, expectedNewUserReward);
+
+        vm.expectEmit(true, true, false, true, address(stakingContract));
+        emit FSCEvents.RewardWithdrawn(userAddr, expectedNewUserReward);
+
+        vm.prank(userAddr);
+        stakingContract.withdrawRewards();
+    }
+
     /**
      *
      * @param amtToStake1 The amount staked by user1. This changes the alpha value at second interaction
