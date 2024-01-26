@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: SEE LICENSE IN LICENSE
 pragma solidity 0.8.23;
 
-import {FinthetixStakingContract, FSCErrors} from "src/FinthetixStakingContract.sol";
+import {FinthetixStakingContract, FSCEvents, FSCErrors} from "src/FinthetixStakingContract.sol";
 import {FinthetixStakingToken} from "src/FinthetixStakingToken.sol";
 import {FinthetixRewardToken} from "src/FinthetixRewardToken.sol";
 import {Test, console} from "forge-std/Test.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract FinthetixStakingContract_UnitTest is Test {
     /**
@@ -668,6 +669,133 @@ contract FinthetixStakingContract_UnitTest is Test {
     }
 
     /**
+     * @param userAddr Address of user who stakes
+     * @param amtToStake1 Amt initially staked in the contract before main interaction.
+     *  This helps to test variations in alpha and rewards owed.
+     * @param amtToStake2 Amt staked for main staking interaction.
+     * @param timeToWait The time to wait before main staking interaction
+     * @notice Tests that staking emits the relevant events.
+     * @dev We stake an initial amount so that we can vary the alpha and
+     *  rewards, and check that event data is as expected
+     */
+    function test_StakingHasEvents(address userAddr, uint8 amtToStake1, uint248 amtToStake2, uint128 timeToWait)
+        public
+    {
+        // assumptions
+        vm.assume(userAddr != address(0) && amtToStake1 > 0 && amtToStake2 > 0);
+
+        // setup
+        _approveAndStake(userAddr, amtToStake1, true); // stake initial amount for varying alpha and rewards
+        _waitForCoolDown();
+        vm.warp(block.timestamp + timeToWait);
+        deal(address(stakingToken), userAddr, amtToStake2, true);
+        vm.prank(userAddr);
+        stakingToken.approve(address(stakingContract), amtToStake2);
+
+        // act & verify
+        uint256 expectedNewAlpha = _getExpectedNewAlpha();
+        vm.expectEmit(false, false, false, true, address(stakingContract));
+        emit FSCEvents.AlphaUpdated(expectedNewAlpha);
+
+        uint256 expectedNewUserReward = _getExpectedNewUserReward(userAddr);
+        vm.expectEmit(true, false, false, true, address(stakingContract));
+        emit FSCEvents.RewardPublished(userAddr, expectedNewUserReward);
+
+        vm.expectEmit(true, true, false, true, address(stakingContract));
+        emit FSCEvents.Staked(userAddr, amtToStake2);
+
+        vm.prank(userAddr);
+        stakingContract.stake(amtToStake2);
+    }
+
+    /**
+     * @param userAddr Address of user who stakes
+     * @param amtToStake Amt initially staked in the contract before main interaction.
+     *  This helps to test variations in alpha and rewards owed.
+     * @param _amtToUnstake Amt staked for main interaction.
+     * @param timeToWait The time to wait before main unstaking interaction
+     * @notice Tests that unstaking emits the relevant events.
+     * @dev We stake an initial amount so that we can vary the alpha and
+     *  rewards, and check that event data is as expected
+     */
+    function test_UnstakingHasEvents(address userAddr, uint248 amtToStake, uint248 _amtToUnstake, uint128 timeToWait)
+        public
+    {
+        // assumptions
+        vm.assume(userAddr != address(0) && amtToStake > 0);
+        uint256 amtToUnstake = bound(_amtToUnstake, 1, amtToStake); // should only unstake less than what's staked
+
+        // setup
+        _approveAndStake(userAddr, amtToStake, true); // stake initial amount for varying alpha and rewards
+        _waitForCoolDown();
+        vm.warp(block.timestamp + timeToWait);
+
+        // act & verify
+        uint256 expectedNewAlpha = _getExpectedNewAlpha();
+        vm.expectEmit(false, false, false, true, address(stakingContract));
+        emit FSCEvents.AlphaUpdated(expectedNewAlpha);
+
+        uint256 expectedNewUserReward = _getExpectedNewUserReward(userAddr);
+        vm.expectEmit(true, false, false, true, address(stakingContract));
+        emit FSCEvents.RewardPublished(userAddr, expectedNewUserReward);
+
+        vm.expectEmit(true, true, false, true, address(stakingContract));
+        emit FSCEvents.Unstaked(userAddr, amtToUnstake);
+
+        vm.prank(userAddr);
+        stakingContract.unstake(amtToUnstake);
+    }
+
+    function test_RewardWithdrawalHasEvents(address userAddr, uint248 amtToStake, uint128 timeToWait) public {
+        vm.assume(userAddr != address(0) && amtToStake > 0);
+        _approveAndStake(userAddr, amtToStake, true);
+        _waitForCoolDown();
+        vm.warp(block.timestamp + timeToWait);
+
+        uint256 expectedNewAlpha = _getExpectedNewAlpha();
+        vm.expectEmit(false, false, false, true, address(stakingContract));
+        emit FSCEvents.AlphaUpdated(expectedNewAlpha);
+
+        uint256 expectedNewUserReward = _getExpectedNewUserReward(userAddr);
+        vm.expectEmit(true, false, false, true, address(stakingContract));
+        emit FSCEvents.RewardPublished(userAddr, expectedNewUserReward);
+
+        vm.expectEmit(true, true, false, true, address(stakingContract));
+        emit FSCEvents.RewardWithdrawn(userAddr, expectedNewUserReward);
+
+        vm.prank(userAddr);
+        stakingContract.withdrawRewards();
+    }
+
+    /**
+     *
+     * @param amtToStake1 The amount staked by user1. This changes the alpha value at second interaction
+     * @param amtToStake2 The amount staked by user2. This varies the final alphaNow
+     * @notice Tests whether the contract offers the ability to view your alpha
+     *  at last interaction. This contributes to the users' ability to calculate
+     *  rewards off-chain
+     */
+    function test_CanViewAlphaAtLastInteraction(uint128 amtToStake1, uint128 amtToStake2) public {
+        vm.assume(amtToStake1 > 0 && amtToStake2 > 0);
+        address userAddr1 = vm.addr(0xB0b);
+        address userAddr2 = vm.addr(0xAbe);
+        _approveAndStake(userAddr1, amtToStake1, true);
+        _waitForCoolDown();
+        vm.prank(userAddr1);
+        stakingContract.unstake(amtToStake1); // we do two interactions to avoid the default alpha value of 0
+        uint256 alphaAfterUser1Interaction = stakingContract.alphaNow();
+
+        _approveAndStake(userAddr2, amtToStake1, true); // alphaNow has increased now
+        vm.prank(userAddr2);
+        uint256 expectedAlphaAtLastUser1Interaction = stakingContract.viewAlphaAtMyLastInteraction();
+        assertEq(
+            expectedAlphaAtLastUser1Interaction,
+            alphaAfterUser1Interaction,
+            "Alpha at last user interaction is not as expected"
+        );
+    }
+
+    /**
      * **********  PRIVATE FUNCTIONS **********
      */
 
@@ -732,5 +860,43 @@ contract FinthetixStakingContract_UnitTest is Test {
     function _waitForCoolDown() private {
         uint256 cooldownTime = (stakingContract.totalStakedAmt() / stakingContract.COOLDOWN_CONSTANT()) + 1;
         vm.warp(block.timestamp + cooldownTime);
+    }
+
+    /**
+     * @dev This function calculates the expected new alpha if someone interacts
+     *  now (block.timestamp).  This is a direct copy of the contract's logic. It
+     *  is not meant to test the accuracy of the alpha calculation logic. Rather
+     *  it is meant to check that the alpha updated or emitted is as expected.
+     */
+    function _getExpectedNewAlpha() private view returns (uint256) {
+        return (
+            stakingContract.alphaNow()
+                + (block.timestamp - stakingContract.lastUpdatedRewardAt()) * stakingContract.COOLDOWN_CONSTANT()
+                    / stakingContract.totalStakedAmt()
+        );
+    }
+
+    /**
+     * @param userAddr The address of the user whose expected rewards you wish to calculate
+     * @dev This function calculates the expected new rewards awarded to the
+     *  userAddr. This is a direct copy of the contract's logic. It is
+     *  not meant to test the accuracy of the reward calculation logic. Rather it
+     *  is meant to check that the rewards updated or emitted are as expected.
+     */
+    function _getExpectedNewUserReward(address userAddr) private returns (uint256) {
+        uint256 alphaNow = _getExpectedNewAlpha();
+        vm.prank(userAddr);
+        uint256 alphaAtLastUserInteraction = stakingContract.viewAlphaAtMyLastInteraction();
+        vm.prank(userAddr);
+        uint256 userStakedAmt = stakingContract.viewMyStakedAmt();
+
+        (bool isProd1Safe, uint256 prod1) = Math.tryMul(userStakedAmt, stakingContract.TOTAL_REWARDS_PER_SECOND());
+        if (!isProd1Safe) {
+            uint256 op1Result = Math.mulDiv(
+                userStakedAmt, stakingContract.TOTAL_REWARDS_PER_SECOND(), stakingContract.COOLDOWN_CONSTANT()
+            );
+            return op1Result * (alphaNow - alphaAtLastUserInteraction);
+        }
+        return Math.mulDiv(prod1, (alphaNow - alphaAtLastUserInteraction), stakingContract.COOLDOWN_CONSTANT());
     }
 }
