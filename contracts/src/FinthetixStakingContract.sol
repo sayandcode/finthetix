@@ -142,27 +142,25 @@ contract FinthetixStakingContract is FSCEvents, FSCErrors {
     }
 
     function _updateReward() private {
-        _updateAlpha();
+        alphaNow += _calculateAccruedAlpha();
+        emit AlphaUpdated(alphaNow);
         mapAddrToPublishedReward[msg.sender] += _calculateAccruedRewards();
         emit RewardUpdated(msg.sender, mapAddrToPublishedReward[msg.sender]);
         lastUpdatedRewardAt = block.timestamp;
         mapAddrToAlphaAtLastUserInteraction[msg.sender] = alphaNow;
     }
 
-    function _updateAlpha() private {
-        if (totalStakedAmt > 0) {
-            // unless time > 1e57 (>3x age of universe!), we are safe from overflow
-            // [Why 1e57? type(uint256).max / COOLDOWN_CONSTANT]
-            uint256 numerator = (block.timestamp - lastUpdatedRewardAt) * COOLDOWN_CONSTANT;
-            if (numerator < totalStakedAmt) revert CannotInteractWhenCoolingDown(block.timestamp, lastUpdatedRewardAt);
+    function _calculateAccruedAlpha() private view returns (uint256) {
+        if (totalStakedAmt == 0) return 0;
 
-            uint256 alphaAccrued = numerator / totalStakedAmt;
-            alphaNow = alphaNow + alphaAccrued;
-            emit AlphaUpdated(alphaNow);
-        }
+        // unless time > 1e57 (>3x age of universe!), we are safe from overflow
+        // [Why 1e57? type(uint256).max / COOLDOWN_CONSTANT]
+        uint256 numerator = (block.timestamp - lastUpdatedRewardAt) * COOLDOWN_CONSTANT;
+        if (numerator < totalStakedAmt) revert CannotInteractWhenCoolingDown(block.timestamp, lastUpdatedRewardAt);
+        return numerator / totalStakedAmt;
     }
 
-    function _calculateAccruedRewards() private view returns (uint256 result) {
+    function _calculateAccruedRewards() private view returns (uint256) {
         uint256 userStakedAmt = mapAddrToStakedAmt[msg.sender];
 
         (bool isProd1Safe, uint256 prod1) = Math.tryMul(userStakedAmt, TOTAL_REWARDS_PER_SECOND);
