@@ -699,7 +699,7 @@ contract FinthetixStakingContract_UnitTest is Test {
 
         uint256 expectedNewUserReward = _getExpectedNewUserReward(userAddr);
         vm.expectEmit(true, false, false, true, address(stakingContract));
-        emit FSCEvents.RewardUpdated(userAddr, expectedNewUserReward);
+        emit FSCEvents.RewardPublished(userAddr, expectedNewUserReward);
 
         vm.expectEmit(true, true, false, true, address(stakingContract));
         emit FSCEvents.Staked(userAddr, amtToStake2);
@@ -737,7 +737,7 @@ contract FinthetixStakingContract_UnitTest is Test {
 
         uint256 expectedNewUserReward = _getExpectedNewUserReward(userAddr);
         vm.expectEmit(true, false, false, true, address(stakingContract));
-        emit FSCEvents.RewardUpdated(userAddr, expectedNewUserReward);
+        emit FSCEvents.RewardPublished(userAddr, expectedNewUserReward);
 
         vm.expectEmit(true, true, false, true, address(stakingContract));
         emit FSCEvents.Unstaked(userAddr, amtToUnstake);
@@ -758,7 +758,7 @@ contract FinthetixStakingContract_UnitTest is Test {
 
         uint256 expectedNewUserReward = _getExpectedNewUserReward(userAddr);
         vm.expectEmit(true, false, false, true, address(stakingContract));
-        emit FSCEvents.RewardUpdated(userAddr, expectedNewUserReward);
+        emit FSCEvents.RewardPublished(userAddr, expectedNewUserReward);
 
         vm.expectEmit(true, true, false, true, address(stakingContract));
         emit FSCEvents.RewardWithdrawn(userAddr, expectedNewUserReward);
