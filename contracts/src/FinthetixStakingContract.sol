@@ -126,6 +126,10 @@ contract FinthetixStakingContract is FSCErrors {
         return mapAddrToPublishedReward[msg.sender];
     }
 
+    function viewAlphaAtMyLastInteraction() external view returns (uint256) {
+        return mapAddrToAlphaAtLastUserInteraction[msg.sender];
+    }
+
     function _updateReward() private {
         _updateAlpha();
         mapAddrToPublishedReward[msg.sender] += _calculateAccruedRewards();

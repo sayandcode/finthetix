@@ -668,6 +668,34 @@ contract FinthetixStakingContract_UnitTest is Test {
     }
 
     /**
+     *
+     * @param amtToStake1 The amount staked by user1. This changes the alpha value at second interaction
+     * @param amtToStake2 The amount staked by user2. This varies the final alphaNow
+     * @notice Tests whether the contract offers the ability to view your alpha
+     *  at last interaction. This contributes to the users' ability to calculate
+     *  rewards off-chain
+     */
+    function test_CanViewAlphaAtLastInteraction(uint128 amtToStake1, uint128 amtToStake2) public {
+        vm.assume(amtToStake1 > 0 && amtToStake2 > 0);
+        address userAddr1 = vm.addr(0xB0b);
+        address userAddr2 = vm.addr(0xAbe);
+        _approveAndStake(userAddr1, amtToStake1, true);
+        _waitForCoolDown();
+        vm.prank(userAddr1);
+        stakingContract.unstake(amtToStake1); // we do two interactions to avoid the default alpha value of 0
+        uint256 alphaAfterUser1Interaction = stakingContract.alphaNow();
+
+        _approveAndStake(userAddr2, amtToStake1, true); // alphaNow has increased now
+        vm.prank(userAddr2);
+        uint256 expectedAlphaAtLastUser1Interaction = stakingContract.viewAlphaAtMyLastInteraction();
+        assertEq(
+            expectedAlphaAtLastUser1Interaction,
+            alphaAfterUser1Interaction,
+            "Alpha at last user interaction is not as expected"
+        );
+    }
+
+    /**
      * **********  PRIVATE FUNCTIONS **********
      */
 
