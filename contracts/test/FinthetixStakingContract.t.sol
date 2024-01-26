@@ -672,18 +672,22 @@ contract FinthetixStakingContract_UnitTest is Test {
      * @param userAddr Address of user who stakes
      * @param amtToStake1 Amt initially staked in the contract before main interaction.
      *  This helps to test variations in alpha and rewards owed.
-     * @param amtToStake2 Amt staked for main interaction.
+     * @param amtToStake2 Amt staked for main staking interaction.
+     * @param timeToWait The time to wait before main staking interaction
      * @notice Tests that staking emits the relevant events.
      * @dev We stake an initial amount so that we can vary the alpha and
      *  rewards, and check that event data is as expected
      */
-    function test_StakingHasEvents(address userAddr, uint8 amtToStake1, uint248 amtToStake2) public {
+    function test_StakingHasEvents(address userAddr, uint8 amtToStake1, uint248 amtToStake2, uint128 timeToWait)
+        public
+    {
         // assumptions
         vm.assume(userAddr != address(0) && amtToStake1 > 0 && amtToStake2 > 0);
 
         // setup
         _approveAndStake(userAddr, amtToStake1, true); // stake initial amount for varying alpha and rewards
         _waitForCoolDown();
+        vm.warp(block.timestamp + timeToWait);
         deal(address(stakingToken), userAddr, amtToStake2, true);
         vm.prank(userAddr);
         stakingToken.approve(address(stakingContract), amtToStake2);
@@ -702,6 +706,44 @@ contract FinthetixStakingContract_UnitTest is Test {
 
         vm.prank(userAddr);
         stakingContract.stake(amtToStake2);
+    }
+
+    /**
+     * @param userAddr Address of user who stakes
+     * @param amtToStake Amt initially staked in the contract before main interaction.
+     *  This helps to test variations in alpha and rewards owed.
+     * @param _amtToUnstake Amt staked for main interaction.
+     * @param timeToWait The time to wait before main unstaking interaction
+     * @notice Tests that unstaking emits the relevant events.
+     * @dev We stake an initial amount so that we can vary the alpha and
+     *  rewards, and check that event data is as expected
+     */
+    function test_UnstakingHasEvents(address userAddr, uint248 amtToStake, uint248 _amtToUnstake, uint128 timeToWait)
+        public
+    {
+        // assumptions
+        vm.assume(userAddr != address(0) && amtToStake > 0);
+        uint256 amtToUnstake = bound(_amtToUnstake, 1, amtToStake); // should only unstake less than what's staked
+
+        // setup
+        _approveAndStake(userAddr, amtToStake, true); // stake initial amount for varying alpha and rewards
+        _waitForCoolDown();
+        vm.warp(block.timestamp + timeToWait);
+
+        // act & verify
+        uint256 expectedNewAlpha = _getExpectedNewAlpha();
+        vm.expectEmit(false, false, false, true, address(stakingContract));
+        emit FSCEvents.AlphaUpdated(expectedNewAlpha);
+
+        uint256 expectedNewUserReward = _getExpectedNewUserReward(userAddr);
+        vm.expectEmit(true, false, false, true, address(stakingContract));
+        emit FSCEvents.RewardUpdated(userAddr, expectedNewUserReward);
+
+        vm.expectEmit(true, true, false, true, address(stakingContract));
+        emit FSCEvents.Unstaked(userAddr, amtToUnstake);
+
+        vm.prank(userAddr);
+        stakingContract.unstake(amtToUnstake);
     }
 
     /**

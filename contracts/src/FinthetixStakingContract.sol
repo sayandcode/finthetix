@@ -7,6 +7,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 interface FSCEvents {
     event Staked(address indexed userAddr, uint256 amtStaked);
+    event Unstaked(address indexed userAddr, uint256 amtUnstaked);
     event AlphaUpdated(uint256 newAlpha);
     event RewardUpdated(address indexed userAddr, uint256 newReward);
 }
@@ -109,6 +110,7 @@ contract FinthetixStakingContract is FSCEvents, FSCErrors {
 
         // interactions
         stakingToken.transfer(msg.sender, amtToUnstake);
+        emit Unstaked(msg.sender, amtToUnstake);
     }
 
     function withdrawRewards() external onlyValidSender {
