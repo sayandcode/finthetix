@@ -5,6 +5,12 @@ import {FinthetixStakingToken} from "src/FinthetixStakingToken.sol";
 import {FinthetixRewardToken} from "src/FinthetixRewardToken.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
+interface FSCEvents {
+    event Staked(address indexed userAddr, uint256 amtStaked);
+    event AlphaUpdated(uint256 newAlpha);
+    event RewardUpdated(address indexed userAddr, uint256 newReward);
+}
+
 interface FSCErrors {
     /**
      * @notice Zero is not a valid amount of tokens to stake/unstake.
@@ -45,7 +51,7 @@ interface FSCErrors {
     // error HighValueTransaction(address userAddr);
 }
 
-contract FinthetixStakingContract is FSCErrors {
+contract FinthetixStakingContract is FSCEvents, FSCErrors {
     uint256 public constant TOTAL_REWARDS_PER_SECOND = 0.5 ether;
     /**
      * @notice The required total staked amount in the contract, for a cooldown period of 1 second.
@@ -86,6 +92,7 @@ contract FinthetixStakingContract is FSCErrors {
 
         // interactions
         stakingToken.transferFrom(msg.sender, address(this), amtToStake);
+        emit Staked(msg.sender, amtToStake);
     }
 
     function unstake(uint256 amtToUnstake) external /* checks */ onlyValidSender nonZeroAmt(amtToUnstake) {
@@ -133,6 +140,7 @@ contract FinthetixStakingContract is FSCErrors {
     function _updateReward() private {
         _updateAlpha();
         mapAddrToPublishedReward[msg.sender] += _calculateAccruedRewards();
+        emit RewardUpdated(msg.sender, mapAddrToPublishedReward[msg.sender]);
         lastUpdatedRewardAt = block.timestamp;
         mapAddrToAlphaAtLastUserInteraction[msg.sender] = alphaNow;
     }
@@ -146,6 +154,7 @@ contract FinthetixStakingContract is FSCErrors {
 
             uint256 alphaAccrued = numerator / totalStakedAmt;
             alphaNow = alphaNow + alphaAccrued;
+            emit AlphaUpdated(alphaNow);
         }
     }
 
