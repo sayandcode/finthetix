@@ -1,11 +1,12 @@
-import { json, type MetaFunction } from '@remix-run/node';
+import { json, LoaderFunctionArgs, redirect, type MetaFunction } from '@remix-run/node';
 import { useCallback } from 'react';
 import { Button } from '~/components/ui/button';
 import { BrowserProvider } from 'ethers';
 import { tryItAsync } from '~/lib/utils';
-import { useLoaderData } from '@remix-run/react';
+import { useLoaderData, useSubmit } from '@remix-run/react';
 import { useToast } from '~/components/ui/use-toast';
 import { UI_ERRORS } from '~/lib/ui-errors';
+import { authSession } from '~/sessions';
 
 export const meta: MetaFunction = () => {
   return [
@@ -14,7 +15,12 @@ export const meta: MetaFunction = () => {
   ];
 };
 
-export const loader = () => {
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  // redirect if already logged in
+  const session = await authSession.getSession(request.headers.get('Cookie'));
+  const activeAddress = session.get('activeAddress');
+  if (activeAddress) return redirect('/dashboard', 302);
+
   const chainInfo = process.env.NODE_ENV === 'development'
     ? {
         iconUrls: [],
@@ -36,8 +42,9 @@ export const loader = () => {
 };
 
 export default function Index() {
-  const { toast } = useToast();
   const { chainInfo } = useLoaderData<typeof loader>();
+  const { toast } = useToast();
+  const submit = useSubmit();
 
   const handleClick = useCallback(async () => {
     if (!window.ethereum) {
@@ -72,9 +79,9 @@ export default function Index() {
       return;
     }
 
-    const activeAccount = requestAccTrialResult.data[0];
-    console.log(activeAccount);
-  }, [chainInfo, toast]);
+    const activeAddress = requestAccTrialResult.data[0];
+    submit({ activeAddress }, { method: 'POST', action: '/login', navigate: false });
+  }, [chainInfo, toast, submit]);
 
   return (
     <div>
