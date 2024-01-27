@@ -9,10 +9,12 @@ import {
   ScrollRestoration,
 } from '@remix-run/react';
 import tailwindCss from './tailwind.css';
+import cairoFontStylesheet from '@fontsource-variable/cairo/wght.css';
 
 export const links: LinksFunction = () => [
-  { rel: 'stylesheet', href: tailwindCss },
   ...(cssBundleHref ? [{ rel: 'stylesheet', href: cssBundleHref }] : []),
+  { rel: 'stylesheet', href: tailwindCss },
+  { rel: 'stylesheet', href: cairoFontStylesheet },
 ];
 
 export default function App() {
