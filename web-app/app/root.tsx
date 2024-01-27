@@ -10,6 +10,7 @@ import {
 } from '@remix-run/react';
 import tailwindCss from './tailwind.css';
 import cairoFontStylesheet from '@fontsource-variable/cairo/wght.css';
+import { Toaster } from './components/ui/toaster';
 
 export const links: LinksFunction = () => [
   ...(cssBundleHref ? [{ rel: 'stylesheet', href: cssBundleHref }] : []),
@@ -27,6 +28,7 @@ export default function App() {
         <Links />
       </head>
       <body>
+        <Toaster />
         <Outlet />
         <ScrollRestoration />
         <Scripts />
