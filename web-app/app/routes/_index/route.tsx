@@ -1,13 +1,14 @@
-import { json, LoaderFunctionArgs, redirect, type MetaFunction } from '@remix-run/node';
-import { useCallback } from 'react';
+import { json, type MetaFunction } from '@remix-run/node';
+import { useCallback, useEffect } from 'react';
 import { Button } from '~/components/ui/button';
 import { BrowserProvider } from 'ethers';
 import { tryItAsync } from '~/lib/utils';
-import { useLoaderData, useSubmit } from '@remix-run/react';
+import { useLoaderData, useNavigate } from '@remix-run/react';
 import { useToast } from '~/components/ui/use-toast';
 import { UI_ERRORS } from '~/lib/ui-errors';
-import { authSession } from '~/sessions';
 import { PARSED_PROCESS_ENV } from '~/lib/env';
+import { useActiveAddress } from '~/lib/hooks/useActiveAddress';
+import { Loader2Icon } from 'lucide-react';
 
 export const meta: MetaFunction = () => {
   return [
@@ -16,12 +17,7 @@ export const meta: MetaFunction = () => {
   ];
 };
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  // redirect if already logged in
-  const session = await authSession.getSession(request.headers.get('Cookie'));
-  const activeAddress = session.get('activeAddress');
-  if (activeAddress) return redirect('/dashboard', 302);
-
+export const loader = async () => {
   const chainInfo = PARSED_PROCESS_ENV.NODE_ENV === 'development'
     ? {
         iconUrls: [],
@@ -43,9 +39,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export default function Index() {
+  const activeAddress = useActiveAddress();
   const { chainInfo } = useLoaderData<typeof loader>();
   const { toast } = useToast();
-  const submit = useSubmit();
 
   const handleClick = useCallback(async () => {
     if (!window.ethereum) {
@@ -80,16 +76,26 @@ export default function Index() {
       return;
     }
 
-    const activeAddress = requestAccTrialResult.data[0];
-    submit({ activeAddress }, { method: 'POST', action: '/login', navigate: false });
-  }, [chainInfo, toast, submit]);
+    const newActiveAddress = requestAccTrialResult.data[0];
+    activeAddress.set(newActiveAddress);
+  }, [chainInfo, toast, activeAddress]);
+
+  const navigate = useNavigate();
+  const hasActiveAddress = !activeAddress.isLoading && activeAddress.get();
+  useEffect(() => {
+    if (hasActiveAddress) navigate('/dashboard');
+  }, [hasActiveAddress, navigate]);
 
   return (
     <div>
       <section className="flex flex-col gap-y-2 items-center justify-center h-screen text-center">
         <h1 className="text-5xl sm:text-6xl font-bold">Finthetix</h1>
         <p className="text-xl">Earn rewards by staking tokens</p>
-        <Button onClick={handleClick}>Connect Wallet</Button>
+        <Button onClick={handleClick}>
+          {activeAddress.isLoading
+            ? <Loader2Icon className="animate-spin" />
+            : activeAddress.get() || 'Connect Wallet'}
+        </Button>
       </section>
     </div>
   );

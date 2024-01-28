@@ -5,11 +5,6 @@ const envSchema = z.object({
     z.literal('development'), z.literal('production'), z.literal('test'),
   ]) satisfies z.ZodType<typeof process.env.NODE_ENV>,
   TZ: z.string().optional() satisfies z.ZodType<typeof process.env.TZ>,
-  COOKIE_SECRETS:
-    z.string()
-      .trim()
-      .min(1, 'Cookie secret cannot be empty string')
-      .transform(commaSeparatedString => commaSeparatedString.split(',')),
 });
 
 const parseResult = envSchema.safeParse(process.env);
