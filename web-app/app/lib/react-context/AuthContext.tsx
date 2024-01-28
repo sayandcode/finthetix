@@ -74,6 +74,20 @@ export function AuthContextProvider(
         description: 'Something went wrong when adding the chain',
         variant: 'destructive',
       });
+      setIsLoading(false);
+      return;
+    }
+
+    const switchChainsTrialResult = await tryItAsync<null>(() => provider.send('wallet_switchEthereumChain', [
+      { chainId: chainInfo.chainId },
+    ]));
+    if (!switchChainsTrialResult.success) {
+      toast({
+        title: UI_ERRORS.ERR4,
+        description: 'Something went wrong when switching to the required chain',
+        variant: 'destructive',
+      });
+      setIsLoading(false);
       return;
     }
 
@@ -84,6 +98,7 @@ export function AuthContextProvider(
         description: 'Something went wrong when fetching the accounts',
         variant: 'destructive',
       });
+      setIsLoading(false);
       return;
     }
 
@@ -111,6 +126,8 @@ export function AuthContextProvider(
       setIsLoading(false);
 
       // attempt to validate again with metamask
+      // no need to auto-login if user has explicitly logged out
+      if (!storedUser) return;
       if (!window.ethereum) {
         toast({
           title: UI_ERRORS.ERR1,
