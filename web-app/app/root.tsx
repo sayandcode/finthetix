@@ -7,11 +7,16 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  json,
+  useLoaderData,
   useRouteError,
 } from '@remix-run/react';
 import tailwindCss from './tailwind.css';
 import cairoFontStylesheet from '@fontsource-variable/cairo/wght.css';
 import { Toaster } from './components/ui/toaster';
+import { PARSED_PROCESS_ENV } from './lib/env';
+import { AuthContextProvider } from './lib/react-context/AuthContext';
+import { ChainInfo } from './lib/types';
 
 export const links: LinksFunction = () => [
   ...(cssBundleHref ? [{ rel: 'stylesheet', href: cssBundleHref }] : []),
@@ -19,7 +24,29 @@ export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: cairoFontStylesheet },
 ];
 
+export const loader = async () => {
+  const chainInfo: ChainInfo = PARSED_PROCESS_ENV.NODE_ENV === 'development'
+    ? {
+        iconUrls: [],
+        nativeCurrency: {
+          name: 'xANV',
+          symbol: 'xANV',
+          decimals: 18,
+        },
+        rpcUrls: [
+          'http://localhost:8545',
+        ],
+        chainId: `0x${(31337).toString(16)}`,
+        chainName: 'Anvil',
+
+      } as const
+    : {} as ChainInfo;
+
+  return json({ chainInfo });
+};
+
 export default function App() {
+  const { chainInfo } = useLoaderData<typeof loader>();
   return (
     <html lang="en">
       <head>
@@ -30,7 +57,9 @@ export default function App() {
       </head>
       <body>
         <Toaster />
-        <Outlet />
+        <AuthContextProvider chainInfo={chainInfo}>
+          <Outlet />
+        </AuthContextProvider>
         <ScrollRestoration />
         <Scripts />
         <LiveReload />
