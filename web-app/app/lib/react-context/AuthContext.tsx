@@ -1,4 +1,4 @@
-import { createContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 import { useToast } from '~/components/ui/use-toast';
 import { UI_ERRORS } from '../ui-errors';
 import { BrowserProvider } from 'ethers';
@@ -53,7 +53,7 @@ export function AuthContextProvider(
    * the dedicated `user` object from `AuthContext`
    * @returns A promise indicating the completion of the login
    */
-  const login: AuthContextType['login'] = async () => {
+  const login: AuthContextType['login'] = useCallback(async () => {
     if (!window.ethereum) {
       toast({
         title: UI_ERRORS.ERR1,
@@ -78,7 +78,7 @@ export function AuthContextProvider(
     }
 
     const requestAccTrialResult = await tryItAsync<string[]>(() => provider.send('eth_requestAccounts', []));
-    if (!requestAccTrialResult.success) {
+    if (!requestAccTrialResult.success || !requestAccTrialResult.data[0]) {
       toast({
         title: UI_ERRORS.ERR3,
         description: 'Something went wrong when fetching the accounts',
@@ -92,14 +92,14 @@ export function AuthContextProvider(
     activeAddressStorage.set(newActiveAddress);
     setUser(newActiveAddress);
     setIsLoading(false);
-  };
+  }, [chainInfo, toast]);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setIsLoading(true);
     setUser(null);
     activeAddressStorage.set(null);
     setIsLoading(false);
-  };
+  }, []);
 
   /* Attempt Auto-Login from LocalStorage */
   useEffect(() => {
@@ -110,11 +110,38 @@ export function AuthContextProvider(
       setUser(storedUser);
       setIsLoading(false);
 
-      // TODO: attempt to validate again with metamask
-    })();
-  }, []);
+      // attempt to validate again with metamask
+      if (!window.ethereum) {
+        toast({
+          title: UI_ERRORS.ERR1,
+          description: 'Please install Metamask browser extension',
+          variant: 'destructive',
+        });
+        return;
+      }
 
-  const contextVal = { login, logout, user, isLoading };
+      setIsLoading(true);
+      const provider = new BrowserProvider(window.ethereum);
+      const fetchAccountsTrialResult = await tryItAsync<string[]>(() => provider.send('eth_accounts', []));
+      if (!fetchAccountsTrialResult.success) {
+        toast({
+          title: UI_ERRORS.ERR3,
+          description: 'Something went wrong when fetching the accounts',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const newActiveAddress = fetchAccountsTrialResult.data[0] || null;
+      setUser(newActiveAddress);
+      activeAddressStorage.set(newActiveAddress);
+      setIsLoading(false);
+    })();
+  }, [logout, toast]);
+
+  const contextVal = useMemo(
+    () => ({ login, logout, user, isLoading })
+    , [login, logout, user, isLoading]);
   return (
     <AuthContext.Provider value={contextVal}>
       {children}
