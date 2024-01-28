@@ -1,12 +1,17 @@
 import { useLocation } from '@remix-run/react';
 import { Loader2Icon } from 'lucide-react';
-import { useContext } from 'react';
+import { useCallback, useContext } from 'react';
 import { Button } from '~/components/ui/button';
 import { AuthContext } from '~/lib/react-context/AuthContext';
 
 export default function Navbar() {
   const { pathname } = useLocation();
   const auth = useContext(AuthContext);
+
+  const handleClick = useCallback(() => {
+    if (auth.user) auth.logout();
+    else auth.login();
+  }, [auth]);
 
   if (pathname === '/') return null;
 
@@ -16,18 +21,24 @@ export default function Navbar() {
       <a href="https://www.github.com/sayandcode/finthetix">
         <GithubIcon />
       </a>
-      <Button onClick={auth.login}>
-        <span className="w-16 sm:w-full truncate">
-          {auth.isLoading
-            ? <Loader2Icon />
-            : auth.user
-            || (
-              <>
-                <span className="hidden sm:inline">Connect Wallet</span>
-                <span className="sm:hidden">Connect</span>
-              </>
-            )}
-        </span>
+      <Button onClick={handleClick} className="min-w-16 hover:bg-destructive group">
+
+        {auth.isLoading
+          ? <Loader2Icon className="animate-spin" />
+          : auth.user
+            ? (
+              <span className="inline-flex relative justify-center">
+                <span className="w-16 sm:w-max truncate opacity-100 group-hover:opacity-0">{auth.user}</span>
+                <span className="opacity-0 group-hover:opacity-100 absolute text-white">Logout</span>
+              </span>
+              )
+            : (
+              <span>
+                Connect
+                {' '}
+                <span className="hidden sm:inline">Wallet</span>
+              </span>
+              )}
       </Button>
     </nav>
   );
