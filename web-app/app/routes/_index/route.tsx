@@ -12,7 +12,7 @@ export const meta: MetaFunction = () => {
   ];
 };
 
-export default function Index() {
+export default function Route() {
   const auth = useContext(AuthContext);
   const navigate = useNavigate();
   const hasActiveAddress = !auth.isLoading && auth.user;

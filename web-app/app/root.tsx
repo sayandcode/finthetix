@@ -17,6 +17,7 @@ import { Toaster } from './components/ui/toaster';
 import { PARSED_PROCESS_ENV } from './lib/env';
 import { AuthContextProvider } from './lib/react-context/AuthContext';
 import { ChainInfo } from './lib/types';
+import Navbar from './components/root/Navbar';
 
 export const links: LinksFunction = () => [
   ...(cssBundleHref ? [{ rel: 'stylesheet', href: cssBundleHref }] : []),
@@ -58,6 +59,7 @@ export default function App() {
       <body>
         <Toaster />
         <AuthContextProvider chainInfo={chainInfo}>
+          <Navbar />
           <Outlet />
         </AuthContextProvider>
         <ScrollRestoration />
