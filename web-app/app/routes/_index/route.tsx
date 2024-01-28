@@ -7,6 +7,7 @@ import { useLoaderData, useSubmit } from '@remix-run/react';
 import { useToast } from '~/components/ui/use-toast';
 import { UI_ERRORS } from '~/lib/ui-errors';
 import { authSession } from '~/sessions';
+import { PARSED_PROCESS_ENV } from '~/lib/env';
 
 export const meta: MetaFunction = () => {
   return [
@@ -21,7 +22,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const activeAddress = session.get('activeAddress');
   if (activeAddress) return redirect('/dashboard', 302);
 
-  const chainInfo = process.env.NODE_ENV === 'development'
+  const chainInfo = PARSED_PROCESS_ENV.NODE_ENV === 'development'
     ? {
         iconUrls: [],
         nativeCurrency: {

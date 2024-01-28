@@ -1,8 +1,5 @@
 import { createCookieSessionStorage } from '@remix-run/node';
-
-const cookieSecretsStr = process.env.COOKIE_SECRET;
-if (!cookieSecretsStr) throw new Error('Please set cookie secret in the environment variables');
-const cookieSecrets = cookieSecretsStr.split(',');
+import { PARSED_PROCESS_ENV } from './lib/env';
 
 type AuthSessionData = {
   activeAddress: string
@@ -11,7 +8,7 @@ type AuthSessionData = {
 export const authSession = createCookieSessionStorage<AuthSessionData>({
   cookie: {
     name: 'auth',
-    secrets: cookieSecrets,
+    secrets: PARSED_PROCESS_ENV.COOKIE_SECRETS,
     httpOnly: true,
     secure: true,
   },
