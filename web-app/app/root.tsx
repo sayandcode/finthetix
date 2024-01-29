@@ -1,5 +1,5 @@
 import { cssBundleHref } from '@remix-run/css-bundle';
-import type { ErrorResponse, LinksFunction } from '@remix-run/node';
+import type { LinksFunction } from '@remix-run/node';
 import {
   Links,
   LiveReload,
@@ -7,6 +7,7 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  isRouteErrorResponse,
   json,
   useLoaderData,
   useRouteError,
@@ -63,7 +64,14 @@ export default function App() {
 }
 
 export function ErrorBoundary() {
-  const error = useRouteError() as ErrorResponse;
+  const error = useRouteError();
+  let validatedError: { status: number, data: string } = { status: 500, data: 'Internal Error' };
+  if (isRouteErrorResponse(error)) validatedError = error;
+  else {
+    // This may be converted to a client-side logging solution
+    console.error(error);
+  }
+
   return (
     <html lang="en">
       <head>
@@ -76,10 +84,10 @@ export function ErrorBoundary() {
         <div className="h-screen flex flex-col justify-center items-center text-center gap-y-2">
           <h1 className="text-3xl font-semibold">
             Oops! Something went wrong (
-            {error.status }
+            {validatedError.status }
             )
           </h1>
-          <p>{error.data}</p>
+          <p>{validatedError.data}</p>
         </div>
         <Scripts />
         <LiveReload />
