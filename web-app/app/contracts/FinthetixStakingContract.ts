@@ -1,24 +1,16 @@
-import { InterfaceAbi, Contract, BrowserProvider } from 'ethers';
+import { BrowserProvider } from 'ethers';
 import { DappInfo } from '~/lib/types';
-
-type TFinthetixStakingContract = Contract & {
-  viewMyStakedAmt: () => Promise<bigint>
-};
+import { FinthetixStakingContract, FinthetixStakingContract__factory } from './types';
 
 export default class FinthetixStakingContractHandler {
-  private static readonly ABI: InterfaceAbi = [
-    'function viewMyStakedAmt() external view returns (uint)',
-  ];
-
-  private contract: TFinthetixStakingContract;
+  private contract: FinthetixStakingContract;
 
   constructor(provider: BrowserProvider, dappInfo: DappInfo) {
     this.contract
-      = new Contract(
+      = FinthetixStakingContract__factory.connect(
         dappInfo.stakingContractAddr,
-        FinthetixStakingContractHandler.ABI,
         provider,
-      ) as TFinthetixStakingContract;
+      );
   }
 
   async getUserData() {
