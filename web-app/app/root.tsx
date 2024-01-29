@@ -20,6 +20,8 @@ import { ChainInfo, DappInfo } from './lib/types';
 import Navbar from './components/root/Navbar';
 import { LOCAL_CHAIN_INFO } from './lib/constants';
 
+export const ROUTE_PATH = 'root';
+
 export const links: LinksFunction = () => [
   ...(cssBundleHref ? [{ rel: 'stylesheet', href: cssBundleHref }] : []),
   { rel: 'stylesheet', href: tailwindCss },
