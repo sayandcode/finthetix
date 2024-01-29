@@ -6,6 +6,7 @@ import {FinthetixStakingToken} from "src/FinthetixStakingToken.sol";
 import {FinthetixRewardToken} from "src/FinthetixRewardToken.sol";
 import {Test, console} from "forge-std/Test.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {DappDeployer} from "script/01_Deploy.s.sol";
 
 contract FinthetixStakingContract_UnitTest is Test {
     /**
@@ -35,9 +36,10 @@ contract FinthetixStakingContract_UnitTest is Test {
     error HighValueTransaction(address userAddr);
 
     function setUp() public {
-        stakingToken = new FinthetixStakingToken();
-        stakingContract = new FinthetixStakingContract(address(stakingToken));
-        rewardToken = stakingContract.rewardToken();
+        (address stakingTokenAddr, address stakingContractAddr, address rewardTokenAddr) = new DappDeployer().run();
+        stakingToken = FinthetixStakingToken(stakingTokenAddr);
+        stakingContract = FinthetixStakingContract(stakingContractAddr);
+        rewardToken = FinthetixRewardToken(rewardTokenAddr);
         REWARD_PRECISION = stakingContract.TOTAL_REWARDS_PER_SECOND() * 2;
     }
 
