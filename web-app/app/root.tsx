@@ -16,8 +16,9 @@ import cairoFontStylesheet from '@fontsource-variable/cairo/wght.css';
 import { Toaster } from './components/ui/toaster';
 import { PARSED_PROCESS_ENV } from './lib/env';
 import { AuthContextProvider } from './lib/react-context/AuthContext';
-import { ChainInfo } from './lib/types';
+import { ChainInfo, DappInfo } from './lib/types';
 import Navbar from './components/root/Navbar';
+import { LOCAL_CHAIN_INFO } from './lib/constants';
 
 export const links: LinksFunction = () => [
   ...(cssBundleHref ? [{ rel: 'stylesheet', href: cssBundleHref }] : []),
@@ -26,24 +27,13 @@ export const links: LinksFunction = () => [
 ];
 
 export const loader = async () => {
-  const chainInfo: ChainInfo = PARSED_PROCESS_ENV.NODE_ENV === 'development'
-    ? {
-        iconUrls: [],
-        nativeCurrency: {
-          name: 'xANV',
-          symbol: 'xANV',
-          decimals: 18,
-        },
-        rpcUrls: [
-          'http://localhost:8545',
-        ],
-        chainId: `0x${(31337).toString(16)}`,
-        chainName: 'Anvil',
-
-      } as const
-    : {} as ChainInfo;
-
-  return json({ chainInfo });
+  const chainInfo: ChainInfo = PARSED_PROCESS_ENV.NODE_ENV === 'development' ? LOCAL_CHAIN_INFO : {};
+  const dappInfo: DappInfo = {
+    stakingContractAddr: PARSED_PROCESS_ENV.STAKING_CONTRACT_ADDRESS,
+    stakingTokenAddr: PARSED_PROCESS_ENV.STAKING_TOKEN_ADDRESS,
+    rewardTokenAddr: PARSED_PROCESS_ENV.REWARD_TOKEN_ADDRESS,
+  };
+  return json({ chainInfo, dappInfo });
 };
 
 export default function App() {

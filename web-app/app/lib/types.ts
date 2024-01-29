@@ -13,3 +13,9 @@ export type ChainInfo = {
   chainId: string
   chainName: string
 };
+
+export type DappInfo = {
+  stakingContractAddr: string
+  stakingTokenAddr: string
+  rewardTokenAddr: string
+};
