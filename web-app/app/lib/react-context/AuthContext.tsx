@@ -3,7 +3,7 @@ import { useToast } from '~/components/ui/use-toast';
 import { UI_ERRORS } from '../ui-errors';
 import { BrowserProvider } from 'ethers';
 import { tryItAsync } from '../utils';
-import { ChainInfo } from '../types';
+import { ChainInfo, TrialResult } from '../types';
 
 const ACTIVE_ADDRESS_LOCAL_STORAGE_KEY = 'active-address';
 
@@ -54,58 +54,19 @@ export function AuthContextProvider(
    * @returns A promise indicating the completion of the login
    */
   const login: AuthContextType['login'] = useCallback(async () => {
-    if (!window.ethereum) {
-      toast({
-        title: UI_ERRORS.ERR1,
-        description: 'Please install Metamask browser extension',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     setIsLoading(true);
-    const provider = new BrowserProvider(window.ethereum);
-    const addChainsTrialResult = await tryItAsync<null>(() => provider.send('wallet_addEthereumChain', [
-      chainInfo,
-    ]));
-    if (!addChainsTrialResult.success) {
-      toast({
-        title: UI_ERRORS.ERR2,
-        description: 'Something went wrong when adding the chain',
-        variant: 'destructive',
-      });
-      setIsLoading(false);
-      return;
-    }
-
-    const switchChainsTrialResult = await tryItAsync<null>(() => provider.send('wallet_switchEthereumChain', [
-      { chainId: chainInfo.chainId },
-    ]));
-    if (!switchChainsTrialResult.success) {
-      toast({
-        title: UI_ERRORS.ERR4,
-        description: 'Something went wrong when switching to the required chain',
-        variant: 'destructive',
-      });
-      setIsLoading(false);
-      return;
-    }
-
-    const requestAccTrialResult = await tryItAsync<string[]>(() => provider.send('eth_requestAccounts', []));
-    if (!requestAccTrialResult.success || !requestAccTrialResult.data[0]) {
-      toast({
-        title: UI_ERRORS.ERR3,
-        description: 'Something went wrong when fetching the accounts',
-        variant: 'destructive',
-      });
+    const metamaskAddressRequest = await requestMetamaskAddress(chainInfo);
+    if (!metamaskAddressRequest.success) {
+      const { err } = metamaskAddressRequest;
+      toast({ variant: 'destructive', title: err.title, description: err.description });
       setIsLoading(false);
       return;
     }
 
     // store the login data in state
-    const newActiveAddress = requestAccTrialResult.data[0];
-    activeAddressStorage.set(newActiveAddress);
-    setUser(newActiveAddress);
+    const newUser = metamaskAddressRequest.data;
+    activeAddressStorage.set(newUser);
+    setUser(newUser);
     setIsLoading(false);
   }, [chainInfo, toast]);
 
@@ -128,30 +89,17 @@ export function AuthContextProvider(
       // attempt to validate again with metamask
       // no need to auto-login if user has explicitly logged out
       if (!storedUser) return;
-      if (!window.ethereum) {
-        toast({
-          title: UI_ERRORS.ERR1,
-          description: 'Please install Metamask browser extension',
-          variant: 'destructive',
-        });
+
+      const trialOfgetActiveMetamaskAddress = await getActiveMetamaskAddress();
+      if (!trialOfgetActiveMetamaskAddress.success) {
+        const { err } = trialOfgetActiveMetamaskAddress;
+        toast({ variant: 'destructive', title: err.title, description: err.description });
         return;
       }
 
-      setIsLoading(true);
-      const provider = new BrowserProvider(window.ethereum);
-      const fetchAccountsTrialResult = await tryItAsync<string[]>(() => provider.send('eth_accounts', []));
-      if (!fetchAccountsTrialResult.success) {
-        toast({
-          title: UI_ERRORS.ERR3,
-          description: 'Something went wrong when fetching the accounts',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      const newActiveAddress = fetchAccountsTrialResult.data[0] || null;
-      setUser(newActiveAddress);
-      activeAddressStorage.set(newActiveAddress);
+      const activeUser = trialOfgetActiveMetamaskAddress.data;
+      setUser(activeUser);
+      activeAddressStorage.set(activeUser);
       setIsLoading(false);
     })();
   }, [logout, toast]);
@@ -164,4 +112,98 @@ export function AuthContextProvider(
       {children}
     </AuthContext.Provider>
   );
+}
+
+type ActiveMetamaskAddress = string | null;
+type MetamaskInteractionError = { title: string, description: string };
+
+async function requestMetamaskAddress(chainInfo: ChainInfo):
+Promise<
+    TrialResult<ActiveMetamaskAddress, MetamaskInteractionError>
+  > {
+  if (!window.ethereum) {
+    return {
+      success: false,
+      err: {
+        title: UI_ERRORS.ERR1,
+        description: 'Please install Metamask browser extension',
+      },
+    };
+  }
+
+  const provider = new BrowserProvider(window.ethereum);
+  const addChainsTrialResult = await tryItAsync<null>(() => provider.send('wallet_addEthereumChain', [
+    chainInfo,
+  ]));
+  if (!addChainsTrialResult.success) {
+    return {
+      success: false,
+      err: {
+        title: UI_ERRORS.ERR2,
+        description: 'Something went wrong when adding the chain',
+      },
+    };
+  }
+
+  const switchChainsTrialResult = await tryItAsync<null>(() => provider.send('wallet_switchEthereumChain', [
+    { chainId: chainInfo.chainId },
+  ]));
+  if (!switchChainsTrialResult.success) {
+    return {
+      success: false,
+      err: {
+        title: UI_ERRORS.ERR4,
+        description: 'Something went wrong when switching to the required chain',
+      },
+    };
+  }
+
+  const requestAccTrialResult = await tryItAsync<string[]>(() => provider.send('eth_requestAccounts', []));
+  if (!requestAccTrialResult.success || !requestAccTrialResult.data[0]) {
+    return {
+      success: false,
+      err: {
+        title: UI_ERRORS.ERR3,
+        description: 'Something went wrong when fetching the accounts',
+      },
+    };
+  }
+
+  const newActiveAddress = requestAccTrialResult.data[0];
+  return { success: true, data: newActiveAddress };
+}
+
+/**
+ * This function is different from {@link requestMetamaskAddress} in that it
+ * only returns the addresses if the current site is already connected.
+ * It does not attempt to connect the current site to Metamask, like
+ * {@link requestMetamaskAddress} does
+ */
+async function getActiveMetamaskAddress():
+Promise<TrialResult<ActiveMetamaskAddress, MetamaskInteractionError>> {
+  if (!window.ethereum) {
+    return {
+      success: false,
+      err: {
+
+        title: UI_ERRORS.ERR1,
+        description: 'Please install Metamask browser extension',
+      },
+    };
+  }
+
+  const provider = new BrowserProvider(window.ethereum);
+  const fetchAccountsTrialResult = await tryItAsync<string[]>(() => provider.send('eth_accounts', []));
+  if (!fetchAccountsTrialResult.success) {
+    return {
+      success: false,
+      err: {
+        title: UI_ERRORS.ERR3,
+        description: 'Something went wrong when fetching the accounts',
+      },
+    };
+  }
+
+  const newUser = fetchAccountsTrialResult.data[0] || null;
+  return { success: true, data: newUser };
 }
