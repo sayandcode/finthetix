@@ -15,20 +15,22 @@ export const meta: MetaFunction = () => {
 export default function Route() {
   const auth = useContext(AuthContext);
   const navigate = useNavigate();
-  const hasActiveAddress = !auth.isLoading && auth.user;
+  const hasActiveAddress = !auth.isLoading && !!auth.user;
   useEffect(() => {
     if (hasActiveAddress) navigate('/dashboard');
   }, [hasActiveAddress, navigate]);
 
+  // if user is available, a redirect is pending, so disable the btn
+  const isBtnDisabled = auth.isLoading || hasActiveAddress;
   return (
     <div>
       <section className="flex flex-col gap-y-2 items-center justify-center h-screen text-center">
         <h1 className="text-5xl sm:text-6xl font-bold">Finthetix</h1>
         <p className="text-xl">Earn rewards by staking tokens</p>
-        <Button onClick={auth.login}>
-          {auth.isLoading
+        <Button onClick={auth.login} disabled={isBtnDisabled}>
+          {isBtnDisabled
             ? <Loader2Icon className="animate-spin" />
-            : auth.user || 'Connect Wallet'}
+            : 'Connect Wallet'}
         </Button>
       </section>
     </div>

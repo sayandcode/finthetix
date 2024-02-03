@@ -28,7 +28,7 @@ export default function Route() {
 
   // fetch the users's staked info
   useEffect(() => {
-    // don't need to run if key dependencies aren't available
+    // wait for key dependencies and loading of user
     if (!navigate || !toast || isLoading) return;
 
     //  redirect to home if user isn't logged in
