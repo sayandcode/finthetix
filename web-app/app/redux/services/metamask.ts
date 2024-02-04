@@ -1,7 +1,29 @@
 import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
-import { getActiveMetamaskAddress, requestMetamaskAddress } from '~/redux/services/lib/Metamask';
+import { MetamaskInteractionError, getActiveMetamaskAddress, requestMetamaskAddress } from '~/redux/services/lib/Metamask';
 import { ChainInfo } from '~/lib/types';
 import { setIsUserLoading, type Address, setActiveAddress } from '../features/user/slice';
+import { toast } from '~/components/ui/use-toast';
+import { z } from 'zod';
+
+type RequestMetamaskAddressEndpointError = { error: MetamaskInteractionError };
+
+const metamaskErrorSchema:
+z.ZodType<RequestMetamaskAddressEndpointError> = z.object({
+  error: z.object({
+    title: z.string(),
+    description: z.string(),
+  }),
+});
+
+const fallbackToastDetails = {
+  title: 'Error connecting to Metamask',
+  description: 'Something went wrong when connecting to Metamask',
+} satisfies MetamaskInteractionError;
+
+export function getIsErrorFromRequestMetamaskAddressEndpoint(err: unknown):
+  err is RequestMetamaskAddressEndpointError {
+  return metamaskErrorSchema.safeParse(err).success;
+}
 
 export const metamaskApi = createApi({
   reducerPath: 'metamaskApi',
@@ -12,7 +34,9 @@ export const metamaskApi = createApi({
       queryFn: async (chainInfo) => {
         const metamaskAddressRequest = await requestMetamaskAddress(chainInfo);
         if (!metamaskAddressRequest.success) {
-          return { error: metamaskAddressRequest.err };
+          return {
+            error: metamaskAddressRequest.err,
+          } satisfies RequestMetamaskAddressEndpointError;
         }
 
         const newAddress = metamaskAddressRequest.data;
@@ -25,7 +49,12 @@ export const metamaskApi = createApi({
           dispatch(setActiveAddress(newAddress));
         }
         catch (err) {
-          console.log('Failed', err);
+          const isMetamaskInteractionError
+            = getIsErrorFromRequestMetamaskAddressEndpoint(err);
+          toast({
+            variant: 'destructive',
+            ...(isMetamaskInteractionError ? err.error : fallbackToastDetails),
+          });
           dispatch(setActiveAddress(null));
         }
         dispatch(setIsUserLoading(false));
@@ -51,7 +80,12 @@ export const metamaskApi = createApi({
           dispatch(setActiveAddress(newAddress));
         }
         catch (err) {
-          console.log('Failed', err);
+          const isMetamaskInteractionError
+            = getIsErrorFromRequestMetamaskAddressEndpoint(err);
+          toast({
+            variant: 'destructive',
+            ...(isMetamaskInteractionError ? err.error : fallbackToastDetails),
+          });
           dispatch(setActiveAddress(null));
         }
         dispatch(setIsUserLoading(false));

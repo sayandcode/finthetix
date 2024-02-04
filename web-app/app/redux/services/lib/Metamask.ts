@@ -4,7 +4,7 @@ import { tryItAsync } from '../../../lib/utils';
 import { ChainInfo, TrialResult } from '../../../lib/types';
 
 type ActiveMetamaskAddress = string;
-type MetamaskInteractionError = { title: string, description: string };
+export type MetamaskInteractionError = { title: string, description: string };
 
 export async function requestMetamaskAddress(chainInfo: ChainInfo):
 Promise<
