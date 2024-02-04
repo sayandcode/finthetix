@@ -1,9 +1,9 @@
-import { UI_ERRORS } from '../../../ui-errors';
+import { UI_ERRORS } from '../../../lib/ui-errors';
 import { BrowserProvider } from 'ethers';
-import { tryItAsync } from '../../../utils';
-import { ChainInfo, TrialResult } from '../../../types';
+import { tryItAsync } from '../../../lib/utils';
+import { ChainInfo, TrialResult } from '../../../lib/types';
 
-type ActiveMetamaskAddress = string | null;
+type ActiveMetamaskAddress = string;
 type MetamaskInteractionError = { title: string, description: string };
 
 export async function requestMetamaskAddress(chainInfo: ChainInfo):
@@ -83,7 +83,7 @@ Promise<TrialResult<ActiveMetamaskAddress, MetamaskInteractionError>> {
 
   const provider = new BrowserProvider(window.ethereum);
   const fetchAccountsTrialResult = await tryItAsync<string[]>(() => provider.send('eth_accounts', []));
-  if (!fetchAccountsTrialResult.success) {
+  if (!fetchAccountsTrialResult.success || !fetchAccountsTrialResult.data[0]) {
     return {
       success: false,
       err: {
@@ -93,6 +93,6 @@ Promise<TrialResult<ActiveMetamaskAddress, MetamaskInteractionError>> {
     };
   }
 
-  const newUser = fetchAccountsTrialResult.data[0] || null;
+  const newUser = fetchAccountsTrialResult.data[0];
   return { success: true, data: newUser };
 }

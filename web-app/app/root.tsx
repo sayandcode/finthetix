@@ -9,17 +9,17 @@ import {
   ScrollRestoration,
   isRouteErrorResponse,
   json,
-  useLoaderData,
   useRouteError,
 } from '@remix-run/react';
 import tailwindCss from './tailwind.css';
 import cairoFontStylesheet from '@fontsource-variable/cairo/wght.css';
 import { Toaster } from './components/ui/toaster';
 import { PARSED_PROCESS_ENV } from './lib/env';
-import { AuthContextProvider } from './lib/react-context/AuthContext';
 import { ChainInfo, DappInfo } from './lib/types';
 import Navbar from './components/root/Navbar';
 import { LOCAL_CHAIN_INFO } from './lib/constants';
+import { Provider as ReduxProvider } from 'react-redux';
+import { store } from './redux/store';
 
 export const ROUTE_PATH = 'root';
 
@@ -40,7 +40,6 @@ export const loader = async () => {
 };
 
 export default function App() {
-  const { chainInfo } = useLoaderData<typeof loader>();
   return (
     <html lang="en">
       <head>
@@ -51,10 +50,10 @@ export default function App() {
       </head>
       <body>
         <Toaster />
-        <AuthContextProvider chainInfo={chainInfo}>
+        <ReduxProvider store={store}>
           <Navbar />
           <Outlet />
-        </AuthContextProvider>
+        </ReduxProvider>
         <ScrollRestoration />
         <Scripts />
         <LiveReload />

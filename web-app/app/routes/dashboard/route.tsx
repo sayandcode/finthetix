@@ -1,14 +1,15 @@
 import { useNavigate } from '@remix-run/react';
 import { BrowserProvider, formatEther } from 'ethers';
 import { Loader2Icon } from 'lucide-react';
-import { useContext, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
 import { useToast } from '~/components/ui/use-toast';
 import FinthetixStakingContractHandler from '~/contracts/FinthetixStakingContract';
 import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
-import { AuthContext } from '~/lib/react-context/AuthContext';
 import { UI_ERRORS } from '~/lib/ui-errors';
+import { selectActiveAddress, selectIsUserLoading } from '~/redux/features/user/slice';
+import { useAppSelector } from '~/redux/hooks';
 
 type UserData = {
   stakedAmt: bigint
@@ -17,7 +18,8 @@ type UserData = {
 export default function Route() {
   const [isInfoLoading, setIsInfoLoading] = useState(true);
   const [userData, setUserData] = useState<UserData | null>(null);
-  const { user, isLoading } = useContext(AuthContext);
+  const activeAddress = useAppSelector(selectActiveAddress);
+  const isUserLoading = useAppSelector(selectIsUserLoading);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { dappInfo } = useRootLoaderData();
@@ -25,10 +27,10 @@ export default function Route() {
   // fetch the users's staked info
   useEffect(() => {
     // wait for key dependencies and loading of user
-    if (!navigate || !toast || isLoading) return;
+    if (!navigate || !toast || isUserLoading) return;
 
     //  redirect to home if user isn't logged in
-    if (!user) {
+    if (!activeAddress) {
       navigate('/');
       return;
     }
@@ -49,7 +51,7 @@ export default function Route() {
     fscHandler.getUserData()
       .then((userData) => { setUserData(userData); })
       .finally(() => setIsInfoLoading(false));
-  }, [user, dappInfo, navigate, toast, isLoading]);
+  }, [activeAddress, dappInfo, navigate, toast, isUserLoading]);
 
   return (
     <div className="m-4">

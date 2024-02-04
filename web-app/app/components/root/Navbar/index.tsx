@@ -1,17 +1,24 @@
 import { useLocation } from '@remix-run/react';
 import { Loader2Icon } from 'lucide-react';
-import { useCallback, useContext } from 'react';
+import { useCallback } from 'react';
 import { Button } from '~/components/ui/button';
-import { AuthContext } from '~/lib/react-context/AuthContext';
+import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
+import { selectActiveAddress, selectIsUserLoading, setActiveAddress } from '~/redux/features/user/slice';
+import { useAppDispatch, useAppSelector } from '~/redux/hooks';
+import { useRequestMetamaskAddressMutation } from '~/redux/services/metamask';
 
 export default function Navbar() {
+  const { chainInfo } = useRootLoaderData();
   const { pathname } = useLocation();
-  const auth = useContext(AuthContext);
+  const activeAddress = useAppSelector(selectActiveAddress);
+  const isUserLoading = useAppSelector(selectIsUserLoading);
+  const dispatch = useAppDispatch();
+  const [requestMetamaskAddress] = useRequestMetamaskAddressMutation();
 
   const handleClick = useCallback(() => {
-    if (auth.user) auth.logout();
-    else auth.login();
-  }, [auth]);
+    if (activeAddress) dispatch(setActiveAddress(null));
+    else requestMetamaskAddress(chainInfo);
+  }, [activeAddress, chainInfo, dispatch, requestMetamaskAddress]);
 
   if (pathname === '/') return null;
 
@@ -23,12 +30,12 @@ export default function Navbar() {
       </a>
       <Button onClick={handleClick} className="min-w-16 hover:bg-destructive group">
 
-        {auth.isLoading
+        {isUserLoading
           ? <Loader2Icon className="animate-spin" />
-          : auth.user
+          : activeAddress
             ? (
               <span className="inline-flex relative justify-center">
-                <span className="w-16 sm:w-max truncate opacity-100 group-hover:opacity-0">{auth.user}</span>
+                <span className="w-16 sm:w-max truncate opacity-100 group-hover:opacity-0">{activeAddress}</span>
                 <span className="opacity-0 group-hover:opacity-100 absolute text-white">Logout</span>
               </span>
               )
