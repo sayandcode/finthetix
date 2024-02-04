@@ -1,4 +1,4 @@
-import { useNavigate, useRouteLoaderData } from '@remix-run/react';
+import { useNavigate } from '@remix-run/react';
 import { BrowserProvider, formatEther } from 'ethers';
 import { Loader2Icon } from 'lucide-react';
 import { useContext, useEffect, useState } from 'react';
@@ -6,9 +6,9 @@ import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
 import { useToast } from '~/components/ui/use-toast';
 import FinthetixStakingContractHandler from '~/contracts/FinthetixStakingContract';
+import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
 import { AuthContext } from '~/lib/react-context/AuthContext';
 import { UI_ERRORS } from '~/lib/ui-errors';
-import { ROUTE_PATH as ROOT_ROUTE_PATH, loader as rootLoader } from '~/root';
 
 type UserData = {
   stakedAmt: bigint
@@ -20,11 +20,7 @@ export default function Route() {
   const { user, isLoading } = useContext(AuthContext);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const data = useRouteLoaderData<typeof rootLoader>(ROOT_ROUTE_PATH);
-  if (!data)
-    throw new Error(
-      `${ROOT_ROUTE_PATH} loader not available in parent of this component`,
-    );
+  const { dappInfo } = useRootLoaderData();
 
   // fetch the users's staked info
   useEffect(() => {
@@ -49,11 +45,11 @@ export default function Route() {
     setIsInfoLoading(true);
     const provider = new BrowserProvider(window.ethereum);
     const fscHandler
-      = new FinthetixStakingContractHandler(provider, data.dappInfo);
+      = new FinthetixStakingContractHandler(provider, dappInfo);
     fscHandler.getUserData()
       .then((userData) => { setUserData(userData); })
       .finally(() => setIsInfoLoading(false));
-  }, [user, data.dappInfo, navigate, toast, isLoading]);
+  }, [user, dappInfo, navigate, toast, isLoading]);
 
   return (
     <div className="m-4">
