@@ -20,6 +20,7 @@ import Navbar from './components/root/Navbar';
 import { LOCAL_CHAIN_INFO } from './lib/constants';
 import { Provider as ReduxProvider } from 'react-redux';
 import { store } from './redux/store';
+import ReduxPersisterInitializer from './components/root/ReduxPersisterInitializer';
 
 export const ROUTE_PATH = 'root';
 
@@ -51,6 +52,7 @@ export default function App() {
       <body>
         <Toaster />
         <ReduxProvider store={store}>
+          <ReduxPersisterInitializer store={store} />
           <Navbar />
           <Outlet />
         </ReduxProvider>

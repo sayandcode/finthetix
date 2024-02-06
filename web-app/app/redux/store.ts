@@ -1,10 +1,10 @@
 import { configureStore } from '@reduxjs/toolkit';
-import authReducer from './features/user/slice';
+import userReducer, { userSlice } from './features/user/slice';
 import { metamaskApi } from './services/metamask';
 
 export const store = configureStore({
   reducer: {
-    auth: authReducer,
+    [userSlice.reducerPath]: userReducer,
     [metamaskApi.reducerPath]: metamaskApi.reducer,
   },
   middleware:
@@ -12,6 +12,8 @@ export const store = configureStore({
       getDefaultMiddleWare().concat(metamaskApi.middleware),
 
 });
+
+export type StoreType = typeof store;
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
