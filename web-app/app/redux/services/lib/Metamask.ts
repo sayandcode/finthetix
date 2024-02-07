@@ -2,13 +2,13 @@ import { UI_ERRORS } from '../../../lib/ui-errors';
 import { BrowserProvider } from 'ethers';
 import { tryItAsync } from '../../../lib/utils';
 import { ChainInfo, TrialResult } from '../../../lib/types';
+import { ActiveAddress } from '~/redux/features/user/slice';
 
-type ActiveMetamaskAddress = string;
 export type MetamaskInteractionError = { title: string, description: string };
 
 export async function requestMetamaskAddress(chainInfo: ChainInfo):
 Promise<
-    TrialResult<ActiveMetamaskAddress, MetamaskInteractionError>
+    TrialResult<ActiveAddress, MetamaskInteractionError>
   > {
   if (!window.ethereum) {
     return {
@@ -69,7 +69,7 @@ Promise<
  * {@link requestMetamaskAddress} does
  */
 export async function getActiveMetamaskAddress():
-Promise<TrialResult<ActiveMetamaskAddress, MetamaskInteractionError>> {
+Promise<TrialResult<ActiveAddress, MetamaskInteractionError>> {
   if (!window.ethereum) {
     return {
       success: false,
@@ -83,7 +83,7 @@ Promise<TrialResult<ActiveMetamaskAddress, MetamaskInteractionError>> {
 
   const provider = new BrowserProvider(window.ethereum);
   const fetchAccountsTrialResult = await tryItAsync<string[]>(() => provider.send('eth_accounts', []));
-  if (!fetchAccountsTrialResult.success || !fetchAccountsTrialResult.data[0]) {
+  if (!fetchAccountsTrialResult.success) {
     return {
       success: false,
       err: {
@@ -93,6 +93,6 @@ Promise<TrialResult<ActiveMetamaskAddress, MetamaskInteractionError>> {
     };
   }
 
-  const newUser = fetchAccountsTrialResult.data[0];
+  const newUser = fetchAccountsTrialResult.data[0] || null;
   return { success: true, data: newUser };
 }

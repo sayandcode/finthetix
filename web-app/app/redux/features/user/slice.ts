@@ -5,10 +5,10 @@ import { RootState } from '~/redux/store';
 const SLICE_NAME = 'user';
 const SLICE_LOCALSTORAGE_KEY = SLICE_NAME;
 
-export type Address = string;
+export type ActiveAddress = string | null;
 
 export type UserState = {
-  activeAddress: Address | null
+  activeAddress: ActiveAddress
   isLoading: boolean
 };
 

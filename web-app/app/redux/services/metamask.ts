@@ -1,7 +1,7 @@
 import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
 import { MetamaskInteractionError, getActiveMetamaskAddress, requestMetamaskAddress } from '~/redux/services/lib/Metamask';
 import { ChainInfo } from '~/lib/types';
-import { setIsUserLoading, type Address, setActiveAddress } from '../features/user/slice';
+import { setIsUserLoading, type ActiveAddress, setActiveAddress } from '../features/user/slice';
 import { toast } from '~/components/ui/use-toast';
 import { z } from 'zod';
 
@@ -30,7 +30,7 @@ export const metamaskApi = createApi({
   baseQuery: fakeBaseQuery(),
   // tagTypes: ['User'],
   endpoints: builder => ({
-    requestMetamaskAddress: builder.mutation<Address, ChainInfo>({
+    requestMetamaskAddress: builder.mutation<ActiveAddress, ChainInfo>({
       queryFn: async (chainInfo) => {
         const metamaskAddressRequest = await requestMetamaskAddress(chainInfo);
         if (!metamaskAddressRequest.success) {
@@ -62,7 +62,7 @@ export const metamaskApi = createApi({
       // invalidatesTags: ['User'],
     }),
 
-    getActiveMetamaskAddress: builder.query<Address, void>({
+    getActiveMetamaskAddress: builder.query<ActiveAddress, void>({
       queryFn: async () => {
         const trialOfgetActiveMetamaskAddress
           = await getActiveMetamaskAddress();
@@ -95,4 +95,7 @@ export const metamaskApi = createApi({
   }),
 });
 
-export const { useRequestMetamaskAddressMutation } = metamaskApi;
+export const {
+  useRequestMetamaskAddressMutation,
+  useLazyGetActiveMetamaskAddressQuery,
+} = metamaskApi;
