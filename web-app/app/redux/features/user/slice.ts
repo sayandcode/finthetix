@@ -14,7 +14,7 @@ export type UserState = {
 
 const initialState: UserState = {
   activeAddress: null,
-  isLoading: false,
+  isLoading: true,
 };
 
 export const userSlice = createSlice({
@@ -31,6 +31,7 @@ export const userSlice = createSlice({
     },
     remember: (state, action: PayloadAction<DataToPersist>) => {
       state.activeAddress = action.payload.activeAddress;
+      state.isLoading = false;
     },
   },
 });

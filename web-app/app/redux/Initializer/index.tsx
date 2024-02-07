@@ -3,9 +3,10 @@ import { rememberPlaybook as userRememberPlaybook, persistPlaybook as userPersis
 import { StoreType } from '~/redux/store';
 import ReduxPersister from '~/redux/persister';
 
-export default function ReduxPersisterInitializer(
+export default function ReduxInitializer(
   { store }: { store: StoreType },
 ) {
+  // setup redux persistence
   useEffect(() => {
     const persister = new ReduxPersister(store);
 
