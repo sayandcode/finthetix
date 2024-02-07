@@ -1,6 +1,6 @@
 import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
-import { MetamaskInteractionError, getActiveMetamaskAddress, requestMetamaskAddress } from '~/redux/services/lib/Metamask';
-import { ChainInfo } from '~/lib/types';
+import { MetamaskInteractionError, getActiveMetamaskAddress, requestMetamaskAddress, tryGetFinthetixUserInfo } from '~/redux/services/lib/Metamask';
+import { ChainInfo, DappInfo } from '~/lib/types';
 import { setIsUserLoading, type ActiveAddress, setActiveAddress } from '../features/user/slice';
 import { toast } from '~/components/ui/use-toast';
 import { z } from 'zod';
@@ -92,10 +92,34 @@ export const metamaskApi = createApi({
       },
       // invalidatesTags: ['User'],
     }),
+
+    getFinthetixUserInfo:
+      builder.query<
+      (Awaited<ReturnType<typeof tryGetFinthetixUserInfo>> & { success: true })['data'],
+        DappInfo>({
+          queryFn: async (dappInfo) => {
+            const getFinthetixUserInfoTrial
+            = await tryGetFinthetixUserInfo(dappInfo);
+            if (!getFinthetixUserInfoTrial.success) {
+              return { error: getFinthetixUserInfoTrial.err };
+            }
+
+            return { data: getFinthetixUserInfoTrial.data };
+          },
+
+          onQueryStarted: (_, { queryFulfilled }) => {
+            queryFulfilled.catch((err) => {
+              if (getIsErrorFromRequestMetamaskAddressEndpoint(err)) {
+                toast({ variant: 'destructive', ...err });
+              }
+            });
+          },
+        }),
   }),
 });
 
 export const {
   useRequestMetamaskAddressMutation,
   useLazyGetActiveMetamaskAddressQuery,
+  useGetFinthetixUserInfoQuery,
 } = metamaskApi;

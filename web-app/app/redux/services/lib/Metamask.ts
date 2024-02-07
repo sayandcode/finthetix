@@ -1,8 +1,9 @@
 import { UI_ERRORS } from '../../../lib/ui-errors';
 import { BrowserProvider } from 'ethers';
 import { tryItAsync } from '../../../lib/utils';
-import { ChainInfo, TrialResult } from '../../../lib/types';
+import { ChainInfo, DappInfo, TrialResult } from '../../../lib/types';
 import { ActiveAddress } from '~/redux/features/user/slice';
+import FinthetixStakingContractHandler from '~/contracts/FinthetixStakingContract';
 
 export type MetamaskInteractionError = { title: string, description: string };
 
@@ -95,4 +96,23 @@ Promise<TrialResult<ActiveAddress, MetamaskInteractionError>> {
 
   const newUser = fetchAccountsTrialResult.data[0] || null;
   return { success: true, data: newUser };
+}
+
+export async function tryGetFinthetixUserInfo(dappInfo: DappInfo):
+Promise<TrialResult<Awaited<ReturnType<FinthetixStakingContractHandler['getUserData']>>>> {
+  if (!window.ethereum) {
+    return {
+      success: false,
+      err: {
+
+        title: UI_ERRORS.ERR1,
+        description: 'Please install Metamask browser extension',
+      },
+    };
+  }
+
+  const provider = new BrowserProvider(window.ethereum);
+  const fscHandler = new FinthetixStakingContractHandler(provider, dappInfo);
+  const userData = await fscHandler.getUserData();
+  return { success: true, data: userData };
 }

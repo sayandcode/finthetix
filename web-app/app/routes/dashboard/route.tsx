@@ -1,57 +1,38 @@
+import { MetaFunction } from '@remix-run/node';
 import { useNavigate } from '@remix-run/react';
-import { BrowserProvider, formatEther } from 'ethers';
+import { formatEther } from 'ethers';
 import { Loader2Icon } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
-import { useToast } from '~/components/ui/use-toast';
-import FinthetixStakingContractHandler from '~/contracts/FinthetixStakingContract';
 import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
-import { UI_ERRORS } from '~/lib/ui-errors';
 import { selectActiveAddress, selectIsUserLoading } from '~/redux/features/user/slice';
 import { useAppSelector } from '~/redux/hooks';
+import { useGetFinthetixUserInfoQuery } from '~/redux/services/metamask';
 
-type UserData = {
-  stakedAmt: bigint
+export const meta: MetaFunction = () => {
+  return [{ title: 'Dashboard | Finthetix', dashboard: 'View your stake and rewards' }];
 };
 
 export default function Route() {
-  const [isInfoLoading, setIsInfoLoading] = useState(true);
-  const [userData, setUserData] = useState<UserData | null>(null);
   const activeAddress = useAppSelector(selectActiveAddress);
   const isUserLoading = useAppSelector(selectIsUserLoading);
-  const { toast } = useToast();
   const navigate = useNavigate();
   const { dappInfo } = useRootLoaderData();
+  const { data: userInfo, isFetching: isInfoFetching }
+    = useGetFinthetixUserInfoQuery(dappInfo);
 
   // fetch the users's staked info
   useEffect(() => {
     // wait for key dependencies and loading of user
-    if (!navigate || !toast || isUserLoading) return;
+    if (!navigate || isUserLoading) return;
 
     //  redirect to home if user isn't logged in
     if (!activeAddress) {
       navigate('/');
       return;
     }
-
-    if (!window.ethereum) {
-      toast({
-        title: UI_ERRORS.ERR1,
-        description: 'Please install Metamask browser extension',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsInfoLoading(true);
-    const provider = new BrowserProvider(window.ethereum);
-    const fscHandler
-      = new FinthetixStakingContractHandler(provider, dappInfo);
-    fscHandler.getUserData()
-      .then((userData) => { setUserData(userData); })
-      .finally(() => setIsInfoLoading(false));
-  }, [activeAddress, dappInfo, navigate, toast, isUserLoading]);
+  }, [activeAddress, navigate, isUserLoading]);
 
   return (
     <div className="m-4">
@@ -68,9 +49,9 @@ export default function Route() {
             <div className="flex justify-between items-end gap-x-2">
               <div>
                 <span className="font-bold text-7xl mr-2">
-                  {isInfoLoading || !userData
+                  {isInfoFetching || !userInfo
                     ? <Loader2Icon className="my-2 mx-5 w-16 h-16 inline-block animate-spin" />
-                    : formatEther(userData.stakedAmt)}
+                    : formatEther(userInfo.stakedAmt)}
                 </span>
                 <span>FST</span>
               </div>
@@ -94,7 +75,7 @@ export default function Route() {
             <div className="flex justify-between gap-x-2">
               <div>
                 <span className="font-bold text-7xl mr-2">
-                  {isInfoLoading
+                  {isInfoFetching
                     ? <Loader2Icon className="my-2 mx-5 w-16 h-16 inline-block animate-spin" />
                     : 200}
                 </span>
