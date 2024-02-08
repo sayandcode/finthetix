@@ -34,7 +34,11 @@ export default class ReduxPersister {
       const [persistKey, actionGenerator] = playbook();
       const stringifiedPersistedData
           = localStorage.getItem(`${ReduxPersister.ROOT_KEY}/${persistKey}`);
-      if (!stringifiedPersistedData) return;
+      if (!stringifiedPersistedData) {
+        const action = actionGenerator(null);
+        this.store.dispatch(action);
+        return;
+      }
 
       const persistedData = JSON.parse(stringifiedPersistedData);
       const action = actionGenerator(persistedData);

@@ -30,7 +30,7 @@ export const userSlice = createSlice({
       state.isLoading = action.payload;
     },
     remember: (state, action: PayloadAction<DataToPersist>) => {
-      state.activeAddress = action.payload.activeAddress;
+      state.activeAddress = action.payload?.activeAddress || null;
       state.isLoading = false;
     },
   },
@@ -40,7 +40,7 @@ export const userSlice = createSlice({
 export const { setActiveAddress, setIsUserLoading } = userSlice.actions;
 
 /* Persister */
-type DataToPersist = { activeAddress: UserState['activeAddress'] };
+type DataToPersist = { activeAddress: UserState['activeAddress'] } | null;
 
 export const persistPlaybook: PersistPlaybookFn = (state: RootState) => {
   const dataToPersist: DataToPersist
