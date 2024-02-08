@@ -4,6 +4,7 @@ import { ChainInfo, DappInfo } from '~/lib/types';
 import { setIsUserLoading, type ActiveAddress, setActiveAddress } from '../features/user/slice';
 import { toast } from '~/components/ui/use-toast';
 import { z } from 'zod';
+import FinthetixStakingContractHandler from '~/contracts/FinthetixStakingContract';
 
 type RequestMetamaskAddressEndpointError = { error: MetamaskInteractionError };
 
@@ -95,7 +96,7 @@ export const metamaskApi = createApi({
 
     getFinthetixUserInfo:
       builder.query<
-      (Awaited<ReturnType<typeof tryGetFinthetixUserInfo>> & { success: true })['data'],
+      Record<keyof Awaited<ReturnType<FinthetixStakingContractHandler['getUserData']>>, string>,
         DappInfo>({
           queryFn: async (dappInfo) => {
             const getFinthetixUserInfoTrial
@@ -104,7 +105,12 @@ export const metamaskApi = createApi({
               return { error: getFinthetixUserInfoTrial.err };
             }
 
-            return { data: getFinthetixUserInfoTrial.data };
+            const userInfo = getFinthetixUserInfoTrial.data;
+            const serializedUserInfo = {
+              ...userInfo,
+              stakedAmt: userInfo.stakedAmt.toString(),
+            };
+            return { data: serializedUserInfo };
           },
 
           onQueryStarted: (_, { queryFulfilled }) => {
