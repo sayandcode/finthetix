@@ -1,6 +1,5 @@
 import { MetaFunction } from '@remix-run/node';
 import { useNavigate } from '@remix-run/react';
-import { formatEther } from 'ethers';
 import { Loader2Icon } from 'lucide-react';
 import { useEffect } from 'react';
 import { Button } from '~/components/ui/button';
@@ -51,7 +50,7 @@ export default function Route() {
                 <span className="font-bold text-7xl mr-2">
                   {isInfoFetching || !userInfo
                     ? <Loader2Icon className="my-2 mx-5 w-16 h-16 inline-block animate-spin" />
-                    : formatEther(userInfo.stakedAmt)}
+                    : userInfo.stakedAmt}
                 </span>
                 <span>FST</span>
               </div>
@@ -75,9 +74,9 @@ export default function Route() {
             <div className="flex justify-between gap-x-2">
               <div>
                 <span className="font-bold text-7xl mr-2">
-                  {isInfoFetching
+                  {isInfoFetching || !userInfo
                     ? <Loader2Icon className="my-2 mx-5 w-16 h-16 inline-block animate-spin" />
-                    : 200}
+                    : userInfo.rewardAmt}
                 </span>
                 <span>FRT</span>
               </div>

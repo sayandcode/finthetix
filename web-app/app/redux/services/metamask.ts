@@ -109,6 +109,7 @@ export const metamaskApi = createApi({
             const serializedUserInfo = {
               ...userInfo,
               stakedAmt: userInfo.stakedAmt.toString(),
+              rewardAmt: userInfo.rewardAmt.toString(),
             };
             return { data: serializedUserInfo };
           },
