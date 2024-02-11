@@ -1,9 +1,12 @@
 import { BrowserProvider } from 'ethers';
 import { DappInfo } from '~/lib/types';
 import { FinthetixStakingContract, FinthetixStakingContract__factory } from './types';
+import { getReadableERC20TokenCount } from '~/lib/utils';
 
 export default class FinthetixStakingContractHandler {
   private contract: FinthetixStakingContract;
+  private STAKING_TOKEN_DECIMALS: number = 18;
+  private REWARD_TOKEN_DECIMALS: number = 18;
 
   constructor(private provider: BrowserProvider, dappInfo: DappInfo) {
     this.contract
@@ -17,8 +20,10 @@ export default class FinthetixStakingContractHandler {
     const stakedAmt = await this.contract.viewMyStakedAmt();
     const rewardAmt = await this._getRewardAmt();
     return {
-      stakedAmt: stakedAmt.toString(),
-      rewardAmt: rewardAmt.toString(),
+      stakedAmt:
+        getReadableERC20TokenCount(stakedAmt, this.STAKING_TOKEN_DECIMALS),
+      rewardAmt:
+        getReadableERC20TokenCount(rewardAmt, this.REWARD_TOKEN_DECIMALS),
     };
   }
 
