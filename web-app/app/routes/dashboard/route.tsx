@@ -3,7 +3,9 @@ import { useNavigate } from '@remix-run/react';
 import { Loader2Icon } from 'lucide-react';
 import { useEffect } from 'react';
 import { Button } from '~/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
+import {
+  Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter,
+} from '~/components/ui/card';
 import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
 import { selectActiveAddress, selectIsUserLoading } from '~/redux/features/user/slice';
 import { useAppSelector } from '~/redux/hooks';
@@ -44,22 +46,18 @@ export default function Route() {
               The number of tokens you have currently staked
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-y-4">
-            <div className="flex justify-between items-end gap-x-2">
-              <div>
-                <span className="font-bold text-7xl mr-2">
-                  {isInfoFetching || !userInfo
-                    ? <Loader2Icon className="my-2 mx-5 w-16 h-16 inline-block animate-spin" />
-                    : userInfo.stakedAmt}
-                </span>
-                <span>FST</span>
-              </div>
-              <div className="flex flex-col gap-y-2">
-                <Button>Stake</Button>
-                <Button variant="outline">Unstake</Button>
-              </div>
-            </div>
+          <CardContent>
+            <span className="font-bold text-5xl mr-2">
+              {isInfoFetching || !userInfo
+                ? <Loader2Icon className="my-2 mx-5 w-16 h-16 inline-block animate-spin" />
+                : userInfo.stakedAmt}
+            </span>
+            <span>FST</span>
           </CardContent>
+          <CardFooter className="flex justify-end gap-2">
+            <Button>Stake</Button>
+            <Button variant="outline">Unstake</Button>
+          </CardFooter>
         </Card>
 
         {/* Rewards Card */}
@@ -70,19 +68,17 @@ export default function Route() {
               The number of tokens you have been rewarded
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-y-4">
-            <div className="flex justify-between gap-x-2">
-              <div>
-                <span className="font-bold text-7xl mr-2">
-                  {isInfoFetching || !userInfo
-                    ? <Loader2Icon className="my-2 mx-5 w-16 h-16 inline-block animate-spin" />
-                    : userInfo.rewardAmt}
-                </span>
-                <span>FRT</span>
-              </div>
-              <Button className="mt-auto">Claim</Button>
-            </div>
+          <CardContent>
+            <span className="font-bold text-5xl mr-2">
+              {isInfoFetching || !userInfo
+                ? <Loader2Icon className="my-2 mx-5 w-16 h-16 inline-block animate-spin" />
+                : userInfo.rewardAmt}
+            </span>
+            <span>FRT</span>
           </CardContent>
+          <CardFooter className="flex justify-end gap-2">
+            <Button className="mt-auto">Claim</Button>
+          </CardFooter>
         </Card>
       </div>
     </div>
