@@ -1,14 +1,22 @@
 import { BrowserProvider } from 'ethers';
 import { DappInfo } from '~/lib/types';
-import { FinthetixStakingContract, FinthetixStakingContract__factory } from './types';
+import { FinthetixRewardToken__factory, FinthetixStakingContract, FinthetixStakingContract__factory, FinthetixStakingToken__factory } from './types';
 import { getReadableERC20TokenCount } from '~/lib/utils';
 
 export default class FinthetixStakingContractHandler {
   private contract: FinthetixStakingContract;
-  private STAKING_TOKEN_DECIMALS: number = 18;
-  private REWARD_TOKEN_DECIMALS: number = 18;
 
-  constructor(private provider: BrowserProvider, dappInfo: DappInfo) {
+  // these will definitely assigned in async constructor `make`
+  private STAKING_TOKEN_DECIMALS: number = NaN;
+  private REWARD_TOKEN_DECIMALS: number = NaN;
+
+  static async make(provider: BrowserProvider, dappInfo: DappInfo) {
+    const handler = new this(provider, dappInfo);
+    await handler.updateDecimals(provider);
+    return handler;
+  }
+
+  private constructor(private provider: BrowserProvider, dappInfo: DappInfo) {
     this.contract
       = FinthetixStakingContract__factory.connect(
         dappInfo.stakingContractAddr,
@@ -61,5 +69,21 @@ export default class FinthetixStakingContractHandler {
 
     return (blockTimestamp - lastUpdatedRewardAt) * cooldownConstant
       / totalStakedAmt;
+  }
+
+  private async updateDecimals(provider: BrowserProvider) {
+    const stakingTokenAddr = await this.contract.stakingToken();
+    this.STAKING_TOKEN_DECIMALS = Number(
+      await FinthetixStakingToken__factory
+        .connect(stakingTokenAddr, provider)
+        .decimals(),
+    );
+
+    const rewardTokenAddr = await this.contract.rewardToken();
+    this.REWARD_TOKEN_DECIMALS = Number(
+      await FinthetixRewardToken__factory
+        .connect(rewardTokenAddr, provider)
+        .decimals(),
+    );
   }
 }
