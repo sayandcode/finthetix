@@ -106,12 +106,7 @@ export const metamaskApi = createApi({
             }
 
             const userInfo = getFinthetixUserInfoTrial.data;
-            const serializedUserInfo = {
-              ...userInfo,
-              stakedAmt: userInfo.stakedAmt.toString(),
-              rewardAmt: userInfo.rewardAmt.toString(),
-            };
-            return { data: serializedUserInfo };
+            return { data: userInfo };
           },
 
           onQueryStarted: (_, { queryFulfilled }) => {

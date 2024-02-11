@@ -17,8 +17,8 @@ export default class FinthetixStakingContractHandler {
     const stakedAmt = await this.contract.viewMyStakedAmt();
     const rewardAmt = await this._getRewardAmt();
     return {
-      stakedAmt,
-      rewardAmt,
+      stakedAmt: stakedAmt.toString(),
+      rewardAmt: rewardAmt.toString(),
     };
   }
 
