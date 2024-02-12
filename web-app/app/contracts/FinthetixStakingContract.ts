@@ -1,92 +1,115 @@
-import { BrowserProvider } from 'ethers';
+import { BrowserProvider, JsonRpcSigner } from 'ethers';
 import { DappInfo } from '~/lib/types';
-import { FinthetixRewardToken__factory, FinthetixStakingContract, FinthetixStakingContract__factory, FinthetixStakingToken__factory } from './types';
+import { FinthetixRewardToken, FinthetixRewardToken__factory, FinthetixStakingContract, FinthetixStakingContract__factory, FinthetixStakingToken, FinthetixStakingToken__factory } from './types';
 import { getReadableERC20TokenCount } from '~/lib/utils';
 
 export default class FinthetixStakingContractHandler {
-  private stakingContract: FinthetixStakingContract;
+  constructor(
+    private _provider: BrowserProvider, private _dappInfo: DappInfo,
+  ) {}
 
-  // these will definitely assigned in async constructor `make`
-  private STAKING_TOKEN_DECIMALS: number = NaN;
-  private REWARD_TOKEN_DECIMALS: number = NaN;
-
-  static async make(provider: BrowserProvider, dappInfo: DappInfo) {
-    const handler = new this(provider, dappInfo);
-    await handler._updateDecimals(provider);
-    return handler;
-  }
-
-  private constructor(private provider: BrowserProvider, dappInfo: DappInfo) {
-    this.stakingContract
-      = FinthetixStakingContract__factory.connect(
-        dappInfo.stakingContractAddr,
-        provider,
-      );
-  }
+  /**
+   * Public Fns
+   */
 
   async getUserData() {
-    const stakedAmt = await this.stakingContract.viewMyStakedAmt();
-    const rewardAmt = await this._getRewardAmt();
+    /** Contract Handlers */
+    // this function only reads data using view fns so we only need a provider
+    const stakingContract = this._getStakingContract(this._provider);
+    const stakingToken = this._getStakingToken(this._provider);
+    const rewardToken = this._getRewardToken(this._provider);
+
+    // fetch data
+    const stakedAmt = await stakingContract.viewMyStakedAmt();
+    const rewardAmt = await this._query_getRewardAmt(stakingContract);
+    const stakingTokenDecimals = Number(await stakingToken.decimals());
+    const rewardTokenDecimals = Number(await rewardToken.decimals());
+
     return {
       stakedAmt:
-        getReadableERC20TokenCount(stakedAmt, this.STAKING_TOKEN_DECIMALS),
+        getReadableERC20TokenCount(stakedAmt, stakingTokenDecimals),
       rewardAmt:
-        getReadableERC20TokenCount(rewardAmt, this.REWARD_TOKEN_DECIMALS),
+        getReadableERC20TokenCount(rewardAmt, rewardTokenDecimals),
     };
   }
 
-  private async _getRewardAmt() {
-    const publishedReward = await this.stakingContract.viewMyPublishedRewards();
-    const accruedReward = await this._calculateAccruedReward();
+  /**
+   * Contract Handler Getters:
+   * These are a awrapper around the contract factories
+   */
+
+  private _getStakingContract(
+    providerOrSigner: BrowserProvider | JsonRpcSigner,
+  ): FinthetixStakingContract {
+    return FinthetixStakingContract__factory.connect(
+      this._dappInfo.stakingContractAddr,
+      providerOrSigner,
+    );
+  }
+
+  private _getStakingToken(
+    providerOrSigner: BrowserProvider | JsonRpcSigner,
+  ): FinthetixStakingToken {
+    return FinthetixStakingToken__factory
+      .connect(this._dappInfo.stakingTokenAddr, providerOrSigner);
+  }
+
+  private _getRewardToken(
+    providerOrSigner: BrowserProvider | JsonRpcSigner,
+  ): FinthetixRewardToken {
+    return FinthetixRewardToken__factory
+      .connect(this._dappInfo.rewardTokenAddr, providerOrSigner);
+  }
+
+  /**
+   * Handler Query Functions:
+   * These only need provider not signer in the constract handler
+   * */
+
+  private async _query_getRewardAmt(
+    queryableStakingContract: FinthetixStakingContract,
+  ) {
+    const publishedReward
+      = await queryableStakingContract.viewMyPublishedRewards();
+    const accruedReward
+      = await this._query_calculateAccruedReward(queryableStakingContract);
     const currRewardAmt = publishedReward + accruedReward;
     return currRewardAmt;
   }
 
-  private async _calculateAccruedReward() {
-    const stakedAmt = await this.stakingContract.viewMyStakedAmt();
+  private async _query_calculateAccruedReward(
+    queryableStakingContract: FinthetixStakingContract,
+  ) {
+    const stakedAmt = await queryableStakingContract.viewMyStakedAmt();
     const totalRewardsPerSec
-      = await this.stakingContract.TOTAL_REWARDS_PER_SECOND();
+      = await queryableStakingContract.TOTAL_REWARDS_PER_SECOND();
     const alphaNow
-      = await this.stakingContract.alphaNow()
-      + await this._calculateAccruedAlpha();
+      = await queryableStakingContract.alphaNow()
+      + await this._query_calculateAccruedAlpha(queryableStakingContract);
     const alphaOfUserAtLastInteraction
-      = await this.stakingContract.viewAlphaAtMyLastInteraction();
+      = await queryableStakingContract.viewAlphaAtMyLastInteraction();
     return stakedAmt * totalRewardsPerSec
       * (alphaNow - alphaOfUserAtLastInteraction);
   }
 
-  private async _calculateAccruedAlpha() {
-    const totalStakedAmt = await this.stakingContract.totalStakedAmt();
+  private async _query_calculateAccruedAlpha(
+    queryableStakingContract: FinthetixStakingContract,
+  ) {
+    const totalStakedAmt = await queryableStakingContract.totalStakedAmt();
     if (totalStakedAmt === 0n) return 0n;
 
-    const currBlockNo = await this.provider.getBlockNumber();
+    const currBlockNo = await this._provider.getBlockNumber();
     const blockTimestampAsNumber
-      = (await this.provider.getBlock(currBlockNo))?.timestamp;
+      = (await this._provider.getBlock(currBlockNo))?.timestamp;
     if (!blockTimestampAsNumber)
       throw new Error(`Current block (${currBlockNo}) doesn't exist`);
 
     const blockTimestamp = BigInt(blockTimestampAsNumber);
     const lastUpdatedRewardAt
-      = await this.stakingContract.lastUpdatedRewardAt();
-    const cooldownConstant = await this.stakingContract.COOLDOWN_CONSTANT();
+      = await queryableStakingContract.lastUpdatedRewardAt();
+    const cooldownConstant = await queryableStakingContract.COOLDOWN_CONSTANT();
 
     return (blockTimestamp - lastUpdatedRewardAt) * cooldownConstant
       / totalStakedAmt;
-  }
-
-  private async _updateDecimals(provider: BrowserProvider) {
-    const stakingTokenAddr = await this.stakingContract.stakingToken();
-    this.STAKING_TOKEN_DECIMALS = Number(
-      await FinthetixStakingToken__factory
-        .connect(stakingTokenAddr, provider)
-        .decimals(),
-    );
-
-    const rewardTokenAddr = await this.stakingContract.rewardToken();
-    this.REWARD_TOKEN_DECIMALS = Number(
-      await FinthetixRewardToken__factory
-        .connect(rewardTokenAddr, provider)
-        .decimals(),
-    );
   }
 }

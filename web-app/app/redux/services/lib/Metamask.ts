@@ -112,8 +112,7 @@ Promise<TrialResult<Awaited<ReturnType<FinthetixStakingContractHandler['getUserD
   }
 
   const provider = new BrowserProvider(window.ethereum);
-  const fscHandler
-    = await FinthetixStakingContractHandler.make(provider, dappInfo);
+  const fscHandler = new FinthetixStakingContractHandler(provider, dappInfo);
   const userData = await fscHandler.getUserData();
   return { success: true, data: userData };
 }
