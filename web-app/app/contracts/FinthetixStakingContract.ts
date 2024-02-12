@@ -33,6 +33,17 @@ export default class FinthetixStakingContractHandler {
     };
   }
 
+  async requestSampleTokens() {
+    /** Contract Handlers */
+    // this function mutates the blockchain as it asks for tokens
+    const signer = await this._provider.getSigner();
+    const stakingToken = this._getStakingToken(signer);
+
+    // make mutations
+    const sampleTokenRequest = await stakingToken.requestSampleTokens();
+    await sampleTokenRequest.wait();
+  }
+
   /**
    * Contract Handler Getters:
    * These are a awrapper around the contract factories

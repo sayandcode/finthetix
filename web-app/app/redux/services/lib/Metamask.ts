@@ -116,3 +116,21 @@ Promise<TrialResult<Awaited<ReturnType<FinthetixStakingContractHandler['getUserD
   const userData = await fscHandler.getUserData();
   return { success: true, data: userData };
 }
+
+export async function requestSampleTokens(dappInfo: DappInfo):
+Promise<TrialResult<void, MetamaskInteractionError>> {
+  if (!window.ethereum) {
+    return {
+      success: false,
+      err: {
+        title: UI_ERRORS.ERR1,
+        description: 'Please install Metamask browser extension',
+      },
+    };
+  }
+
+  const provider = new BrowserProvider(window.ethereum);
+  const fscHandler = new FinthetixStakingContractHandler(provider, dappInfo);
+  await fscHandler.requestSampleTokens();
+  return { success: true, data: undefined };
+}

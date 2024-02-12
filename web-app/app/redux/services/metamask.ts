@@ -1,15 +1,15 @@
 import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
-import { MetamaskInteractionError, getActiveMetamaskAddress, requestMetamaskAddress, tryGetFinthetixUserInfo } from '~/redux/services/lib/Metamask';
+import { MetamaskInteractionError, getActiveMetamaskAddress, requestMetamaskAddress, requestSampleTokens, tryGetFinthetixUserInfo } from '~/redux/services/lib/Metamask';
 import { ChainInfo, DappInfo } from '~/lib/types';
 import { setIsUserLoading, type ActiveAddress, setActiveAddress } from '../features/user/slice';
 import { toast } from '~/components/ui/use-toast';
 import { z } from 'zod';
 import FinthetixStakingContractHandler from '~/contracts/FinthetixStakingContract';
 
-type RequestMetamaskAddressEndpointError = { error: MetamaskInteractionError };
+type MetamaskInteractionEndpointError = { error: MetamaskInteractionError };
 
-const metamaskErrorSchema:
-z.ZodType<RequestMetamaskAddressEndpointError> = z.object({
+const metamaskInteractionEndpointErrorSchema:
+z.ZodType<MetamaskInteractionEndpointError> = z.object({
   error: z.object({
     title: z.string(),
     description: z.string(),
@@ -21,9 +21,9 @@ const fallbackToastDetails = {
   description: 'Something went wrong when connecting to Metamask',
 } satisfies MetamaskInteractionError;
 
-export function getIsErrorFromRequestMetamaskAddressEndpoint(err: unknown):
-  err is RequestMetamaskAddressEndpointError {
-  return metamaskErrorSchema.safeParse(err).success;
+export function getIsMetamaskInterationEndpointError(err: unknown):
+  err is MetamaskInteractionEndpointError {
+  return metamaskInteractionEndpointErrorSchema.safeParse(err).success;
 }
 
 export const metamaskApi = createApi({
@@ -37,7 +37,7 @@ export const metamaskApi = createApi({
         if (!metamaskAddressRequest.success) {
           return {
             error: metamaskAddressRequest.err,
-          } satisfies RequestMetamaskAddressEndpointError;
+          } satisfies MetamaskInteractionEndpointError;
         }
 
         const newAddress = metamaskAddressRequest.data;
@@ -51,7 +51,7 @@ export const metamaskApi = createApi({
         }
         catch (err) {
           const isMetamaskInteractionError
-            = getIsErrorFromRequestMetamaskAddressEndpoint(err);
+            = getIsMetamaskInterationEndpointError(err);
           toast({
             variant: 'destructive',
             ...(isMetamaskInteractionError ? err.error : fallbackToastDetails),
@@ -82,7 +82,7 @@ export const metamaskApi = createApi({
         }
         catch (err) {
           const isMetamaskInteractionError
-            = getIsErrorFromRequestMetamaskAddressEndpoint(err);
+            = getIsMetamaskInterationEndpointError(err);
           toast({
             variant: 'destructive',
             ...(isMetamaskInteractionError ? err.error : fallbackToastDetails),
@@ -111,12 +111,26 @@ export const metamaskApi = createApi({
 
           onQueryStarted: (_, { queryFulfilled }) => {
             queryFulfilled.catch((err) => {
-              if (getIsErrorFromRequestMetamaskAddressEndpoint(err)) {
+              if (getIsMetamaskInterationEndpointError(err)) {
                 toast({ variant: 'destructive', ...err });
               }
             });
           },
         }),
+
+    requestSampleTokens:
+      builder.mutation<void, DappInfo>({
+        queryFn: async (dappInfo) => {
+          const sampleTokensRequest = await requestSampleTokens(dappInfo);
+          if (!sampleTokensRequest.success) {
+            return {
+              error: sampleTokensRequest.err,
+            } satisfies MetamaskInteractionEndpointError;
+          }
+
+          return { data: undefined };
+        },
+      }),
   }),
 });
 
@@ -124,4 +138,5 @@ export const {
   useRequestMetamaskAddressMutation,
   useLazyGetActiveMetamaskAddressQuery,
   useGetFinthetixUserInfoQuery,
+  useRequestSampleTokensMutation,
 } = metamaskApi;

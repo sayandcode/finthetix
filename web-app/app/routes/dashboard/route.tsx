@@ -10,6 +10,7 @@ import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
 import { selectActiveAddress, selectIsUserLoading } from '~/redux/features/user/slice';
 import { useAppSelector } from '~/redux/hooks';
 import { useGetFinthetixUserInfoQuery } from '~/redux/services/metamask';
+import SampleTokensBanner from './subcomponents/SampleTokensBanner';
 
 export const meta: MetaFunction = () => {
   return [{ title: 'Dashboard | Finthetix', dashboard: 'View your stake and rewards' }];
@@ -37,6 +38,8 @@ export default function Route() {
 
   return (
     <div className="m-4">
+      <SampleTokensBanner />
+
       {/* Staked Card */}
       <div className="flex flex-col sm:flex-row gap-y-2 sm:gap-x-2">
         <Card className="w-full flex flex-col justify-between">
