@@ -1,6 +1,6 @@
 export const UI_ERRORS = {
-  ERR1: 'ERR1: Metamask not installed',
-  ERR2: 'ERR2: Couldn\'t add chain',
-  ERR3: 'ERR3: Couldn\'t fetch accounts',
-  ERR4: 'ERR4: Couldn\'t switch to required chain',
-};
+  ERR1: 'ERR1: Metamask Address Request Failed',
+  ERR2: 'ERR2: Could not fetch active Metamask address',
+  ERR3: 'ERR3: Error fetching user data',
+  ERR4: 'ERR4: Could not request sample tokens',
+} as const;

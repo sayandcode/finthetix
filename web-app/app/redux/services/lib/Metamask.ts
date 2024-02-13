@@ -1,136 +1,44 @@
-import { UI_ERRORS } from '../../../lib/ui-errors';
 import { BrowserProvider } from 'ethers';
-import { tryItAsync } from '../../../lib/utils';
-import { ChainInfo, DappInfo, TrialResult } from '../../../lib/types';
+import { ChainInfo } from '../../../lib/types';
 import { ActiveAddress } from '~/redux/features/user/slice';
-import FinthetixStakingContractHandler from '~/contracts/FinthetixStakingContract';
 
-export type MetamaskInteractionError = { title: string, description: string };
-
-export async function requestMetamaskAddress(chainInfo: ChainInfo):
-Promise<
-    TrialResult<ActiveAddress, MetamaskInteractionError>
-  > {
-  if (!window.ethereum) {
-    return {
-      success: false,
-      err: {
-        title: UI_ERRORS.ERR1,
-        description: 'Please install Metamask browser extension',
-      },
-    };
-  }
-
-  const provider = new BrowserProvider(window.ethereum);
-  const addChainsTrialResult = await tryItAsync<null>(() => provider.send('wallet_addEthereumChain', [
-    chainInfo,
-  ]));
-  if (!addChainsTrialResult.success) {
-    return {
-      success: false,
-      err: {
-        title: UI_ERRORS.ERR2,
-        description: 'Something went wrong when adding the chain',
-      },
-    };
-  }
-
-  const switchChainsTrialResult = await tryItAsync<null>(() => provider.send('wallet_switchEthereumChain', [
-    { chainId: chainInfo.chainId },
-  ]));
-  if (!switchChainsTrialResult.success) {
-    return {
-      success: false,
-      err: {
-        title: UI_ERRORS.ERR4,
-        description: 'Something went wrong when switching to the required chain',
-      },
-    };
-  }
-
-  const requestAccTrialResult = await tryItAsync<string[]>(() => provider.send('eth_requestAccounts', []));
-  if (!requestAccTrialResult.success || !requestAccTrialResult.data[0]) {
-    return {
-      success: false,
-      err: {
-        title: UI_ERRORS.ERR3,
-        description: 'Something went wrong when fetching the accounts',
-      },
-    };
-  }
-
-  const newActiveAddress = requestAccTrialResult.data[0];
-  return { success: true, data: newActiveAddress };
+enum MetamaskHandlerErrors {
+  ERR1 = 'Metamask not installed',
+  ERR2 = 'No account found in Metamask',
 }
+export default class MetamaskHandler {
+  public readonly provider: BrowserProvider;
 
-/**
- * This function is different from {@link requestMetamaskAddress} in that it
+  constructor() {
+    if (!window.ethereum) {
+      throw new Error(MetamaskHandlerErrors.ERR1);
+    }
+
+    this.provider = new BrowserProvider(window.ethereum);
+  }
+
+  async requestAddress(chainInfo: ChainInfo):
+  Promise<NonNullable<ActiveAddress>> {
+    await this.provider.send('wallet_addEthereumChain', [
+      chainInfo,
+    ]);
+    await this.provider.send('wallet_switchEthereumChain', [
+      { chainId: chainInfo.chainId },
+    ]);
+    const accounts: string[] = await this.provider.send('eth_requestAccounts', []);
+    if (!accounts[0]) throw new Error(MetamaskHandlerErrors.ERR2);
+    return accounts[0];
+  }
+
+  /**
+ * This function is different from {@link requestAddress} in that it
  * only returns the addresses if the current site is already connected.
  * It does not attempt to connect the current site to Metamask, like
- * {@link requestMetamaskAddress} does
+ * {@link requestAddress} does
  */
-export async function getActiveMetamaskAddress():
-Promise<TrialResult<ActiveAddress, MetamaskInteractionError>> {
-  if (!window.ethereum) {
-    return {
-      success: false,
-      err: {
-
-        title: UI_ERRORS.ERR1,
-        description: 'Please install Metamask browser extension',
-      },
-    };
+  async getActiveAddress(): Promise<ActiveAddress> {
+    const accounts = await this.provider.send('eth_accounts', []);
+    const activeAddress = accounts[0] || null;
+    return activeAddress;
   }
-
-  const provider = new BrowserProvider(window.ethereum);
-  const fetchAccountsTrialResult = await tryItAsync<string[]>(() => provider.send('eth_accounts', []));
-  if (!fetchAccountsTrialResult.success) {
-    return {
-      success: false,
-      err: {
-        title: UI_ERRORS.ERR3,
-        description: 'Something went wrong when fetching the accounts',
-      },
-    };
-  }
-
-  const newUser = fetchAccountsTrialResult.data[0] || null;
-  return { success: true, data: newUser };
-}
-
-export async function tryGetFinthetixUserInfo(dappInfo: DappInfo):
-Promise<TrialResult<Awaited<ReturnType<FinthetixStakingContractHandler['getUserData']>>>> {
-  if (!window.ethereum) {
-    return {
-      success: false,
-      err: {
-
-        title: UI_ERRORS.ERR1,
-        description: 'Please install Metamask browser extension',
-      },
-    };
-  }
-
-  const provider = new BrowserProvider(window.ethereum);
-  const fscHandler = new FinthetixStakingContractHandler(provider, dappInfo);
-  const userData = await fscHandler.getUserData();
-  return { success: true, data: userData };
-}
-
-export async function requestSampleTokens(dappInfo: DappInfo):
-Promise<TrialResult<void, MetamaskInteractionError>> {
-  if (!window.ethereum) {
-    return {
-      success: false,
-      err: {
-        title: UI_ERRORS.ERR1,
-        description: 'Please install Metamask browser extension',
-      },
-    };
-  }
-
-  const provider = new BrowserProvider(window.ethereum);
-  const fscHandler = new FinthetixStakingContractHandler(provider, dappInfo);
-  await fscHandler.requestSampleTokens();
-  return { success: true, data: undefined };
 }

@@ -1,37 +1,16 @@
 import { HandCoinsIcon, Loader2Icon } from 'lucide-react';
 import { useCallback } from 'react';
 import { Button } from '~/components/ui/button';
-import { useToast } from '~/components/ui/use-toast';
 import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
-import { getIsMetamaskInterationEndpointError, useRequestSampleTokensMutation } from '~/redux/services/metamask';
+import { useRequestSampleTokensMutation } from '~/redux/services/metamask';
 
 export default function SampleTokensBanner() {
-  const { toast } = useToast();
   const { dappInfo } = useRootLoaderData();
   const [requestSampleTokens, { isLoading }]
     = useRequestSampleTokensMutation();
   const claimFreeTokens = useCallback(async () => {
-    const request = await requestSampleTokens(dappInfo);
-    let toastDetails: { variant: 'default' | 'destructive', title: string, description: string };
-    if ('error' in request) {
-      toastDetails = {
-        variant: 'destructive',
-        ...(
-          getIsMetamaskInterationEndpointError(request.error)
-            ? request.error.error
-            : { title: 'Request failed', description: 'Could not request sample tokens' }
-        ),
-      };
-    }
-    else {
-      toastDetails = {
-        variant: 'default',
-        title: 'Request successful',
-        description: 'FST tokens have been added to your address',
-      };
-    }
-    toast(toastDetails);
-  }, [dappInfo, requestSampleTokens, toast]);
+    await requestSampleTokens(dappInfo);
+  }, [requestSampleTokens, dappInfo]);
   return (
     <div className="bg-primary p-4 my-4 flex gap-2">
       <div><HandCoinsIcon className="h-6 w-6" /></div>

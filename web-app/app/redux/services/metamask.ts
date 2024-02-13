@@ -1,30 +1,14 @@
 import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
-import { MetamaskInteractionError, getActiveMetamaskAddress, requestMetamaskAddress, requestSampleTokens, tryGetFinthetixUserInfo } from '~/redux/services/lib/Metamask';
+import MetamaskHandler from '~/redux/services/lib/Metamask';
 import { ChainInfo, DappInfo } from '~/lib/types';
 import { setIsUserLoading, type ActiveAddress, setActiveAddress } from '../features/user/slice';
 import { toast } from '~/components/ui/use-toast';
-import { z } from 'zod';
 import FinthetixStakingContractHandler from '~/contracts/FinthetixStakingContract';
+import { tryItAsync } from '~/lib/utils';
+import { UI_ERRORS } from '~/lib/ui-errors';
+import { getIsEndpointError } from './lib/utils';
 
-type MetamaskInteractionEndpointError = { error: MetamaskInteractionError };
-
-const metamaskInteractionEndpointErrorSchema:
-z.ZodType<MetamaskInteractionEndpointError> = z.object({
-  error: z.object({
-    title: z.string(),
-    description: z.string(),
-  }),
-});
-
-const fallbackToastDetails = {
-  title: 'Error connecting to Metamask',
-  description: 'Something went wrong when connecting to Metamask',
-} satisfies MetamaskInteractionError;
-
-export function getIsMetamaskInterationEndpointError(err: unknown):
-  err is MetamaskInteractionEndpointError {
-  return metamaskInteractionEndpointErrorSchema.safeParse(err).success;
-}
+const FALLBACK_ERROR_DESCRIPTION = 'Something went wrong when interacting with the Blockchain';
 
 export const metamaskApi = createApi({
   reducerPath: 'metamaskApi',
@@ -33,15 +17,15 @@ export const metamaskApi = createApi({
   endpoints: builder => ({
     requestMetamaskAddress: builder.mutation<ActiveAddress, ChainInfo>({
       queryFn: async (chainInfo) => {
-        const metamaskAddressRequest = await requestMetamaskAddress(chainInfo);
-        if (!metamaskAddressRequest.success) {
-          return {
-            error: metamaskAddressRequest.err,
-          } satisfies MetamaskInteractionEndpointError;
+        const trial = await tryItAsync(() => {
+          const metamaskHandler = new MetamaskHandler();
+          return metamaskHandler.requestAddress(chainInfo);
+        });
+        if (!trial.success) {
+          return { error: trial.err };
         }
 
-        const newAddress = metamaskAddressRequest.data;
-        return { data: newAddress };
+        return { data: trial.data };
       },
       onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
         dispatch(setIsUserLoading(true));
@@ -50,11 +34,14 @@ export const metamaskApi = createApi({
           dispatch(setActiveAddress(newAddress));
         }
         catch (err) {
-          const isMetamaskInteractionError
-            = getIsMetamaskInterationEndpointError(err);
+          const isEndpointError
+            = getIsEndpointError(err);
           toast({
             variant: 'destructive',
-            ...(isMetamaskInteractionError ? err.error : fallbackToastDetails),
+            title: UI_ERRORS.ERR1,
+            description:
+              isEndpointError ? err.error : FALLBACK_ERROR_DESCRIPTION
+            ,
           });
           dispatch(setActiveAddress(null));
         }
@@ -65,14 +52,13 @@ export const metamaskApi = createApi({
 
     getActiveMetamaskAddress: builder.query<ActiveAddress, void>({
       queryFn: async () => {
-        const trialOfgetActiveMetamaskAddress
-          = await getActiveMetamaskAddress();
-        if (!trialOfgetActiveMetamaskAddress.success) {
-          return { error: trialOfgetActiveMetamaskAddress.err };
-        }
+        const trial = await tryItAsync(() => {
+          const metamaskHandler = new MetamaskHandler();
+          return metamaskHandler.getActiveAddress();
+        });
+        if (!trial.success) return { error: trial.err };
 
-        const newActiveMetamaskAddress = trialOfgetActiveMetamaskAddress.data;
-        return { data: newActiveMetamaskAddress };
+        return { data: trial.data };
       },
       onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
         dispatch(setIsUserLoading(true));
@@ -81,11 +67,13 @@ export const metamaskApi = createApi({
           dispatch(setActiveAddress(newAddress));
         }
         catch (err) {
-          const isMetamaskInteractionError
-            = getIsMetamaskInterationEndpointError(err);
+          const isEndpointError
+            = getIsEndpointError(err);
           toast({
             variant: 'destructive',
-            ...(isMetamaskInteractionError ? err.error : fallbackToastDetails),
+            title: UI_ERRORS.ERR2,
+            description:
+              isEndpointError ? err.error : FALLBACK_ERROR_DESCRIPTION,
           });
           dispatch(setActiveAddress(null));
         }
@@ -99,21 +87,31 @@ export const metamaskApi = createApi({
       Record<keyof Awaited<ReturnType<FinthetixStakingContractHandler['getUserData']>>, string>,
         DappInfo>({
           queryFn: async (dappInfo) => {
-            const getFinthetixUserInfoTrial
-            = await tryGetFinthetixUserInfo(dappInfo);
-            if (!getFinthetixUserInfoTrial.success) {
-              return { error: getFinthetixUserInfoTrial.err };
+            const trial = await tryItAsync(() => {
+              const metamaskHandler = new MetamaskHandler();
+              const fscHandler
+                = new FinthetixStakingContractHandler(
+                  metamaskHandler.provider, dappInfo,
+                );
+              return fscHandler.getUserData();
+            });
+            if (!trial.success) {
+              return { error: trial.err };
             }
 
-            const userInfo = getFinthetixUserInfoTrial.data;
-            return { data: userInfo };
+            return { data: trial.data };
           },
 
           onQueryStarted: (_, { queryFulfilled }) => {
             queryFulfilled.catch((err) => {
-              if (getIsMetamaskInterationEndpointError(err)) {
-                toast({ variant: 'destructive', ...err });
-              }
+              toast({
+                variant: 'destructive',
+                title: UI_ERRORS.ERR3,
+                description:
+                  getIsEndpointError(err)
+                    ? err.error
+                    : FALLBACK_ERROR_DESCRIPTION,
+              });
             });
           },
         }),
@@ -121,14 +119,38 @@ export const metamaskApi = createApi({
     requestSampleTokens:
       builder.mutation<void, DappInfo>({
         queryFn: async (dappInfo) => {
-          const sampleTokensRequest = await requestSampleTokens(dappInfo);
-          if (!sampleTokensRequest.success) {
-            return {
-              error: sampleTokensRequest.err,
-            } satisfies MetamaskInteractionEndpointError;
+          const trial = await tryItAsync(() => {
+            const metamaskHandler = new MetamaskHandler();
+            const fscHandler
+                = new FinthetixStakingContractHandler(
+                  metamaskHandler.provider, dappInfo,
+                );
+            return fscHandler.requestSampleTokens();
+          });
+          if (!trial.success) {
+            return { error: trial.err };
           }
 
-          return { data: undefined };
+          return { data: trial.data };
+        },
+
+        onQueryStarted: (_, { queryFulfilled }) => {
+          queryFulfilled.then(() => {
+            toast({
+              variant: 'default',
+              title: 'Request successful',
+              description: 'FST tokens have been added to your address',
+            });
+          }).catch((err) => {
+            toast({
+              variant: 'destructive',
+              title: UI_ERRORS.ERR4,
+              description:
+                  getIsEndpointError(err)
+                    ? err.error
+                    : FALLBACK_ERROR_DESCRIPTION,
+            });
+          });
         },
       }),
   }),
