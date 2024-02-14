@@ -4,9 +4,8 @@ import { ChainInfo, DappInfo } from '~/lib/types';
 import { setIsUserLoading, type ActiveAddress, setActiveAddress } from '../features/user/slice';
 import { toast } from '~/components/ui/use-toast';
 import FinthetixStakingContractHandler from '~/contracts/FinthetixStakingContract';
-import { tryItAsync } from '~/lib/utils';
 import { UI_ERRORS } from '~/lib/ui-errors';
-import { getIsEndpointError, getIsInternalError } from './lib/utils';
+import { getIsEndpointError, getIsInternalError, makeErrorableQueryFn } from './lib/utils';
 
 const FALLBACK_ERROR_DESCRIPTION = 'Something went wrong when interacting with the Blockchain';
 
@@ -15,55 +14,48 @@ export const metamaskApi = createApi({
   baseQuery: fakeBaseQuery(),
   // tagTypes: ['User'],
   endpoints: builder => ({
-    requestMetamaskAddress: builder.mutation<ActiveAddress, ChainInfo>({
-      queryFn: async (chainInfo) => {
-        const trial = await tryItAsync(() => {
-          const metamaskHandler = new MetamaskHandler();
-          return metamaskHandler.requestAddress(chainInfo);
-        });
-        if (!trial.success) {
-          const userErrorMsg = mapInternalErrToUserFriendlyErrMsg(trial.err, 'requestMetamaskAddress');
-          return { error: userErrorMsg };
-        }
+    requestMetamaskAddress:
+      builder.mutation<NonNullable<ActiveAddress>, ChainInfo>({
+        queryFn:
+          makeErrorableQueryFn(async (chainInfo) => {
+            const metamaskHandler = new MetamaskHandler();
+            return metamaskHandler.requestAddress(chainInfo);
+          },
+          'requestMetamaskAddress',
+          mapInternalErrToUserFriendlyErrMsg),
 
-        return { data: trial.data };
-      },
-      onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
-        dispatch(setIsUserLoading(true));
-        try {
-          const { data: newAddress } = await queryFulfilled;
-          dispatch(setActiveAddress(newAddress));
-        }
-        catch (err) {
-          const isEndpointError = getIsEndpointError(err);
-          const errDescription
+        onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
+          dispatch(setIsUserLoading(true));
+          try {
+            const { data: newAddress } = await queryFulfilled;
+            dispatch(setActiveAddress(newAddress));
+          }
+          catch (err) {
+            const isEndpointError = getIsEndpointError(err);
+            const errDescription
             = isEndpointError ? err.error : FALLBACK_ERROR_DESCRIPTION;
-          toast({
-            variant: 'destructive',
-            title: UI_ERRORS.ERR1,
-            description: errDescription
-            ,
-          });
-          dispatch(setActiveAddress(null));
-        }
-        dispatch(setIsUserLoading(false));
-      },
+            toast({
+              variant: 'destructive',
+              title: UI_ERRORS.ERR1,
+              description: errDescription
+              ,
+            });
+            dispatch(setActiveAddress(null));
+          }
+          dispatch(setIsUserLoading(false));
+        },
       // invalidatesTags: ['User'],
-    }),
+      }),
 
     getActiveMetamaskAddress: builder.query<ActiveAddress, void>({
-      queryFn: async () => {
-        const trial = await tryItAsync(() => {
-          const metamaskHandler = new MetamaskHandler();
-          return metamaskHandler.getActiveAddress();
-        });
-        if (!trial.success) {
-          const userErrorMsg = mapInternalErrToUserFriendlyErrMsg(trial.err, 'getActiveMetamaskAddress');
-          return { error: userErrorMsg };
-        }
+      queryFn:
+          makeErrorableQueryFn(async () => {
+            const metamaskHandler = new MetamaskHandler();
+            return metamaskHandler.getActiveAddress();
+          },
+          'getActiveMetamaskAddress',
+          mapInternalErrToUserFriendlyErrMsg),
 
-        return { data: trial.data };
-      },
       onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
         dispatch(setIsUserLoading(true));
         try {
@@ -90,22 +82,16 @@ export const metamaskApi = createApi({
       builder.query<
       Record<keyof Awaited<ReturnType<FinthetixStakingContractHandler['getUserData']>>, string>,
         DappInfo>({
-          queryFn: async (dappInfo) => {
-            const trial = await tryItAsync(() => {
+          queryFn:
+            makeErrorableQueryFn(async (dappInfo) => {
               const metamaskHandler = new MetamaskHandler();
-              const fscHandler
-                = new FinthetixStakingContractHandler(
-                  metamaskHandler.provider, dappInfo,
-                );
+              const fscHandler = new FinthetixStakingContractHandler(
+                metamaskHandler.provider, dappInfo,
+              );
               return fscHandler.getUserData();
-            });
-            if (!trial.success) {
-              const userErrorMsg = mapInternalErrToUserFriendlyErrMsg(trial.err, 'getFinthetixUserInfo');
-              return { error: userErrorMsg };
-            }
-
-            return { data: trial.data };
-          },
+            },
+            'getFinthetixUserInfo',
+            mapInternalErrToUserFriendlyErrMsg),
 
           onQueryStarted: (_, { queryFulfilled }) => {
             queryFulfilled.catch((err) => {
@@ -123,22 +109,17 @@ export const metamaskApi = createApi({
 
     requestSampleTokens:
       builder.mutation<void, DappInfo>({
-        queryFn: async (dappInfo) => {
-          const trial = await tryItAsync(() => {
+        queryFn:
+          makeErrorableQueryFn(async (dappInfo) => {
             const metamaskHandler = new MetamaskHandler();
             const fscHandler
                 = new FinthetixStakingContractHandler(
                   metamaskHandler.provider, dappInfo,
                 );
             return fscHandler.requestSampleTokens();
-          });
-          if (!trial.success) {
-            const userErrorMsg = mapInternalErrToUserFriendlyErrMsg(trial.err, 'requestSampleTokens');
-            return { error: userErrorMsg };
-          }
-
-          return { data: trial.data };
-        },
+          },
+          'requestSampleTokens',
+          mapInternalErrToUserFriendlyErrMsg),
 
         onQueryStarted: (_, { queryFulfilled }) => {
           queryFulfilled.then(() => {
@@ -164,7 +145,7 @@ export const metamaskApi = createApi({
 
 function mapInternalErrToUserFriendlyErrMsg(
   internalErr: unknown,
-  endpoint: keyof typeof metamaskApi.endpoints,
+  endpoint: string,
 ): string {
   console.error(internalErr); // this can be converted to logger later
   const isInternalError = getIsInternalError(internalErr);
