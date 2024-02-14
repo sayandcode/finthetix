@@ -6,7 +6,7 @@ import { toast } from '~/components/ui/use-toast';
 import FinthetixStakingContractHandler from '~/contracts/FinthetixStakingContract';
 import { tryItAsync } from '~/lib/utils';
 import { UI_ERRORS } from '~/lib/ui-errors';
-import { getIsEndpointError } from './lib/utils';
+import { getIsEndpointError, getIsInternalError } from './lib/utils';
 
 const FALLBACK_ERROR_DESCRIPTION = 'Something went wrong when interacting with the Blockchain';
 
@@ -22,7 +22,8 @@ export const metamaskApi = createApi({
           return metamaskHandler.requestAddress(chainInfo);
         });
         if (!trial.success) {
-          return { error: trial.err };
+          const userErrorMsg = mapInternalErrToUserFriendlyErrMsg(trial.err, 'requestMetamaskAddress');
+          return { error: userErrorMsg };
         }
 
         return { data: trial.data };
@@ -34,13 +35,13 @@ export const metamaskApi = createApi({
           dispatch(setActiveAddress(newAddress));
         }
         catch (err) {
-          const isEndpointError
-            = getIsEndpointError(err);
+          const isEndpointError = getIsEndpointError(err);
+          const errDescription
+            = isEndpointError ? err.error : FALLBACK_ERROR_DESCRIPTION;
           toast({
             variant: 'destructive',
             title: UI_ERRORS.ERR1,
-            description:
-              isEndpointError ? err.error : FALLBACK_ERROR_DESCRIPTION
+            description: errDescription
             ,
           });
           dispatch(setActiveAddress(null));
@@ -56,7 +57,10 @@ export const metamaskApi = createApi({
           const metamaskHandler = new MetamaskHandler();
           return metamaskHandler.getActiveAddress();
         });
-        if (!trial.success) return { error: trial.err };
+        if (!trial.success) {
+          const userErrorMsg = mapInternalErrToUserFriendlyErrMsg(trial.err, 'getActiveMetamaskAddress');
+          return { error: userErrorMsg };
+        }
 
         return { data: trial.data };
       },
@@ -67,13 +71,13 @@ export const metamaskApi = createApi({
           dispatch(setActiveAddress(newAddress));
         }
         catch (err) {
-          const isEndpointError
-            = getIsEndpointError(err);
+          const isEndpointError = getIsEndpointError(err);
+          const errDescription
+            = isEndpointError ? err.error : FALLBACK_ERROR_DESCRIPTION;
           toast({
             variant: 'destructive',
             title: UI_ERRORS.ERR2,
-            description:
-              isEndpointError ? err.error : FALLBACK_ERROR_DESCRIPTION,
+            description: errDescription,
           });
           dispatch(setActiveAddress(null));
         }
@@ -96,7 +100,8 @@ export const metamaskApi = createApi({
               return fscHandler.getUserData();
             });
             if (!trial.success) {
-              return { error: trial.err };
+              const userErrorMsg = mapInternalErrToUserFriendlyErrMsg(trial.err, 'getFinthetixUserInfo');
+              return { error: userErrorMsg };
             }
 
             return { data: trial.data };
@@ -104,13 +109,13 @@ export const metamaskApi = createApi({
 
           onQueryStarted: (_, { queryFulfilled }) => {
             queryFulfilled.catch((err) => {
+              const isEndpointError = getIsEndpointError(err);
+              const errDescription
+                = isEndpointError ? err.error : FALLBACK_ERROR_DESCRIPTION;
               toast({
                 variant: 'destructive',
                 title: UI_ERRORS.ERR3,
-                description:
-                  getIsEndpointError(err)
-                    ? err.error
-                    : FALLBACK_ERROR_DESCRIPTION,
+                description: errDescription,
               });
             });
           },
@@ -128,7 +133,8 @@ export const metamaskApi = createApi({
             return fscHandler.requestSampleTokens();
           });
           if (!trial.success) {
-            return { error: trial.err };
+            const userErrorMsg = mapInternalErrToUserFriendlyErrMsg(trial.err, 'requestSampleTokens');
+            return { error: userErrorMsg };
           }
 
           return { data: trial.data };
@@ -142,19 +148,63 @@ export const metamaskApi = createApi({
               description: 'FST tokens have been added to your address',
             });
           }).catch((err) => {
+            const isEndpointError = getIsEndpointError(err);
+            const errDescription
+                = isEndpointError ? err.error : FALLBACK_ERROR_DESCRIPTION;
             toast({
               variant: 'destructive',
               title: UI_ERRORS.ERR4,
-              description:
-                  getIsEndpointError(err)
-                    ? err.error
-                    : FALLBACK_ERROR_DESCRIPTION,
+              description: errDescription,
             });
           });
         },
       }),
   }),
 });
+
+function mapInternalErrToUserFriendlyErrMsg(
+  internalErr: unknown,
+  endpoint: keyof typeof metamaskApi.endpoints,
+): string {
+  console.error(internalErr); // this can be converted to logger later
+  const isInternalError = getIsInternalError(internalErr);
+  if (!isInternalError) return FALLBACK_ERROR_DESCRIPTION;
+
+  const errMsg = internalErr.message;
+
+  // default error paths
+  if (errMsg.startsWith('Metamask not installed'))
+    return 'Install Metamask browser extension and try again';
+
+  // endpoint specific error paths
+  switch (endpoint) {
+    case 'requestMetamaskAddress':
+      if (errMsg.match(/reason="rejected".*eth_requestAccounts/))
+        return 'Please accept the connect wallet request in metamask';
+      else if (errMsg.match(/reason="rejected".*wallet_addEthereumChain/))
+        return 'Please accept the request to add the correct chain';
+      else if (errMsg.match(/reason="rejected".*wallet_switchEthereumChain/))
+        return 'Please accept the request to switch to the correct chain';
+      else
+        return FALLBACK_ERROR_DESCRIPTION;
+
+    // as of now the following request has no expected error paths other
+    // than default paths which are handled above
+    case 'getActiveMetamaskAddress': return FALLBACK_ERROR_DESCRIPTION;
+
+    // as of now the following request has no expected error paths other
+    // than default paths which are handled above
+    case 'getFinthetixUserInfo': return FALLBACK_ERROR_DESCRIPTION;
+
+    case 'requestSampleTokens':
+      if (errMsg.match(/user rejected action.*/))
+        return 'Please accept the transaction to receive sample tokens';
+      else
+        return FALLBACK_ERROR_DESCRIPTION;
+
+    default: return FALLBACK_ERROR_DESCRIPTION;
+  }
+}
 
 export const {
   useRequestMetamaskAddressMutation,
