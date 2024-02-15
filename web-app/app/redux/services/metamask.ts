@@ -197,6 +197,6 @@ export const metamaskApi = createApi({
 export const {
   useRequestMetamaskAddressMutation,
   useLazyGetActiveMetamaskAddressQuery,
-  useGetFinthetixUserInfoQuery,
+  useLazyGetFinthetixUserInfoQuery,
   useRequestSampleTokensMutation,
 } = metamaskApi;

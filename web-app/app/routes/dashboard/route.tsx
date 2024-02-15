@@ -9,7 +9,7 @@ import {
 import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
 import { selectActiveAddress, selectIsUserLoading } from '~/redux/features/user/slice';
 import { useAppSelector } from '~/redux/hooks';
-import { useGetFinthetixUserInfoQuery } from '~/redux/services/metamask';
+import { useLazyGetFinthetixUserInfoQuery } from '~/redux/services/metamask';
 import SampleTokensBanner from './subcomponents/SampleTokensBanner';
 
 export const meta: MetaFunction = () => {
@@ -21,20 +21,32 @@ export default function Route() {
   const isUserLoading = useAppSelector(selectIsUserLoading);
   const navigate = useNavigate();
   const { dappInfo } = useRootLoaderData();
-  const { data: userInfo, isFetching: isInfoFetching }
-    = useGetFinthetixUserInfoQuery(dappInfo);
+  const [
+    getFinthetixUserInfoQuery,
+    { data: userInfo, isFetching: isInfoFetching },
+  ] = useLazyGetFinthetixUserInfoQuery();
 
   // fetch the users's staked info
   useEffect(() => {
     // wait for key dependencies and loading of user
-    if (!navigate || isUserLoading) return;
+    if (!navigate || isUserLoading || !dappInfo || !getFinthetixUserInfoQuery)
+      return;
 
     //  redirect to home if user isn't logged in
     if (!activeAddress) {
       navigate('/');
       return;
     }
-  }, [activeAddress, navigate, isUserLoading]);
+
+    getFinthetixUserInfoQuery(dappInfo);
+  },
+  [
+    activeAddress,
+    navigate,
+    isUserLoading,
+    getFinthetixUserInfoQuery,
+    dappInfo,
+  ]);
 
   return (
     <div className="m-4">

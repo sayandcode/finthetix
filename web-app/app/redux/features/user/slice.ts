@@ -30,8 +30,11 @@ export const userSlice = createSlice({
       state.isLoading = action.payload;
     },
     remember: (state, action: PayloadAction<DataToPersist>) => {
-      state.activeAddress = action.payload?.activeAddress || null;
-      state.isLoading = false;
+      const activeAddress = action.payload?.activeAddress;
+      state.activeAddress = activeAddress || null;
+      // if active address exists, we still need to validate it via metamask.
+      // Till then, our user is still loading
+      state.isLoading = activeAddress ? true : false;
     },
   },
 });
