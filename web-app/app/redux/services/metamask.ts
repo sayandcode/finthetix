@@ -51,6 +51,11 @@ export const metamaskApi = createApi({
           try {
             const { data: newAddress } = await queryFulfilled;
             dispatch(setActiveAddress(newAddress));
+            toast({
+              variant: 'success',
+              title: 'Logged in successfully',
+              description: `Welcome ${newAddress}!`,
+            });
           }
           catch (err) {
             const isEndpointError = getIsEndpointError(err);
@@ -92,6 +97,11 @@ export const metamaskApi = createApi({
         try {
           const { data: newAddress } = await queryFulfilled;
           dispatch(setActiveAddress(newAddress));
+          toast({
+            variant: 'success',
+            title: 'Logged in successfully',
+            description: `Welcome ${newAddress}!`,
+          });
         }
         catch (err) {
           const isEndpointError = getIsEndpointError(err);
@@ -175,7 +185,7 @@ export const metamaskApi = createApi({
         onQueryStarted: (_, { queryFulfilled }) => {
           queryFulfilled.then(() => {
             toast({
-              variant: 'default',
+              variant: 'success',
               title: 'Request successful',
               description: 'FST tokens have been added to your address',
             });
