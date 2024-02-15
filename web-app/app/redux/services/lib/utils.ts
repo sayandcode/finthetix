@@ -10,7 +10,7 @@ export function getIsEndpointError(err: unknown):
 
 const internalErrSchema = z.object({ message: z.string() });
 
-export function getIsInternalError(err: unknown):
+function getIsInternalError(err: unknown):
   err is z.infer<typeof internalErrSchema> {
   return internalErrSchema.safeParse(err).success;
 }
@@ -24,25 +24,32 @@ export function getIsInternalError(err: unknown):
  *
  * @param errorableFn The function which may result in an error,
  *  or otherwise returns the result
- * @param endpoint The RTK query endpoint. This endpoint must be
- *  handled in the
- *  {@link mapInternalErrToUserFriendlyErrMsg error message mapper function}
+ *
  * @param mapInternalErrToUserFriendlyErrMsg The function that maps the
  *  internal error to a user friendly error message
+ *
+ * @param fallbackErrMsg The error message to show if the internal error
+ *  is in an unknown format
+ *
  * @returns A query function which handles the errors gracefully
  *  and in the format expected by RTK Query
  */
-export function makeErrorableQueryFn<ReturnVal, Arg, Endpoints>(
+export function makeErrorableQueryFn<ReturnVal, Arg >(
   errorableFn: (arg: Arg) => Promise<ReturnVal>,
-  endpoint: Endpoints,
   mapInternalErrToUserFriendlyErrMsg:
-  (err: unknown, endpoint: Endpoints) => string,
+  (internalErr: string) => string,
+  fallbackErrMsg: string,
 ): (arg: Arg) => Promise<{ data: ReturnVal } | { error: string }> {
   return async (arg) => {
     const trial = await tryItAsync(() => errorableFn(arg));
     if (!trial.success) {
+      console.error(trial.err); // this can be converted to logger later
+      const { err } = trial;
+      const isInternalError = getIsInternalError(err);
+      if (!isInternalError) return { error: fallbackErrMsg };
+
       const userFriendlyError
-        = mapInternalErrToUserFriendlyErrMsg(trial.err, endpoint);
+        = mapInternalErrToUserFriendlyErrMsg(err.message);
       return { error: userFriendlyError };
     }
     return { data: trial.data };

@@ -5,7 +5,7 @@ import { setIsUserLoading, type ActiveAddress, setActiveAddress } from '../featu
 import { toast } from '~/components/ui/use-toast';
 import FinthetixStakingContractHandler from '~/contracts/FinthetixStakingContract';
 import { UI_ERRORS } from '~/lib/ui-errors';
-import { getIsEndpointError, getIsInternalError, makeErrorableQueryFn } from './lib/utils';
+import { getIsEndpointError, makeErrorableQueryFn } from './lib/utils';
 
 const FALLBACK_ERROR_DESCRIPTION = 'Something went wrong when interacting with the Blockchain';
 
@@ -17,12 +17,34 @@ export const metamaskApi = createApi({
     requestMetamaskAddress:
       builder.mutation<NonNullable<ActiveAddress>, ChainInfo>({
         queryFn:
-          makeErrorableQueryFn(async (chainInfo) => {
-            const metamaskHandler = new MetamaskHandler();
-            return metamaskHandler.requestAddress(chainInfo);
-          },
-          'requestMetamaskAddress',
-          mapInternalErrToUserFriendlyErrMsg),
+          makeErrorableQueryFn(
+            async (chainInfo) => {
+              const metamaskHandler = new MetamaskHandler();
+              return metamaskHandler.requestAddress(chainInfo);
+            },
+            (internalErr) => {
+              // default error paths
+              if (internalErr.startsWith('Metamask not installed'))
+                return 'Install Metamask browser extension and try again';
+
+              // endpoint specific errors
+              else if (internalErr.match(
+                /reason="rejected".*eth_requestAccounts/,
+              ))
+                return 'Please accept the connect wallet request in metamask';
+              else if (internalErr.match(
+                /reason="rejected".*wallet_addEthereumChain/,
+              ))
+                return 'Please accept the request to add the correct chain';
+              else if (internalErr.match(
+                /reason="rejected".*wallet_switchEthereumChain/,
+              ))
+                return 'Please accept the request to switch to the correct chain';
+              else
+                return FALLBACK_ERROR_DESCRIPTION;
+            },
+            FALLBACK_ERROR_DESCRIPTION,
+          ),
 
         onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
           dispatch(setIsUserLoading(true));
@@ -49,12 +71,21 @@ export const metamaskApi = createApi({
 
     getActiveMetamaskAddress: builder.query<ActiveAddress, void>({
       queryFn:
-          makeErrorableQueryFn(async () => {
+        makeErrorableQueryFn(
+          async () => {
             const metamaskHandler = new MetamaskHandler();
             return metamaskHandler.getActiveAddress();
           },
-          'getActiveMetamaskAddress',
-          mapInternalErrToUserFriendlyErrMsg),
+          (internalErr) => {
+            // default error paths
+            if (internalErr.startsWith('Metamask not installed'))
+              return 'Install Metamask browser extension and try again';
+            // as of now the following request has no expected error paths
+            // other than default paths which are handled above
+            else return FALLBACK_ERROR_DESCRIPTION;
+          },
+          FALLBACK_ERROR_DESCRIPTION,
+        ),
 
       onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
         dispatch(setIsUserLoading(true));
@@ -83,15 +114,24 @@ export const metamaskApi = createApi({
       Record<keyof Awaited<ReturnType<FinthetixStakingContractHandler['getUserData']>>, string>,
         DappInfo>({
           queryFn:
-            makeErrorableQueryFn(async (dappInfo) => {
-              const metamaskHandler = new MetamaskHandler();
-              const fscHandler = new FinthetixStakingContractHandler(
-                metamaskHandler.provider, dappInfo,
-              );
-              return fscHandler.getUserData();
-            },
-            'getFinthetixUserInfo',
-            mapInternalErrToUserFriendlyErrMsg),
+            makeErrorableQueryFn(
+              async (dappInfo) => {
+                const metamaskHandler = new MetamaskHandler();
+                const fscHandler = new FinthetixStakingContractHandler(
+                  metamaskHandler.provider, dappInfo,
+                );
+                return fscHandler.getUserData();
+              },
+              (internalErr) => {
+                // default error paths
+                if (internalErr.startsWith('Metamask not installed'))
+                  return 'Install Metamask browser extension and try again';
+                // as of now the following request has no expected error paths
+                // other than default paths which are handled above
+                else return FALLBACK_ERROR_DESCRIPTION;
+              },
+              FALLBACK_ERROR_DESCRIPTION,
+            ),
 
           onQueryStarted: (_, { queryFulfilled }) => {
             queryFulfilled.catch((err) => {
@@ -110,16 +150,27 @@ export const metamaskApi = createApi({
     requestSampleTokens:
       builder.mutation<void, DappInfo>({
         queryFn:
-          makeErrorableQueryFn(async (dappInfo) => {
-            const metamaskHandler = new MetamaskHandler();
-            const fscHandler
+          makeErrorableQueryFn(
+            async (dappInfo) => {
+              const metamaskHandler = new MetamaskHandler();
+              const fscHandler
                 = new FinthetixStakingContractHandler(
                   metamaskHandler.provider, dappInfo,
                 );
-            return fscHandler.requestSampleTokens();
-          },
-          'requestSampleTokens',
-          mapInternalErrToUserFriendlyErrMsg),
+              return fscHandler.requestSampleTokens();
+            },
+            (internalErr) => {
+              // default error paths
+              if (internalErr.startsWith('Metamask not installed'))
+                return 'Install Metamask browser extension and try again';
+
+              // endpoint specific error paths
+              else if (internalErr.match(/user rejected action.*/))
+                return 'Please accept the transaction to receive sample tokens';
+              else return FALLBACK_ERROR_DESCRIPTION;
+            },
+            FALLBACK_ERROR_DESCRIPTION,
+          ),
 
         onQueryStarted: (_, { queryFulfilled }) => {
           queryFulfilled.then(() => {
@@ -142,50 +193,6 @@ export const metamaskApi = createApi({
       }),
   }),
 });
-
-function mapInternalErrToUserFriendlyErrMsg(
-  internalErr: unknown,
-  endpoint: string,
-): string {
-  console.error(internalErr); // this can be converted to logger later
-  const isInternalError = getIsInternalError(internalErr);
-  if (!isInternalError) return FALLBACK_ERROR_DESCRIPTION;
-
-  const errMsg = internalErr.message;
-
-  // default error paths
-  if (errMsg.startsWith('Metamask not installed'))
-    return 'Install Metamask browser extension and try again';
-
-  // endpoint specific error paths
-  switch (endpoint) {
-    case 'requestMetamaskAddress':
-      if (errMsg.match(/reason="rejected".*eth_requestAccounts/))
-        return 'Please accept the connect wallet request in metamask';
-      else if (errMsg.match(/reason="rejected".*wallet_addEthereumChain/))
-        return 'Please accept the request to add the correct chain';
-      else if (errMsg.match(/reason="rejected".*wallet_switchEthereumChain/))
-        return 'Please accept the request to switch to the correct chain';
-      else
-        return FALLBACK_ERROR_DESCRIPTION;
-
-    // as of now the following request has no expected error paths other
-    // than default paths which are handled above
-    case 'getActiveMetamaskAddress': return FALLBACK_ERROR_DESCRIPTION;
-
-    // as of now the following request has no expected error paths other
-    // than default paths which are handled above
-    case 'getFinthetixUserInfo': return FALLBACK_ERROR_DESCRIPTION;
-
-    case 'requestSampleTokens':
-      if (errMsg.match(/user rejected action.*/))
-        return 'Please accept the transaction to receive sample tokens';
-      else
-        return FALLBACK_ERROR_DESCRIPTION;
-
-    default: return FALLBACK_ERROR_DESCRIPTION;
-  }
-}
 
 export const {
   useRequestMetamaskAddressMutation,
