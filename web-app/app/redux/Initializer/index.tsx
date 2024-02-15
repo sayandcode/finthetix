@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { rememberPlaybook as userRememberPlaybook, persistPlaybook as userPersistPlaybook, selectActiveAddress } from '~/redux/features/user/slice';
 import { StoreType } from '~/redux/store';
 import ReduxPersister from '~/redux/persister';
-import { useLazyGetActiveMetamaskAddressQuery } from '../services/metamask';
+import { useRefreshActiveMetamaskAddressMutation } from '../services/metamask';
 import { useAppSelector } from '../hooks';
 
 export default function ReduxInitializer(
@@ -22,12 +22,13 @@ export default function ReduxInitializer(
   }, [store]);
 
   // setup auto-login with metamask
-  const [getActiveMetamaskAddress] = useLazyGetActiveMetamaskAddressQuery();
+  const [refreshActiveMetamaskAddress]
+    = useRefreshActiveMetamaskAddressMutation();
   const activeAddress = useAppSelector(selectActiveAddress);
   useEffect(() => {
     // only runs if we automatically logged in from local storage
     // doesn't login if local storage says no active address
-    if (activeAddress) getActiveMetamaskAddress();
-  }, [activeAddress, getActiveMetamaskAddress]);
+    if (activeAddress) refreshActiveMetamaskAddress();
+  }, [activeAddress, refreshActiveMetamaskAddress]);
   return null;
 }

@@ -12,7 +12,7 @@ const FALLBACK_ERROR_DESCRIPTION = 'Something went wrong when interacting with t
 export const metamaskApi = createApi({
   reducerPath: 'metamaskApi',
   baseQuery: fakeBaseQuery(),
-  // tagTypes: ['User'],
+  tagTypes: ['User'],
   endpoints: builder => ({
     requestMetamaskAddress:
       builder.mutation<NonNullable<ActiveAddress>, ChainInfo>({
@@ -71,10 +71,10 @@ export const metamaskApi = createApi({
           }
           dispatch(setIsUserLoading(false));
         },
-      // invalidatesTags: ['User'],
+        invalidatesTags: ['User'],
       }),
 
-    getActiveMetamaskAddress: builder.query<ActiveAddress, void>({
+    refreshActiveMetamaskAddress: builder.mutation<ActiveAddress, void>({
       queryFn:
         makeErrorableQueryFn(
           async () => {
@@ -116,7 +116,7 @@ export const metamaskApi = createApi({
         }
         dispatch(setIsUserLoading(false));
       },
-      // invalidatesTags: ['User'],
+      invalidatesTags: ['User'],
     }),
 
     getFinthetixUserInfo:
@@ -155,6 +155,7 @@ export const metamaskApi = createApi({
               });
             });
           },
+          providesTags: ['User'],
         }),
 
     requestSampleTokens:
@@ -206,7 +207,7 @@ export const metamaskApi = createApi({
 
 export const {
   useRequestMetamaskAddressMutation,
-  useLazyGetActiveMetamaskAddressQuery,
+  useRefreshActiveMetamaskAddressMutation,
   useLazyGetFinthetixUserInfoQuery,
   useRequestSampleTokensMutation,
 } = metamaskApi;
