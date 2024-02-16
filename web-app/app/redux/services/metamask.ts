@@ -97,11 +97,12 @@ export const metamaskApi = createApi({
         try {
           const { data: newAddress } = await queryFulfilled;
           dispatch(setActiveAddress(newAddress));
-          toast({
-            variant: 'success',
-            title: 'Logged in successfully',
-            description: `Welcome ${newAddress}!`,
-          });
+          if (newAddress)
+            toast({
+              variant: 'success',
+              title: 'Logged in successfully',
+              description: `Welcome ${newAddress}!`,
+            });
         }
         catch (err) {
           const isEndpointError = getIsEndpointError(err);
