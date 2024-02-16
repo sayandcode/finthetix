@@ -3,7 +3,7 @@ import MetamaskHandler from '~/redux/services/lib/Metamask';
 import { ChainInfo, DappInfo } from '~/lib/types';
 import { setIsUserLoading, type ActiveAddress, setActiveAddress } from '../features/user/slice';
 import { toast } from '~/components/ui/use-toast';
-import FinthetixStakingContractHandler from '~/contracts/FinthetixStakingContract';
+import FinthetixStakingContractHandler, { AmtToStakeStr } from '~/contracts/FinthetixStakingContract';
 import { UI_ERRORS } from '~/lib/ui-errors';
 import { getIsEndpointError, makeErrorableQueryFn } from './lib/utils';
 
@@ -64,8 +64,7 @@ export const metamaskApi = createApi({
             toast({
               variant: 'destructive',
               title: UI_ERRORS.ERR1,
-              description: errDescription
-              ,
+              description: errDescription,
             });
             dispatch(setActiveAddress(null));
           }
@@ -203,6 +202,61 @@ export const metamaskApi = createApi({
           });
         },
       }),
+
+    stakeWithFinthetix:
+      builder.mutation<
+        void,
+        { amtToStakeStr: AmtToStakeStr, dappInfo: DappInfo }
+      >({
+        queryFn:
+          makeErrorableQueryFn(
+            async ({ amtToStakeStr, dappInfo }) => {
+              const metamaskHandler = new MetamaskHandler();
+              const fscHandler = new FinthetixStakingContractHandler(
+                metamaskHandler.provider, dappInfo,
+              );
+              await fscHandler.stake(amtToStakeStr);
+            },
+            (internalErr) => {
+              console.log({ internalErr });
+              // default error paths
+              if (internalErr.startsWith('Metamask not installed'))
+                return 'Install Metamask browser extension and try again';
+
+              // endpoint specific errors
+              else if (internalErr.match(/reason="rejected"/)) {
+                console.log('here');
+                return 'Please accept the approval and staking transactions';
+              }
+              else return FALLBACK_ERROR_DESCRIPTION;
+            },
+            FALLBACK_ERROR_DESCRIPTION,
+          ),
+
+        onQueryStarted: async (_, { queryFulfilled }) => {
+          try {
+            await queryFulfilled;
+            toast({
+              variant: 'success',
+              title: 'Staked successfully',
+            });
+          }
+          catch (err) {
+            const isEndpointError = getIsEndpointError(err);
+            const errDescription
+            = isEndpointError ? err.error : FALLBACK_ERROR_DESCRIPTION;
+            toast({
+              variant: 'destructive',
+              title: UI_ERRORS.ERR5,
+              description: errDescription,
+            });
+          }
+        },
+
+        invalidatesTags: ['User'],
+
+      }),
+
   }),
 });
 
@@ -211,4 +265,5 @@ export const {
   useRefreshActiveMetamaskAddressMutation,
   useLazyGetFinthetixUserInfoQuery,
   useRequestSampleTokensMutation,
+  useStakeWithFinthetixMutation,
 } = metamaskApi;

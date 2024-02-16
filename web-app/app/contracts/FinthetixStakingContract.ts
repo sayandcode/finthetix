@@ -3,6 +3,12 @@ import { DappInfo } from '~/lib/types';
 import { FinthetixRewardToken, FinthetixRewardToken__factory, FinthetixStakingContract, FinthetixStakingContract__factory, FinthetixStakingToken, FinthetixStakingToken__factory } from './types';
 import { getReadableERC20TokenCount } from '~/lib/utils';
 
+/**
+ * The amount to stake as a string. This helps because bigints may
+ * not be serializable midway
+ */
+export type AmtToStakeStr = string;
+
 export default class FinthetixStakingContractHandler {
   constructor(
     private _provider: BrowserProvider, private _dappInfo: DappInfo,
@@ -15,7 +21,8 @@ export default class FinthetixStakingContractHandler {
   async getUserData() {
     /** Contract Handlers */
     // this function only reads data using view fns so we only need a provider
-    const stakingContract = this._getStakingContract(this._provider);
+    const signer = await this._provider.getSigner();
+    const stakingContract = this._getStakingContract(signer);
     const stakingToken = this._getStakingToken(this._provider);
     const rewardToken = this._getRewardToken(this._provider);
 
@@ -42,6 +49,32 @@ export default class FinthetixStakingContractHandler {
     // make mutations
     const sampleTokenRequest = await stakingToken.requestSampleTokens();
     await sampleTokenRequest.wait();
+  }
+
+  /**
+   * This function first approves the said number of tokens for transfer by the
+   * staking contract, and then stakes said amount.
+   *
+   * @param amtToStakeStr The amount to stake as a string. This helps because
+   *  bigints may not be serializable midway
+   */
+  async stake(amtToStakeStr: AmtToStakeStr) {
+    const amtToStake = BigInt(amtToStakeStr);
+
+    /** Contract Handlers */
+    // this function mutates the blockchain as it stakes tokens
+    const signer = await this._provider.getSigner();
+    const stakingToken = this._getStakingToken(signer);
+    const stakingContract = this._getStakingContract(signer);
+
+    // make mutations
+    const approvalTxn
+      = await stakingToken.approve(
+        this._dappInfo.stakingContractAddr, amtToStake,
+      );
+    await approvalTxn.wait();
+    const stakeTxn = await stakingContract.stake(amtToStake);
+    await stakeTxn.wait();
   }
 
   /**

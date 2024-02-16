@@ -3,4 +3,5 @@ export const UI_ERRORS = {
   ERR2: 'ERR2: Could not fetch active Metamask address',
   ERR3: 'ERR3: Error fetching user data',
   ERR4: 'ERR4: Could not request sample tokens',
+  ERR5: 'ERR5: Could not stake tokens',
 } as const;
