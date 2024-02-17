@@ -24,13 +24,17 @@ export default class FinthetixStakingContractHandler {
   async getUserData() {
     const stakingTokenDecimals = Number(await this._stakingToken.decimals());
     const rewardTokenDecimals = Number(await this._rewardToken.decimals());
+    const userAddr = this._signer.address;
 
     const stakedAmt = await this._stakingContract.viewMyStakedAmt();
     const rewardAmt = await this._getRewardAmt();
+    const stakingTokenBalAmt = await this._stakingToken.balanceOf(userAddr);
 
     return {
       stakedAmt: { value: stakedAmt, decimals: stakingTokenDecimals },
       rewardAmt: { value: rewardAmt, decimals: rewardTokenDecimals },
+      stakingTokenBal:
+        { value: stakingTokenBalAmt, decimals: stakingTokenDecimals },
     };
   }
 

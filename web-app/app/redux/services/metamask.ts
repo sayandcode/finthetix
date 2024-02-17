@@ -196,6 +196,8 @@ export const metamaskApi = createApi({
             });
           });
         },
+
+        invalidatesTags: ['User'],
       }),
 
     stakeWithFinthetix:

@@ -27,6 +27,7 @@ const NOTATION_SWITCH_THRESHOLD = 18;
 export function getReadableERC20TokenCount(
   tokenCountStr: string,
   noOfDecimals: number,
+  notationForFractionalNumber: 'scientific' | 'compact' = 'scientific',
 ): string {
   if (tokenCountStr === '0') return '0';
 
@@ -37,7 +38,7 @@ export function getReadableERC20TokenCount(
     const decimalizedTokenCount
       = Number(`0.${tokenCountStr.padStart(noOfDecimals, '0')}`);
     return Intl
-      .NumberFormat('en-US', { maximumFractionDigits: 2, notation: 'scientific' })
+      .NumberFormat('en-US', { maximumSignificantDigits: 2, notation: notationForFractionalNumber })
       .format(decimalizedTokenCount);
   }
 
