@@ -126,8 +126,9 @@ export default class FinthetixStakingContractHandler {
       + await this._calculateAccruedAlpha();
     const alphaOfUserAtLastInteraction
       = await this._stakingContract.viewAlphaAtMyLastInteraction();
+    const cooldownConstant = await this._stakingContract.COOLDOWN_CONSTANT();
     return stakedAmt * totalRewardsPerSec
-      * (alphaNow - alphaOfUserAtLastInteraction);
+      * (alphaNow - alphaOfUserAtLastInteraction) / cooldownConstant;
   }
 
   private async _calculateAccruedAlpha() {
