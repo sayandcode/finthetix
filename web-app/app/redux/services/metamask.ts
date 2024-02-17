@@ -127,7 +127,7 @@ export const metamaskApi = createApi({
             makeErrorableQueryFn(
               async (dappInfo) => {
                 const metamaskHandler = new MetamaskHandler();
-                const fscHandler = new FinthetixStakingContractHandler(
+                const fscHandler = await FinthetixStakingContractHandler.make(
                   metamaskHandler.provider, dappInfo,
                 );
                 return fscHandler.getUserData();
@@ -164,10 +164,9 @@ export const metamaskApi = createApi({
           makeErrorableQueryFn(
             async (dappInfo) => {
               const metamaskHandler = new MetamaskHandler();
-              const fscHandler
-                = new FinthetixStakingContractHandler(
-                  metamaskHandler.provider, dappInfo,
-                );
+              const fscHandler = await FinthetixStakingContractHandler.make(
+                metamaskHandler.provider, dappInfo,
+              );
               return fscHandler.requestSampleTokens();
             },
             (internalErr) => {
@@ -212,20 +211,18 @@ export const metamaskApi = createApi({
           makeErrorableQueryFn(
             async ({ amtToStakeStr, dappInfo }) => {
               const metamaskHandler = new MetamaskHandler();
-              const fscHandler = new FinthetixStakingContractHandler(
+              const fscHandler = await FinthetixStakingContractHandler.make(
                 metamaskHandler.provider, dappInfo,
               );
               await fscHandler.stake(amtToStakeStr);
             },
             (internalErr) => {
-              console.log({ internalErr });
               // default error paths
               if (internalErr.startsWith('Metamask not installed'))
                 return 'Install Metamask browser extension and try again';
 
               // endpoint specific errors
               else if (internalErr.match(/reason="rejected"/)) {
-                console.log('here');
                 return 'Please accept the approval and staking transactions';
               }
               else return FALLBACK_ERROR_DESCRIPTION;
