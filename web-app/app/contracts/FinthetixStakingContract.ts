@@ -1,14 +1,8 @@
 import { BrowserProvider, JsonRpcSigner } from 'ethers';
 import { DappInfo } from '~/lib/types';
 import { FinthetixRewardToken, FinthetixRewardToken__factory, FinthetixStakingContract, FinthetixStakingContract__factory, FinthetixStakingToken, FinthetixStakingToken__factory } from './types';
-import { getReadableERC20TokenCount } from '~/lib/utils';
 
-/**
- * The amount to stake as a string. This helps because bigints may
- * not be serializable midway
- */
-export type AmtToStakeStr = string;
-
+export type FinthetixUserData = Awaited<ReturnType<FinthetixStakingContractHandler['getUserData']>>;
 export default class FinthetixStakingContractHandler {
   static async make(provider: BrowserProvider, dappInfo: DappInfo) {
     const signer = await provider.getSigner();
@@ -28,16 +22,15 @@ export default class FinthetixStakingContractHandler {
    */
 
   async getUserData() {
-    const stakedAmt = await this._stakingContract.viewMyStakedAmt();
-    const rewardAmt = await this._getRewardAmt();
     const stakingTokenDecimals = Number(await this._stakingToken.decimals());
     const rewardTokenDecimals = Number(await this._rewardToken.decimals());
 
+    const stakedAmt = await this._stakingContract.viewMyStakedAmt();
+    const rewardAmt = await this._getRewardAmt();
+
     return {
-      stakedAmt:
-        getReadableERC20TokenCount(stakedAmt, stakingTokenDecimals),
-      rewardAmt:
-        getReadableERC20TokenCount(rewardAmt, rewardTokenDecimals),
+      stakedAmt: { value: stakedAmt, decimals: stakingTokenDecimals },
+      rewardAmt: { value: rewardAmt, decimals: rewardTokenDecimals },
     };
   }
 
@@ -50,12 +43,9 @@ export default class FinthetixStakingContractHandler {
    * This function first approves the said number of tokens for transfer by the
    * staking contract, and then stakes said amount.
    *
-   * @param amtToStakeStr The amount to stake as a string. This helps because
-   *  bigints may not be serializable midway
+   * @param amtToStake The amount to stake
    */
-  async stake(amtToStakeStr: AmtToStakeStr) {
-    const amtToStake = BigInt(amtToStakeStr);
-
+  async stake(amtToStake: bigint) {
     // approve
     const approvalTxn
       = await this._stakingToken.approve(

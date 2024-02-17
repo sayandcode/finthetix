@@ -1,16 +1,25 @@
 import { Loader2Icon } from 'lucide-react';
+import { useMemo } from 'react';
 import { Button } from '~/components/ui/button';
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter,
 } from '~/components/ui/card';
-import FinthetixStakingContractHandler from '~/contracts/FinthetixStakingContract';
+import { FinthetixUserData } from '~/contracts/FinthetixStakingContract';
+import { StringifyBigIntsInObj } from '~/lib/types';
+import { getReadableERC20TokenCount } from '~/lib/utils';
 
 export default function RewardsCard(
   { userInfo, isInfoFetching }:
   {
-    userInfo?: Awaited<ReturnType<FinthetixStakingContractHandler['getUserData']>>
+    userInfo?: StringifyBigIntsInObj<FinthetixUserData>
     isInfoFetching: boolean
   }) {
+  const rewardAmtStr = useMemo(() => {
+    if (!userInfo) return null;
+    const { value: tokenCountStr, decimals } = userInfo.rewardAmt;
+    return getReadableERC20TokenCount(tokenCountStr, decimals);
+  }, [userInfo]);
+
   return (
     <Card className="w-full flex flex-col justify-between">
       <CardHeader>
@@ -21,9 +30,9 @@ export default function RewardsCard(
       </CardHeader>
       <CardContent>
         <span className="font-bold text-5xl mr-2">
-          {isInfoFetching || !userInfo
+          {isInfoFetching || !rewardAmtStr
             ? <Loader2Icon className="my-2 mx-5 w-16 h-16 inline-block animate-spin" />
-            : userInfo.rewardAmt}
+            : rewardAmtStr}
         </span>
         <span>FRT</span>
       </CardContent>

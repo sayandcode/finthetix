@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { TrialResult } from './types';
+import { StringifyBigIntsInObj, TrialResult } from './types';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -25,12 +25,10 @@ export async function tryItAsync<ResultType = unknown, Err = unknown>(
 const NOTATION_SWITCH_THRESHOLD = 18;
 
 export function getReadableERC20TokenCount(
-  tokenCount: bigint,
+  tokenCountStr: string,
   noOfDecimals: number,
 ): string {
-  if (tokenCount === 0n) return '0';
-
-  const tokenCountStr = tokenCount.toString();
+  if (tokenCountStr === '0') return '0';
 
   // there is only fraction part
   const isTokenCountFractional
@@ -56,4 +54,22 @@ export function getReadableERC20TokenCount(
   return Intl
     .NumberFormat('en-US', { maximumFractionDigits: 2, notation })
     .format(decimalizedTokenCount);
+}
+
+export function stringifyBigIntsInObj<Obj extends object>(obj: Obj):
+StringifyBigIntsInObj<Obj> {
+  return Object.fromEntries(
+    Object
+      .entries(obj)
+      .map(([k, v]) => {
+        const serializedVal
+          = typeof v === 'bigint'
+            ? v.toString()
+            : typeof v === 'object'
+              ? stringifyBigIntsInObj(v)
+              : v;
+
+        return [k, serializedVal];
+      }),
+  ) as StringifyBigIntsInObj<Obj>;
 }

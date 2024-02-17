@@ -19,3 +19,16 @@ export type DappInfo = {
   stakingTokenAddr: string
   rewardTokenAddr: string
 };
+
+/**
+ * We can use this type to stringify all bigints in an object,
+ * so that redux can properly serialize them
+ */
+export type StringifyBigIntsInObj<Obj> = {
+  [K in keyof Obj]:
+  Obj[K] extends bigint
+    ? string
+    : Obj[K] extends object
+      ? StringifyBigIntsInObj<Obj[K]>
+      : Obj[K]
+};
