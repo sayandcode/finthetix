@@ -38,7 +38,7 @@ export default function StakingCard(
       <CardContent>
         <span className="font-bold text-5xl mr-2">
           {isInfoFetching || !stakedAmtStr
-            ? <Loader2Icon className="my-2 mx-5 w-16 h-16 inline-block animate-spin" />
+            ? <Loader2Icon className="mx-10 w-10 h-10 inline-block animate-spin" />
             : stakedAmtStr}
         </span>
         <span>FST</span>
