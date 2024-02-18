@@ -8,6 +8,8 @@ import { FinthetixUserData } from '~/contracts/FinthetixStakingContract';
 import { StringifyBigIntsInObj } from '~/lib/utils/stringifyBigIntsInObj';
 import getReadableERC20TokenCount from '~/lib/utils/readableERC20';
 
+const MAX_DIGITS_TO_DISPLAY_IN_AMT_STR = 4;
+
 export default function RewardsCard(
   { userInfo, isInfoFetching }:
   {
@@ -16,8 +18,9 @@ export default function RewardsCard(
   }) {
   const rewardAmtStr = useMemo(() => {
     if (!userInfo) return null;
-    const { value: tokenCountStr, decimals } = userInfo.rewardAmt;
-    return getReadableERC20TokenCount(tokenCountStr, decimals);
+    return getReadableERC20TokenCount(
+      userInfo.rewardAmt, MAX_DIGITS_TO_DISPLAY_IN_AMT_STR,
+    );
   }, [userInfo]);
 
   return (

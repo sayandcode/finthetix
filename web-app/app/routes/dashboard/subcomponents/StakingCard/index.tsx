@@ -9,6 +9,8 @@ import getReadableERC20TokenCount from '~/lib/utils/readableERC20';
 import StakeBtn from './subcomponents/StakeBtn';
 import UnstakeBtn from './subcomponents/UnstakeBtn';
 
+const MAX_DIGITS_TO_DISPLAY_IN_AMT_STR = 4;
+
 export default function StakingCard(
   { userInfo, isInfoFetching }:
   {
@@ -17,8 +19,9 @@ export default function StakingCard(
   }) {
   const stakedAmtStr = useMemo(() => {
     if (!userInfo) return null;
-    const { value: tokenCountStr, decimals } = userInfo.stakedAmt;
-    return getReadableERC20TokenCount(tokenCountStr, decimals);
+    return getReadableERC20TokenCount(
+      userInfo.stakedAmt, MAX_DIGITS_TO_DISPLAY_IN_AMT_STR,
+    );
   }, [userInfo]);
 
   return (

@@ -7,6 +7,8 @@ import getReadableERC20TokenCount from '~/lib/utils/readableERC20';
 const MAX_PERCENT_IN_SLIDER = 100;
 const MIN_PERCENT_IN_SLIDER = 1;
 
+const MAX_DIGITS_TO_DISPLAY_FOR_AMT_STR = 18;
+
 export default function TokenAmtSliderInput(
   { maxAmt, onAmtChange: handleAmtChange, disabled, tokenSymbol }:
   {
@@ -20,7 +22,8 @@ export default function TokenAmtSliderInput(
 
   const [readableAmtStr, setReadableAmtStr]
     = useState<string>(
-      () => getReadableERC20TokenCount(maxAmt.value, maxAmt.decimals, 'compact'),
+      () =>
+        getReadableERC20TokenCount(maxAmt, MAX_DIGITS_TO_DISPLAY_FOR_AMT_STR),
     );
 
   const handleSliderChange = useCallback(
@@ -29,7 +32,10 @@ export default function TokenAmtSliderInput(
       const fractionalAmt = getPercentageOfTokenCount(maxAmt, newPercVal);
       handleAmtChange(fractionalAmt);
 
-      const newReadableAmtStr = getReadableERC20TokenCount(fractionalAmt.value, fractionalAmt.decimals, 'compact');
+      const newReadableAmtStr
+        = getReadableERC20TokenCount(
+          fractionalAmt, MAX_DIGITS_TO_DISPLAY_FOR_AMT_STR,
+        );
       setReadableAmtStr(newReadableAmtStr);
     }, [maxAmt, handleAmtChange]);
 
