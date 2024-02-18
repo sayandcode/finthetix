@@ -1,27 +1,16 @@
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '~/components/ui/dialog';
 import { Loader2Icon } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '~/components/ui/button';
 import InsufficientTokenBalAlert from './subcomponents/InsufficientTokensAlert';
 import { StringifiedTokenCount } from '~/lib/types';
 import { useStakeCommand } from './lib/hooks';
-import AmtToStakeSliderInput from './subcomponents/AmtToStakeSliderInput';
-import getPercentageOfTokenCount from '~/lib/utils/getPercentageOfTokenCount';
-
-const INIT_PERCENTAGE_TO_STAKE = 100;
+import TokenAmtSliderInput from '~/routes/dashboard/subcomponents/lib/TokenAmtSliderInput';
 
 export function StakeDialogContent(
   { stakingTokenBal, onClose: closeDialog }:
-  {
-    stakingTokenBal: StringifiedTokenCount
-    onClose: () => void
-  }) {
-  const [percentageToStake, setPercentageToStake]
-    = useState(INIT_PERCENTAGE_TO_STAKE);
-
-  const amtToStake = useMemo(
-    () => getPercentageOfTokenCount(stakingTokenBal, percentageToStake),
-    [stakingTokenBal, percentageToStake]);
+  { stakingTokenBal: StringifiedTokenCount, onClose: () => void }) {
+  const [amtToStake, setAmtToStake] = useState(stakingTokenBal);
 
   const { stake, isProcessing: isStakingInProcess }
     = useStakeCommand(amtToStake.value, closeDialog);
@@ -38,10 +27,10 @@ export function StakeDialogContent(
         </DialogDescription>
       </DialogHeader>
       {isTokenBalInsufficient ? <InsufficientTokenBalAlert /> : null}
-      <AmtToStakeSliderInput
-        amtToStake={amtToStake}
-        percentageToStake={percentageToStake}
-        setPercentageToStake={setPercentageToStake}
+      <TokenAmtSliderInput
+        onAmtChange={setAmtToStake}
+        maxAmt={stakingTokenBal}
+        tokenSymbol="FST"
         disabled={isStakingBlocked}
       />
       <DialogFooter className="gap-y-2">

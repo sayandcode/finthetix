@@ -1,26 +1,15 @@
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '~/components/ui/dialog';
 import { Loader2Icon } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '~/components/ui/button';
 import { StringifiedTokenCount } from '~/lib/types';
 import { useUnstakeCommand } from './lib/hooks';
-import AmtToUnstakeSliderInput from './subcomponents/AmtToUnstakeSliderInput';
-import getPercentageOfTokenCount from '~/lib/utils/getPercentageOfTokenCount';
-
-const INIT_PERCENTAGE_TO_UNSTAKE = 1;
+import TokenAmtSliderInput from '~/routes/dashboard/subcomponents/lib/TokenAmtSliderInput';
 
 export function UnstakeDialogContent(
   { amtCurrentlyStaked, onClose: closeDialog }:
-  {
-    amtCurrentlyStaked: StringifiedTokenCount
-    onClose: () => void
-  }) {
-  const [percentageToUnstake, setPercentageToUnstake]
-    = useState(INIT_PERCENTAGE_TO_UNSTAKE);
-
-  const amtToUnstake = useMemo(
-    () => getPercentageOfTokenCount(amtCurrentlyStaked, percentageToUnstake),
-    [amtCurrentlyStaked, percentageToUnstake]);
+  { amtCurrentlyStaked: StringifiedTokenCount, onClose: () => void }) {
+  const [amtToUnstake, setAmtToUnstake] = useState(amtCurrentlyStaked);
 
   const { unstake, isProcessing: isUnstakingInProcess }
     = useUnstakeCommand(amtToUnstake.value, closeDialog);
@@ -35,10 +24,10 @@ export function UnstakeDialogContent(
           Return FST tokens to your account balance
         </DialogDescription>
       </DialogHeader>
-      <AmtToUnstakeSliderInput
-        amtToUnstake={amtToUnstake}
-        percentageToUnstake={percentageToUnstake}
-        setPercentageToUnstake={setPercentageToUnstake}
+      <TokenAmtSliderInput
+        onAmtChange={setAmtToUnstake}
+        maxAmt={amtCurrentlyStaked}
+        tokenSymbol="FST"
         disabled={isUnstakingBlocked}
       />
       <DialogFooter className="gap-y-2">
