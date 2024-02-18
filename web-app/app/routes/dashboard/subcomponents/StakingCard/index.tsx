@@ -5,8 +5,8 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter,
 } from '~/components/ui/card';
 import { FinthetixUserData } from '~/contracts/FinthetixStakingContract';
-import { StringifyBigIntsInObj } from '~/lib/types';
-import { getReadableERC20TokenCount } from '~/lib/utils';
+import { StringifyBigIntsInObj } from '~/lib/utils/stringifyBigIntsInObj';
+import getReadableERC20TokenCount from '~/lib/utils/readableERC20';
 import { Dialog, DialogContent, DialogTrigger } from '~/components/ui/dialog';
 import StakeDialog from './subcomponents/StakeDialog';
 

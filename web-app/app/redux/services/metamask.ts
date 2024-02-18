@@ -1,12 +1,12 @@
 import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
 import MetamaskHandler from '~/redux/services/lib/Metamask';
-import { ChainInfo, DappInfo, StringifyBigIntsInObj } from '~/lib/types';
+import { ChainInfo, DappInfo } from '~/lib/types';
+import stringifyBigIntsInObj, { StringifyBigIntsInObj } from '~/lib/utils/stringifyBigIntsInObj';
 import { setIsUserLoading, type ActiveAddress, setActiveAddress } from '../features/user/slice';
 import { toast } from '~/components/ui/use-toast';
 import FinthetixStakingContractHandler, { FinthetixUserData } from '~/contracts/FinthetixStakingContract';
 import { UI_ERRORS } from '~/lib/ui-errors';
 import { getIsEndpointError, makeErrorableQueryFn } from './lib/utils';
-import { stringifyBigIntsInObj } from '~/lib/utils';
 
 const FALLBACK_ERROR_DESCRIPTION = 'Something went wrong when interacting with the Blockchain';
 

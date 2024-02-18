@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { tryItAsync } from '~/lib/utils';
+import tryItAsync from '~/lib/utils/tryItAsync';
 
 const endpointErrSchema = z.object({ error: z.string() });
 
