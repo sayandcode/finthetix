@@ -1,6 +1,5 @@
 import { Loader2Icon } from 'lucide-react';
 import { useMemo } from 'react';
-import { Button } from '~/components/ui/button';
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter,
 } from '~/components/ui/card';
@@ -8,6 +7,7 @@ import { FinthetixUserData } from '~/contracts/FinthetixStakingContract';
 import { StringifyBigIntsInObj } from '~/lib/utils/stringifyBigIntsInObj';
 import getReadableERC20TokenCount from '~/lib/utils/readableERC20';
 import StakeBtn from './subcomponents/StakeBtn';
+import UnstakeBtn from './subcomponents/UnstakeBtn';
 
 export default function StakingCard(
   { userInfo, isInfoFetching }:
@@ -39,7 +39,7 @@ export default function StakingCard(
       </CardContent>
       <CardFooter className="flex justify-end gap-2">
         <StakeBtn stakingTokenBal={userInfo?.stakingTokenBal} />
-        <Button variant="outline">Unstake</Button>
+        <UnstakeBtn amtCurrentlyStaked={userInfo?.stakedAmt} />
       </CardFooter>
     </Card>
   );
