@@ -1,10 +1,11 @@
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '~/components/ui/dialog';
 import { Loader2Icon } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Button } from '~/components/ui/button';
 import { StringifiedTokenCount } from '~/lib/types';
-import { useAmtToUnstake, useUnstakeCommand } from './lib/hooks';
+import { useUnstakeCommand } from './lib/hooks';
 import AmtToUnstakeSliderInput from './subcomponents/AmtToUnstakeSliderInput';
+import getPercentageOfTokenCount from '~/lib/utils/getPercentageOfTokenCount';
 
 const INIT_PERCENTAGE_TO_UNSTAKE = 1;
 
@@ -17,10 +18,12 @@ export function UnstakeDialogContent(
   const [percentageToUnstake, setPercentageToUnstake]
     = useState(INIT_PERCENTAGE_TO_UNSTAKE);
 
-  const amtToStake = useAmtToUnstake(amtCurrentlyStaked, percentageToUnstake);
+  const amtToUnstake = useMemo(
+    () => getPercentageOfTokenCount(amtCurrentlyStaked, percentageToUnstake),
+    [amtCurrentlyStaked, percentageToUnstake]);
 
-  const { confirmUnstaking, isUnstakingInProcess }
-    = useUnstakeCommand(amtToStake.value, closeDialog);
+  const { unstake, isProcessing: isUnstakingInProcess }
+    = useUnstakeCommand(amtToUnstake.value, closeDialog);
 
   const isUnstakingBlocked = isUnstakingInProcess;
 
@@ -33,13 +36,13 @@ export function UnstakeDialogContent(
         </DialogDescription>
       </DialogHeader>
       <AmtToUnstakeSliderInput
-        amtToUnstake={amtToStake}
+        amtToUnstake={amtToUnstake}
         percentageToUnstake={percentageToUnstake}
         setPercentageToUnstake={setPercentageToUnstake}
         disabled={isUnstakingBlocked}
       />
       <DialogFooter className="gap-y-2">
-        <Button onClick={confirmUnstaking} disabled={isUnstakingBlocked}>
+        <Button onClick={unstake} disabled={isUnstakingBlocked}>
           {isUnstakingInProcess ? <Loader2Icon className="animate-spin" /> : 'Confirm' }
         </Button>
         <Button variant="outline" onClick={closeDialog} disabled={isUnstakingBlocked}>
