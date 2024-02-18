@@ -19,3 +19,8 @@ export type DappInfo = {
   stakingTokenAddr: string
   rewardTokenAddr: string
 };
+
+export type StringifiedTokenCount = {
+  value: string
+  decimals: number
+};

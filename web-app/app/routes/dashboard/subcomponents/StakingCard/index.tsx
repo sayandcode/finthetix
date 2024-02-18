@@ -1,5 +1,5 @@
 import { Loader2Icon } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Button } from '~/components/ui/button';
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter,
@@ -7,8 +7,7 @@ import {
 import { FinthetixUserData } from '~/contracts/FinthetixStakingContract';
 import { StringifyBigIntsInObj } from '~/lib/utils/stringifyBigIntsInObj';
 import getReadableERC20TokenCount from '~/lib/utils/readableERC20';
-import { Dialog, DialogContent, DialogTrigger } from '~/components/ui/dialog';
-import StakeDialog from './subcomponents/StakeDialog';
+import StakeBtn from './subcomponents/StakeBtn';
 
 export default function StakingCard(
   { userInfo, isInfoFetching }:
@@ -21,11 +20,6 @@ export default function StakingCard(
     const { value: tokenCountStr, decimals } = userInfo.stakedAmt;
     return getReadableERC20TokenCount(tokenCountStr, decimals);
   }, [userInfo]);
-
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const closeModal = useCallback(() => {
-    setIsDialogOpen(false);
-  }, []);
 
   return (
     <Card className="w-full flex flex-col justify-between">
@@ -44,16 +38,7 @@ export default function StakingCard(
         <span>FST</span>
       </CardContent>
       <CardFooter className="flex justify-end gap-2">
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild disabled={!userInfo}>
-            <Button>Stake</Button>
-          </DialogTrigger>
-          <DialogContent>
-            {userInfo
-              ? (<StakeDialog userInfo={userInfo} onClose={closeModal} />)
-              : null}
-          </DialogContent>
-        </Dialog>
+        <StakeBtn stakingTokenBal={userInfo?.stakingTokenBal} />
         <Button variant="outline">Unstake</Button>
       </CardFooter>
     </Card>
