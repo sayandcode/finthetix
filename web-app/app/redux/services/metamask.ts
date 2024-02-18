@@ -220,9 +220,8 @@ export const metamaskApi = createApi({
               return 'Install Metamask browser extension and try again';
 
             // endpoint specific errors
-            else if (internalErr.match(/reason="rejected"/)) {
+            else if (internalErr.match(/reason="rejected"/))
               return 'Please accept the approval and staking transactions';
-            }
             else return FALLBACK_ERROR_DESCRIPTION;
           },
           FALLBACK_ERROR_DESCRIPTION,
@@ -252,6 +251,54 @@ export const metamaskApi = createApi({
 
       }),
 
+    unstakeWithFinthetix:
+      builder.mutation<void, { amtToUnstakeStr: string, dappInfo: DappInfo }>({
+        queryFn: makeErrorableQueryFn(
+          async ({ amtToUnstakeStr, dappInfo }) => {
+            const metamaskHandler = new MetamaskHandler();
+            const fscHandler = await FinthetixStakingContractHandler.make(
+              metamaskHandler.provider, dappInfo,
+            );
+            const amtToStake = BigInt(amtToUnstakeStr);
+            await fscHandler.unstake(amtToStake);
+          },
+          (internalErr) => {
+            // default error paths
+            if (internalErr.startsWith('Metamask not installed'))
+              return 'Install Metamask browser extension and try again';
+
+            // endpoint specific errors
+            else if (internalErr.match(/reason="rejected"/))
+              return 'Please accept the unstaking transactions';
+            else return FALLBACK_ERROR_DESCRIPTION;
+          },
+          FALLBACK_ERROR_DESCRIPTION,
+        ),
+
+        onQueryStarted: async (_, { queryFulfilled }) => {
+          try {
+            await queryFulfilled;
+            toast({
+              variant: 'success',
+              title: 'Unstaked successfully',
+            });
+          }
+          catch (err) {
+            const isEndpointError = getIsEndpointError(err);
+            const errDescription
+            = isEndpointError ? err.error : FALLBACK_ERROR_DESCRIPTION;
+            toast({
+              variant: 'destructive',
+              title: UI_ERRORS.ERR5,
+              description: errDescription,
+            });
+          }
+        },
+
+        invalidatesTags: ['User'],
+
+      }),
+
   }),
 });
 
@@ -261,4 +308,5 @@ export const {
   useLazyGetFinthetixUserInfoQuery,
   useRequestSampleTokensMutation,
   useStakeWithFinthetixMutation,
+  useUnstakeWithFinthetixMutation,
 } = metamaskApi;

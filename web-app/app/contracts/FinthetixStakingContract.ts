@@ -62,6 +62,11 @@ export default class FinthetixStakingContractHandler {
     await stakeTxn.wait();
   }
 
+  async unstake(amtToUnstake: bigint) {
+    const txn = await this._stakingContract.unstake(amtToUnstake);
+    await txn.wait();
+  }
+
   /**
    * Contract Handler Getters:
    * These are a awrapper around the contract factories
