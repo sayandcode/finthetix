@@ -67,6 +67,11 @@ export default class FinthetixStakingContractHandler {
     await txn.wait();
   }
 
+  async withdrawReward() {
+    const txn = await this._stakingContract.withdrawRewards();
+    await txn.wait();
+  }
+
   /**
    * Contract Handler Getters:
    * These are a awrapper around the contract factories

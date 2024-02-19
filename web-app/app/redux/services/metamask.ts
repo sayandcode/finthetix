@@ -289,14 +289,59 @@ export const metamaskApi = createApi({
             = isEndpointError ? err.error : FALLBACK_ERROR_DESCRIPTION;
             toast({
               variant: 'destructive',
-              title: UI_ERRORS.ERR5,
+              title: UI_ERRORS.ERR6,
               description: errDescription,
             });
           }
         },
 
         invalidatesTags: ['User'],
+      }),
 
+    withdrawRewardsFromFinthetix:
+      builder.mutation<void, DappInfo >({
+        queryFn: makeErrorableQueryFn(
+          async (dappInfo) => {
+            const metamaskHandler = new MetamaskHandler();
+            const fscHandler = await FinthetixStakingContractHandler.make(
+              metamaskHandler.provider, dappInfo,
+            );
+            await fscHandler.withdrawReward();
+          },
+          (internalErr) => {
+            // default error paths
+            if (internalErr.startsWith('Metamask not installed'))
+              return 'Install Metamask browser extension and try again';
+
+            // endpoint specific errors
+            else if (internalErr.match(/reason="rejected"/))
+              return 'Please accept the reward withdrawal transaction';
+            else return FALLBACK_ERROR_DESCRIPTION;
+          },
+          FALLBACK_ERROR_DESCRIPTION,
+        ),
+
+        onQueryStarted: async (_, { queryFulfilled }) => {
+          try {
+            await queryFulfilled;
+            toast({
+              variant: 'success',
+              title: 'Withdrawal successful',
+            });
+          }
+          catch (err) {
+            const isEndpointError = getIsEndpointError(err);
+            const errDescription
+            = isEndpointError ? err.error : FALLBACK_ERROR_DESCRIPTION;
+            toast({
+              variant: 'destructive',
+              title: UI_ERRORS.ERR7,
+              description: errDescription,
+            });
+          }
+        },
+
+        invalidatesTags: ['User'],
       }),
 
   }),
@@ -309,4 +354,5 @@ export const {
   useRequestSampleTokensMutation,
   useStakeWithFinthetixMutation,
   useUnstakeWithFinthetixMutation,
+  useWithdrawRewardsFromFinthetixMutation,
 } = metamaskApi;
