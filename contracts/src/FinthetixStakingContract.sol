@@ -14,16 +14,18 @@ interface FSCEvents {
     /**
      * @notice User has staked tokens
      * @param userAddr The address of the user who stakes
-     * @param amtStaked The amount of tokens staked by user
+     * @param amtStaked The additional amount of tokens staked by user in this transaction
+     * @param totalStakedAmt The total amount of tokens staked by user after this transaction
      */
-    event Staked(address indexed userAddr, uint256 amtStaked);
+    event Staked(address indexed userAddr, uint256 amtStaked, uint256 totalStakedAmt);
 
     /**
      * @notice User has unstaked tokens
      * @param userAddr The address of the user who unstakes
      * @param amtUnstaked The amount of tokens unstaked by user
+     * @param totalStakedAmt The total amount of tokens staked by user after this transaction
      */
-    event Unstaked(address indexed userAddr, uint256 amtUnstaked);
+    event Unstaked(address indexed userAddr, uint256 amtUnstaked, uint256 totalStakedAmt);
 
     /**
      * @notice User has withdrawn a reward
@@ -193,7 +195,7 @@ contract FinthetixStakingContract is FSCEvents, FSCErrors {
 
         // interactions
         stakingToken.transferFrom(msg.sender, address(this), amtToStake);
-        emit Staked(msg.sender, amtToStake);
+        emit Staked(msg.sender, amtToStake, totalStakedAmt);
     }
 
     /**
@@ -215,7 +217,7 @@ contract FinthetixStakingContract is FSCEvents, FSCErrors {
 
         // interactions
         stakingToken.transfer(msg.sender, amtToUnstake);
-        emit Unstaked(msg.sender, amtToUnstake);
+        emit Unstaked(msg.sender, amtToUnstake, totalStakedAmt);
     }
 
     /**
