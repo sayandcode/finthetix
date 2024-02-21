@@ -1,8 +1,12 @@
 import { BrowserProvider, JsonRpcSigner } from 'ethers';
 import { DappInfo } from '~/lib/types';
 import { FinthetixRewardToken, FinthetixRewardToken__factory, FinthetixStakingContract, FinthetixStakingContract__factory, FinthetixStakingToken, FinthetixStakingToken__factory } from './types';
+import sortTxns from '~/lib/utils/sortTxns';
+import { StakedEvent } from './types/FinthetixStakingContract.sol/FSCEvents';
+import { z } from 'zod';
 
 export type FinthetixUserData = Awaited<ReturnType<FinthetixStakingContractHandler['getUserData']>>;
+
 export default class FinthetixStakingContractHandler {
   static async make(provider: BrowserProvider, dappInfo: DappInfo) {
     const signer = await provider.getSigner();
@@ -70,6 +74,37 @@ export default class FinthetixStakingContractHandler {
   async withdrawReward() {
     const txn = await this._stakingContract.withdrawRewards();
     await txn.wait();
+  }
+
+  async getHistoricalStakedAmt() {
+    const senderAddr = this._signer.address;
+    const stakeEventFilter = this._stakingContract.filters.Staked(senderAddr);
+    const unstakeEventFilter
+      = this._stakingContract.filters.Unstaked(senderAddr);
+    const stakeEventLogs
+      = await this._stakingContract.queryFilter(stakeEventFilter);
+    const unstakeEventLogs
+      = await this._stakingContract.queryFilter(unstakeEventFilter);
+
+    // process the logs
+    const combinedLogs
+      = stakeEventLogs.concat(unstakeEventLogs).sort(sortTxns);
+    const totalAmtStakedLogs
+      = await Promise.all(combinedLogs.map(async (log) => {
+        const decodedEventLog
+        = this._stakingContract.interface
+          .decodeEventLog(log.fragment, log.data, log.topics);
+        const decodedEventLogSchema
+        = z.tuple([z.string(), z.bigint(), z.bigint()]) satisfies
+            z.ZodType<StakedEvent.InputTuple>;
+        const [, , totalAmtStaked]
+          = decodedEventLogSchema.parse(decodedEventLog);
+        const timeStampInS = (await log.getBlock()).timestamp;
+        const timestampISOString = new Date(timeStampInS * 1000).toISOString();
+        return { timestampISOString, totalAmtStaked };
+      }));
+
+    return totalAmtStakedLogs;
   }
 
   /**
