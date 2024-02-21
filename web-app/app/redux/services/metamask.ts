@@ -60,7 +60,7 @@ export const metamaskApi = createApi({
           catch (err) {
             const isEndpointError = getIsEndpointError(err);
             const errDescription
-            = isEndpointError ? err.error : FALLBACK_ERROR_DESCRIPTION;
+              = isEndpointError ? err.error : FALLBACK_ERROR_DESCRIPTION;
             toast({
               variant: 'destructive',
               title: UI_ERRORS.ERR1,
@@ -83,8 +83,8 @@ export const metamaskApi = createApi({
           // default error paths
           if (internalErr.startsWith('Metamask not installed'))
             return 'Install Metamask browser extension and try again';
-            // as of now the following request has no expected error paths
-            // other than default paths which are handled above
+          // as of now the following request has no expected error paths
+          // other than default paths which are handled above
           else return FALLBACK_ERROR_DESCRIPTION;
         },
         FALLBACK_ERROR_DESCRIPTION,
@@ -133,8 +133,9 @@ export const metamaskApi = createApi({
             // default error paths
             if (internalErr.startsWith('Metamask not installed'))
               return 'Install Metamask browser extension and try again';
-              // as of now the following request has no expected error paths
-              // other than default paths which are handled above
+
+            // as of now the following request has no expected error paths
+            // other than default paths which are handled above
             else return FALLBACK_ERROR_DESCRIPTION;
           },
           FALLBACK_ERROR_DESCRIPTION,
@@ -144,7 +145,7 @@ export const metamaskApi = createApi({
           queryFulfilled.catch((err) => {
             const isEndpointError = getIsEndpointError(err);
             const errDescription
-                = isEndpointError ? err.error : FALLBACK_ERROR_DESCRIPTION;
+              = isEndpointError ? err.error : FALLBACK_ERROR_DESCRIPTION;
             toast({
               variant: 'destructive',
               title: UI_ERRORS.ERR3,
@@ -188,7 +189,7 @@ export const metamaskApi = createApi({
           }).catch((err) => {
             const isEndpointError = getIsEndpointError(err);
             const errDescription
-                = isEndpointError ? err.error : FALLBACK_ERROR_DESCRIPTION;
+              = isEndpointError ? err.error : FALLBACK_ERROR_DESCRIPTION;
             toast({
               variant: 'destructive',
               title: UI_ERRORS.ERR4,
@@ -238,7 +239,7 @@ export const metamaskApi = createApi({
           catch (err) {
             const isEndpointError = getIsEndpointError(err);
             const errDescription
-            = isEndpointError ? err.error : FALLBACK_ERROR_DESCRIPTION;
+              = isEndpointError ? err.error : FALLBACK_ERROR_DESCRIPTION;
             toast({
               variant: 'destructive',
               title: UI_ERRORS.ERR5,
@@ -286,7 +287,7 @@ export const metamaskApi = createApi({
           catch (err) {
             const isEndpointError = getIsEndpointError(err);
             const errDescription
-            = isEndpointError ? err.error : FALLBACK_ERROR_DESCRIPTION;
+              = isEndpointError ? err.error : FALLBACK_ERROR_DESCRIPTION;
             toast({
               variant: 'destructive',
               title: UI_ERRORS.ERR6,
@@ -299,7 +300,7 @@ export const metamaskApi = createApi({
       }),
 
     withdrawRewardsFromFinthetix:
-      builder.mutation<void, DappInfo >({
+      builder.mutation<void, DappInfo>({
         queryFn: makeErrorableQueryFn(
           async (dappInfo) => {
             const metamaskHandler = new MetamaskHandler();
@@ -332,7 +333,7 @@ export const metamaskApi = createApi({
           catch (err) {
             const isEndpointError = getIsEndpointError(err);
             const errDescription
-            = isEndpointError ? err.error : FALLBACK_ERROR_DESCRIPTION;
+              = isEndpointError ? err.error : FALLBACK_ERROR_DESCRIPTION;
             toast({
               variant: 'destructive',
               title: UI_ERRORS.ERR7,
@@ -344,6 +345,37 @@ export const metamaskApi = createApi({
         invalidatesTags: ['User'],
       }),
 
+    getFinthetixLogData:
+      builder.query<
+        StringifyBigIntsInObj<
+          Awaited<
+            ReturnType<
+              FinthetixStakingContractHandler['getHistoricalStakedAmt']
+        >>>,
+         DappInfo
+      >({
+        queryFn: makeErrorableQueryFn(async (dappInfo) => {
+          const metamaskHandler = new MetamaskHandler();
+          const fscHandler = await FinthetixStakingContractHandler.make(
+            metamaskHandler.provider, dappInfo,
+          );
+          const logs = await fscHandler.getHistoricalStakedAmt();
+          return logs.map(stringifyBigIntsInObj);
+        },
+        (internalErr) => {
+          // default error paths
+          if (internalErr.startsWith('Metamask not installed'))
+            return 'Install Metamask browser extension and try again';
+
+          // as of now the following request has no expected error paths
+          // other than default paths which are handled above
+          else return FALLBACK_ERROR_DESCRIPTION;
+        },
+        FALLBACK_ERROR_DESCRIPTION,
+        ),
+
+        providesTags: ['User'],
+      }),
   }),
 });
 
@@ -355,4 +387,5 @@ export const {
   useStakeWithFinthetixMutation,
   useUnstakeWithFinthetixMutation,
   useWithdrawRewardsFromFinthetixMutation,
+  useLazyGetFinthetixLogDataQuery,
 } = metamaskApi;
