@@ -1,11 +1,15 @@
 import { BrowserProvider, JsonRpcSigner } from 'ethers';
 import { DappInfo } from '~/lib/types';
 import { FinthetixRewardToken, FinthetixRewardToken__factory, FinthetixStakingContract, FinthetixStakingContract__factory, FinthetixStakingToken, FinthetixStakingToken__factory } from './types';
-import sortTxns from '~/lib/utils/sortTxns';
-import { StakedEvent } from './types/FinthetixStakingContract.sol/FSCEvents';
+import { StakeBalChangedEvent } from './types/FinthetixStakingContract.sol/FSCEvents';
 import { z } from 'zod';
 
 export type FinthetixUserData = Awaited<ReturnType<FinthetixStakingContractHandler['getUserData']>>;
+
+export type HistoricalStakedAmtData = {
+  timestampInMs: number
+  totalAmtStakedByUserVal: bigint
+}[];
 
 export default class FinthetixStakingContractHandler {
   static async make(provider: BrowserProvider, dappInfo: DappInfo) {
@@ -26,7 +30,7 @@ export default class FinthetixStakingContractHandler {
    */
 
   async getUserData() {
-    const stakingTokenDecimals = Number(await this._stakingToken.decimals());
+    const stakingTokenDecimals = await this.getStakingTokenDecimals();
     const rewardTokenDecimals = Number(await this._rewardToken.decimals());
     const userAddr = this._signer.address;
 
@@ -76,35 +80,37 @@ export default class FinthetixStakingContractHandler {
     await txn.wait();
   }
 
-  async getHistoricalStakedAmt() {
+  async getHistoricalStakedAmt(): Promise<HistoricalStakedAmtData> {
     const senderAddr = this._signer.address;
-    const stakeEventFilter = this._stakingContract.filters.Staked(senderAddr);
-    const unstakeEventFilter
-      = this._stakingContract.filters.Unstaked(senderAddr);
-    const stakeEventLogs
-      = await this._stakingContract.queryFilter(stakeEventFilter);
-    const unstakeEventLogs
-      = await this._stakingContract.queryFilter(unstakeEventFilter);
+    const stakedBalChangedEventFilter
+      = this._stakingContract.filters.StakeBalChanged(senderAddr);
+    const eventLogs
+      = await this._stakingContract.queryFilter(stakedBalChangedEventFilter);
 
     // process the logs
-    const combinedLogs
-      = stakeEventLogs.concat(unstakeEventLogs).sort(sortTxns);
     const totalAmtStakedLogs
-      = await Promise.all(combinedLogs.map(async (log) => {
+      = await Promise.all(eventLogs.map(async (log) => {
         const decodedEventLog
         = this._stakingContract.interface
           .decodeEventLog(log.fragment, log.data, log.topics);
         const decodedEventLogSchema
-        = z.tuple([z.string(), z.bigint(), z.bigint()]) satisfies
-            z.ZodType<StakedEvent.InputTuple>;
-        const [, , totalAmtStaked]
+        = z.tuple([z.string(), z.bigint()]) satisfies
+            z.ZodType<StakeBalChangedEvent.InputTuple>;
+        const [, totalAmtStakedByUserVal]
           = decodedEventLogSchema.parse(decodedEventLog);
         const timeStampInS = (await log.getBlock()).timestamp;
-        const timestampISOString = new Date(timeStampInS * 1000).toISOString();
-        return { timestampISOString, totalAmtStaked };
+        const timestampInMs = timeStampInS * 1000;
+        return {
+          timestampInMs,
+          totalAmtStakedByUserVal,
+        };
       }));
 
     return totalAmtStakedLogs;
+  }
+
+  async getStakingTokenDecimals() {
+    return Number(await this._stakingToken.decimals());
   }
 
   /**

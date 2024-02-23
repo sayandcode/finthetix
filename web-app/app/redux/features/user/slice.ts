@@ -63,6 +63,8 @@ export const selectActiveAddress
   = (state: RootState) => state.user.activeAddress;
 export const selectIsUserLoading
   = (state: RootState) => state.user.isLoading;
+export const selectIsUserLoggedIn
+  = ({ user }: RootState) => !user.isLoading && user.activeAddress;
 
 /* Reducer */
 const userReducer = userSlice.reducer;

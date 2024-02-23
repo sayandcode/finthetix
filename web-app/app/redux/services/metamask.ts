@@ -4,11 +4,16 @@ import { ChainInfo, DappInfo } from '~/lib/types';
 import stringifyBigIntsInObj, { StringifyBigIntsInObj } from '~/lib/utils/stringifyBigIntsInObj';
 import { setIsUserLoading, type ActiveAddress, setActiveAddress } from '../features/user/slice';
 import { toast } from '~/components/ui/use-toast';
-import FinthetixStakingContractHandler, { FinthetixUserData } from '~/contracts/FinthetixStakingContract';
+import FinthetixStakingContractHandler, { FinthetixUserData, HistoricalStakedAmtData } from '~/contracts/FinthetixStakingContract';
 import { UI_ERRORS } from '~/lib/ui-errors';
 import { getIsEndpointError, makeErrorableQueryFn } from './lib/utils';
 
 const FALLBACK_ERROR_DESCRIPTION = 'Something went wrong when interacting with the Blockchain';
+
+export type FinthetixLogDataQueryResult = {
+  historicalData: StringifyBigIntsInObj<HistoricalStakedAmtData>
+  stakingTokenDecimals: number
+};
 
 export const metamaskApi = createApi({
   reducerPath: 'metamaskApi',
@@ -346,21 +351,20 @@ export const metamaskApi = createApi({
       }),
 
     getFinthetixLogData:
-      builder.query<
-        StringifyBigIntsInObj<
-          Awaited<
-            ReturnType<
-              FinthetixStakingContractHandler['getHistoricalStakedAmt']
-        >>>,
-         DappInfo
-      >({
+      builder.query<FinthetixLogDataQueryResult, DappInfo>({
         queryFn: makeErrorableQueryFn(async (dappInfo) => {
           const metamaskHandler = new MetamaskHandler();
           const fscHandler = await FinthetixStakingContractHandler.make(
             metamaskHandler.provider, dappInfo,
           );
           const logs = await fscHandler.getHistoricalStakedAmt();
-          return logs.map(stringifyBigIntsInObj);
+          const stringfiedLogs = logs.map(stringifyBigIntsInObj);
+          const stakingTokenDecimals
+            = await fscHandler.getStakingTokenDecimals();
+          return {
+            historicalData: stringfiedLogs,
+            stakingTokenDecimals,
+          };
         },
         (internalErr) => {
           // default error paths

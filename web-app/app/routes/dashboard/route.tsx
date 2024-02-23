@@ -8,6 +8,7 @@ import { useLazyGetFinthetixUserInfoQuery } from '~/redux/services/metamask';
 import SampleTokensBanner from './subcomponents/SampleTokensBanner';
 import StakingCard from './subcomponents/StakingCard';
 import RewardsCard from './subcomponents/RewardsCard';
+import UserLogDataGraph from './subcomponents/UserLogDataGraph';
 
 export const meta: MetaFunction = () => {
   return [{ title: 'Dashboard | Finthetix', dashboard: 'View your stake and rewards' }];
@@ -52,6 +53,7 @@ export default function Route() {
         <StakingCard userInfo={userInfo} isInfoFetching={isInfoFetching} />
         <RewardsCard userInfo={userInfo} isInfoFetching={isInfoFetching} />
       </div>
+      <UserLogDataGraph />
     </div>
   );
 }
