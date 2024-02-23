@@ -687,7 +687,14 @@ contract FinthetixStakingContract_UnitTest is Test {
         vm.assume(userAddr != address(0) && amtToStake1 > 0 && amtToStake2 > 0);
 
         // setup
-        _approveAndStake(userAddr, amtToStake1, true); // stake initial amount for varying alpha and rewards
+        /// make sure total supply is different from user1 balances
+        address otherUserAddr = vm.addr(0xB0b);
+        uint8 otherAmtToStake = type(uint8).max;
+        _approveAndStake(otherUserAddr, otherAmtToStake, true);
+        _waitForCoolDown();
+
+        /// stake initial amount for varying alpha and rewards
+        _approveAndStake(userAddr, amtToStake1, true);
         _waitForCoolDown();
         vm.warp(block.timestamp + timeToWait);
         deal(address(stakingToken), userAddr, amtToStake2, true);
@@ -704,7 +711,7 @@ contract FinthetixStakingContract_UnitTest is Test {
         emit FSCEvents.RewardPublished(userAddr, expectedNewUserReward);
 
         vm.expectEmit(true, true, true, true, address(stakingContract));
-        emit FSCEvents.Staked(userAddr, amtToStake2, uint256(amtToStake1) + uint256(amtToStake2));
+        emit FSCEvents.StakeBalChanged(userAddr, uint256(amtToStake1) + uint256(amtToStake2));
 
         vm.prank(userAddr);
         stakingContract.stake(amtToStake2);
@@ -728,7 +735,14 @@ contract FinthetixStakingContract_UnitTest is Test {
         uint256 amtToUnstake = bound(_amtToUnstake, 1, amtToStake); // should only unstake less than what's staked
 
         // setup
-        _approveAndStake(userAddr, amtToStake, true); // stake initial amount for varying alpha and rewards
+        /// make sure total supply is different from user1 balances
+        address otherUserAddr = vm.addr(0xB0b);
+        uint8 otherAmtToStake = type(uint8).max;
+        _approveAndStake(otherUserAddr, otherAmtToStake, true);
+        _waitForCoolDown();
+
+        /// stake initial amount for varying alpha and rewards
+        _approveAndStake(userAddr, amtToStake, true);
         _waitForCoolDown();
         vm.warp(block.timestamp + timeToWait);
 
@@ -742,7 +756,7 @@ contract FinthetixStakingContract_UnitTest is Test {
         emit FSCEvents.RewardPublished(userAddr, expectedNewUserReward);
 
         vm.expectEmit(true, true, true, true, address(stakingContract));
-        emit FSCEvents.Unstaked(userAddr, amtToUnstake, amtToStake - amtToUnstake);
+        emit FSCEvents.StakeBalChanged(userAddr, amtToStake - amtToUnstake);
 
         vm.prank(userAddr);
         stakingContract.unstake(amtToUnstake);
