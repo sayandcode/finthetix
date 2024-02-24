@@ -4,15 +4,21 @@ import { ChainInfo, DappInfo } from '~/lib/types';
 import stringifyBigIntsInObj, { StringifyBigIntsInObj } from '~/lib/utils/stringifyBigIntsInObj';
 import { setIsUserLoading, type ActiveAddress, setActiveAddress } from '../features/user/slice';
 import { toast } from '~/components/ui/use-toast';
-import FinthetixStakingContractHandler, { FinthetixUserData, HistoricalStakedAmtData } from '~/contracts/FinthetixStakingContract';
+import FinthetixStakingContractHandler, { FinthetixUserData, HistoricalRewardAmtData, HistoricalStakedAmtData } from '~/contracts/FinthetixStakingContract';
 import { UI_ERRORS } from '~/lib/ui-errors';
 import { getIsEndpointError, makeErrorableQueryFn } from './lib/utils';
 
 const FALLBACK_ERROR_DESCRIPTION = 'Something went wrong when interacting with the Blockchain';
 
 export type FinthetixLogDataQueryResult = {
-  historicalData: StringifyBigIntsInObj<HistoricalStakedAmtData>
-  stakingTokenDecimals: number
+  stakedAmt: {
+    historicalData: StringifyBigIntsInObj<HistoricalStakedAmtData>
+    decimals: number
+  }
+  rewardAmt: {
+    historicalData: StringifyBigIntsInObj<HistoricalRewardAmtData>
+    decimals: number
+  }
 };
 
 export const metamaskApi = createApi({
@@ -357,13 +363,23 @@ export const metamaskApi = createApi({
           const fscHandler = await FinthetixStakingContractHandler.make(
             metamaskHandler.provider, dappInfo,
           );
-          const logs = await fscHandler.getHistoricalStakedAmt();
-          const stringfiedLogs = logs.map(stringifyBigIntsInObj);
+
+          const historicalStakedAmt = await fscHandler.getHistoricalStakedAmt();
           const stakingTokenDecimals
             = await fscHandler.getStakingTokenDecimals();
+
+          const historicalRewardAmt = await fscHandler.getHistoricalRewardAmt();
+          const rewardTokenDecimals = await fscHandler.getRewardTokenDecimals();
+
           return {
-            historicalData: stringfiedLogs,
-            stakingTokenDecimals,
+            stakedAmt: {
+              historicalData: historicalStakedAmt.map(stringifyBigIntsInObj),
+              decimals: stakingTokenDecimals,
+            },
+            rewardAmt: {
+              historicalData: historicalRewardAmt.map(stringifyBigIntsInObj),
+              decimals: rewardTokenDecimals,
+            },
           };
         },
         (internalErr) => {

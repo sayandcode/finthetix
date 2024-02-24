@@ -1,7 +1,7 @@
 import { BrowserProvider, JsonRpcSigner } from 'ethers';
 import { DappInfo } from '~/lib/types';
 import { FinthetixRewardToken, FinthetixRewardToken__factory, FinthetixStakingContract, FinthetixStakingContract__factory, FinthetixStakingToken, FinthetixStakingToken__factory } from './types';
-import { StakeBalChangedEvent } from './types/FinthetixStakingContract.sol/FSCEvents';
+import { StakeBalChangedEvent, UserRewardUpdatedEvent } from './types/FinthetixStakingContract.sol/FSCEvents';
 import { z } from 'zod';
 
 export type FinthetixUserData = Awaited<ReturnType<FinthetixStakingContractHandler['getUserData']>>;
@@ -9,6 +9,11 @@ export type FinthetixUserData = Awaited<ReturnType<FinthetixStakingContractHandl
 export type HistoricalStakedAmtData = {
   timestampInMs: number
   totalAmtStakedByUserVal: bigint
+}[];
+
+export type HistoricalRewardAmtData = {
+  timestampInMs: number
+  rewardBalVal: bigint
 }[];
 
 export default class FinthetixStakingContractHandler {
@@ -82,35 +87,70 @@ export default class FinthetixStakingContractHandler {
 
   async getHistoricalStakedAmt(): Promise<HistoricalStakedAmtData> {
     const senderAddr = this._signer.address;
-    const stakedBalChangedEventFilter
+    const eventFilter
       = this._stakingContract.filters.StakeBalChanged(senderAddr);
-    const eventLogs
-      = await this._stakingContract.queryFilter(stakedBalChangedEventFilter);
+    const eventLogs = await this._stakingContract.queryFilter(eventFilter);
 
     // process the logs
-    const totalAmtStakedLogs
-      = await Promise.all(eventLogs.map(async (log) => {
-        const decodedEventLog
+    const decodeLogsPromises = eventLogs.map(async (log) => {
+      const decodedEventLog
         = this._stakingContract.interface
           .decodeEventLog(log.fragment, log.data, log.topics);
-        const decodedEventLogSchema
+      const decodedEventLogSchema
         = z.tuple([z.string(), z.bigint()]) satisfies
             z.ZodType<StakeBalChangedEvent.InputTuple>;
-        const [, totalAmtStakedByUserVal]
+      const [, totalAmtStakedByUserVal]
           = decodedEventLogSchema.parse(decodedEventLog);
-        const timeStampInS = (await log.getBlock()).timestamp;
-        const timestampInMs = timeStampInS * 1000;
-        return {
-          timestampInMs,
-          totalAmtStakedByUserVal,
-        };
-      }));
+      const timeStampInS = (await log.getBlock()).timestamp;
+      const timestampInMs = timeStampInS * 1000;
+      return {
+        timestampInMs,
+        totalAmtStakedByUserVal,
+      };
+    });
+    const decodedLogs = await Promise.all(decodeLogsPromises);
 
-    return totalAmtStakedLogs;
+    return decodedLogs;
+  }
+
+  async getHistoricalRewardAmt(): Promise<HistoricalRewardAmtData> {
+    const senderAddr = this._signer.address;
+    const eventFilter
+      = this._stakingContract.filters.UserRewardUpdated(senderAddr);
+    const eventLogs = await this._stakingContract.queryFilter(eventFilter);
+
+    // process the logs
+    const decodeLogPromises = eventLogs.map(async (log) => {
+      const decodedEventLog
+        = this
+          ._stakingContract
+          .interface
+          .decodeEventLog(log.fragment, log.data, log.topics);
+
+      const decodedEventLogSchema
+        = z.tuple([z.string(), z.bigint()]) satisfies
+        z.ZodType<UserRewardUpdatedEvent.InputTuple>;
+
+      const [, updatedRewardBal]
+        = decodedEventLogSchema.parse(decodedEventLog);
+      const timeStampInS = (await log.getBlock()).timestamp;
+      const timestampInMs = timeStampInS * 1000;
+      return {
+        timestampInMs,
+        rewardBalVal: updatedRewardBal,
+      };
+    });
+
+    const decodedLogs = await Promise.all(decodeLogPromises);
+    return decodedLogs;
   }
 
   async getStakingTokenDecimals() {
     return Number(await this._stakingToken.decimals());
+  }
+
+  async getRewardTokenDecimals() {
+    return Number(await this._rewardToken.decimals());
   }
 
   /**
