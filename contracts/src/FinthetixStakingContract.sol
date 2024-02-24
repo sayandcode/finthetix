@@ -19,13 +19,6 @@ interface FSCEvents {
     event StakeBalChanged(address indexed userAddr, uint256 totalAmtStakedByUser);
 
     /**
-     * @notice User has withdrawn a reward
-     * @param userAddr The address of the user who has withdrawn a reward
-     * @param rewardAmt The reward amount withdrawn by the user
-     */
-    event RewardWithdrawn(address indexed userAddr, uint256 rewardAmt);
-
-    /**
      * @notice The alpha has been updated
      * @dev This event is fired on every user interaction
      * @param newAlpha The updated alpha value
@@ -33,12 +26,12 @@ interface FSCEvents {
     event AlphaUpdated(uint256 newAlpha);
 
     /**
-     * @notice Reward has been published for a user
+     * @notice Reward has been updated for a user
      * @dev This happens on every interaction of user with the contract
      * @param userAddr The address of the user who has interacted with the contract
      * @param newReward The new value of published reward for this user
      */
-    event RewardPublished(address indexed userAddr, uint256 newReward);
+    event UserRewardUpdated(address indexed userAddr, uint256 newReward);
 }
 
 interface FSCErrors {
@@ -227,7 +220,7 @@ contract FinthetixStakingContract is FSCEvents, FSCErrors {
 
         // interactions
         rewardToken.mint(msg.sender, rewardBal);
-        emit RewardWithdrawn(msg.sender, rewardBal);
+        emit UserRewardUpdated(msg.sender, 0);
     }
 
     /**
@@ -268,7 +261,7 @@ contract FinthetixStakingContract is FSCEvents, FSCErrors {
         alphaNow += _calculateAccruedAlpha();
         emit AlphaUpdated(alphaNow);
         mapAddrToPublishedReward[msg.sender] += _calculateAccruedRewards();
-        emit RewardPublished(msg.sender, mapAddrToPublishedReward[msg.sender]);
+        emit UserRewardUpdated(msg.sender, mapAddrToPublishedReward[msg.sender]);
         lastUpdatedRewardAt = block.timestamp;
         mapAddrToAlphaAtLastUserInteraction[msg.sender] = alphaNow;
     }
