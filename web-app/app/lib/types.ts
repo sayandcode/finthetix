@@ -24,3 +24,5 @@ export type StringifiedTokenCount = {
   value: string
   decimals: number
 };
+
+export type TimestampInMs = number;

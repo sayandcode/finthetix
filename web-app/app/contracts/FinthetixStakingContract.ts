@@ -1,5 +1,5 @@
 import { BrowserProvider, JsonRpcSigner } from 'ethers';
-import { DappInfo } from '~/lib/types';
+import { DappInfo, TimestampInMs } from '~/lib/types';
 import { FinthetixRewardToken, FinthetixRewardToken__factory, FinthetixStakingContract, FinthetixStakingContract__factory, FinthetixStakingToken, FinthetixStakingToken__factory } from './types';
 import { StakeBalChangedEvent, UserRewardUpdatedEvent } from './types/FinthetixStakingContract.sol/FSCEvents';
 import { z } from 'zod';
@@ -7,12 +7,12 @@ import { z } from 'zod';
 export type FinthetixUserData = Awaited<ReturnType<FinthetixStakingContractHandler['getUserData']>>;
 
 export type HistoricalStakedAmtData = {
-  timestampInMs: number
+  timestampInMs: TimestampInMs
   totalAmtStakedByUserVal: bigint
 }[];
 
 export type HistoricalRewardAmtData = {
-  timestampInMs: number
+  timestampInMs: TimestampInMs
   rewardBalVal: bigint
 }[];
 
