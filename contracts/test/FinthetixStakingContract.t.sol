@@ -672,18 +672,20 @@ contract FinthetixStakingContract_UnitTest is Test {
 
     /**
      * @param userAddr Address of user who stakes
-     * @param amtToStake1 Amt initially staked in the contract before main interaction.
+     * @param _amtToStake1 Amt initially staked in the contract before main interaction.
      *  This helps to test variations in alpha and rewards owed.
-     * @param amtToStake2 Amt staked for main staking interaction.
+     * @param _amtToStake2 Amt staked for main staking interaction.
      * @param timeToWait The time to wait before main staking interaction
      * @notice Tests that staking emits the relevant events.
      * @dev We stake an initial amount so that we can vary the alpha and
      *  rewards, and check that event data is as expected
      */
-    function test_StakingHasEvents(address userAddr, uint8 amtToStake1, uint248 amtToStake2, uint128 timeToWait)
+    function test_StakingHasEvents(address userAddr, uint8 _amtToStake1, uint248 _amtToStake2, uint128 timeToWait)
         public
     {
         // assumptions
+        uint256 amtToStake1 = uint256(_amtToStake1);
+        uint256 amtToStake2 = uint256(_amtToStake2);
         vm.assume(userAddr != address(0) && amtToStake1 > 0 && amtToStake2 > 0);
 
         // setup
@@ -710,8 +712,9 @@ contract FinthetixStakingContract_UnitTest is Test {
         vm.expectEmit(true, false, false, true, address(stakingContract));
         emit FSCEvents.RewardPublished(userAddr, expectedNewUserReward);
 
+        uint256 expectedNewStakeBal = amtToStake1 + amtToStake2;
         vm.expectEmit(true, true, true, true, address(stakingContract));
-        emit FSCEvents.StakeBalChanged(userAddr, uint256(amtToStake1) + uint256(amtToStake2));
+        emit FSCEvents.StakeBalChanged(userAddr, expectedNewStakeBal);
 
         vm.prank(userAddr);
         stakingContract.stake(amtToStake2);
