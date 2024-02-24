@@ -49,7 +49,7 @@ export default function Route() {
   return (
     <div className="m-4">
       <SampleTokensBanner />
-      <div className="flex flex-col sm:flex-row gap-y-2 sm:gap-x-2">
+      <div className="flex flex-col sm:flex-row gap-y-2 sm:gap-x-2 mb-4">
         <StakingCard userInfo={userInfo} isInfoFetching={isInfoFetching} />
         <RewardsCard userInfo={userInfo} isInfoFetching={isInfoFetching} />
       </div>

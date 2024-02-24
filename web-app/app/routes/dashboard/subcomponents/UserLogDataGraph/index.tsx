@@ -1,6 +1,6 @@
 import { Loader2Icon } from 'lucide-react';
 import { useCallback, useEffect } from 'react';
-import { XAxis, Tooltip, ResponsiveContainer, BarChart, Area, Bar } from 'recharts';
+import { XAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
 import getReadableERC20TokenCount from '~/lib/utils/readableERC20';
 import { selectIsUserLoggedIn } from '~/redux/features/user/slice';
@@ -46,28 +46,33 @@ export default function UserLogDataGraph() {
 
       return [readableTokenCount, Y_AXIS_LABEL];
     }, [data?.stakingTokenDecimals]);
+
+  if (!data || isFetching) return (
+    <div className="w-full h-72 flex justify-center items-center bg-white border-primary">
+      <Loader2Icon className="animate-spin h-10 w-10" />
+    </div>
+  );
+
+  if (!data?.historicalData.length) return null;
+
   return (
-    <div>
-      {data
-        ? (
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={data.historicalData}>
-              <Tooltip
-                formatter={yAxisValFormatter}
-                labelFormatter={xAxisValFormatter}
-              />
+    <div className="w-full h-72 bg-white border-primary px-4">
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart data={data.historicalData}>
+          <Tooltip
+            formatter={yAxisValFormatter}
+            labelFormatter={xAxisValFormatter}
+          />
 
-              <Bar dataKey={yValKey} fill="#facc15" maxBarSize={40} />
+          <Bar dataKey={yValKey} fill="#facc15" maxBarSize={40} />
 
-              <XAxis
-                dataKey={xValKey}
-                domain={['dataMin', 'dataMax']}
-                tickFormatter={tickVal => new Date(tickVal).toDateString()}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-          )
-        : <Loader2Icon className="animate-spin" />}
+          <XAxis
+            dataKey={xValKey}
+            domain={['dataMin', 'dataMax']}
+            tickFormatter={tickVal => new Date(tickVal).toDateString()}
+          />
+        </BarChart>
+      </ResponsiveContainer>
 
     </div>
   );
