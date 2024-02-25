@@ -5,6 +5,7 @@ import { selectIsUserLoggedIn } from '~/redux/features/user/slice';
 import { useAppSelector } from '~/redux/hooks';
 import { useLazyGetFinthetixLogDataQuery } from '~/redux/services/metamask';
 import getGraphDataFromLogData from './lib/getGraphDataFromLogData';
+import StakeAndRewardAmtGraphs from './subcomponents/StakeAndRewardAmtGraphs';
 
 export default function UserLogDataGraph() {
   const isUserLoggedIn = useAppSelector(selectIsUserLoggedIn);
@@ -34,8 +35,5 @@ export default function UserLogDataGraph() {
 
   if (!graphData) return null;
 
-  return (
-    <div className="w-full h-72 bg-white shadow-sm px-4">
-    </div>
-  );
+  return <StakeAndRewardAmtGraphs graphData={graphData} />;
 }

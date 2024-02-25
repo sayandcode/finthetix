@@ -1,8 +1,8 @@
-import { TimestampInMs } from '~/lib/types';
 import { FinthetixLogDataQueryResult } from '~/redux/services/metamask';
 
-type StakedAmtVal = number | null;
+type StakedAmtVal = number;
 type RewardAmtVal = number;
+type ReadableTimestamp = string;
 
 export default function getGraphDataFromLogData(
   stakeEventHistoricalData: FinthetixLogDataQueryResult['stakedAmt']['historicalData'],
@@ -11,7 +11,7 @@ export default function getGraphDataFromLogData(
   {
     stakedAmtVals: StakedAmtVal[]
     rewardAmtVals: RewardAmtVal[]
-    timestampsInMs: TimestampInMs[]
+    readableTimestamps: ReadableTimestamp[]
   } {
   // sort the input arrays
   const sortedStakeEventsQueue
@@ -23,7 +23,7 @@ export default function getGraphDataFromLogData(
 
   const stakedAmtVals: StakedAmtVal[] = [];
   const rewardAmtVals: RewardAmtVal[] = [];
-  const timestampsInMs: TimestampInMs[] = [];
+  const readableTimestamps: ReadableTimestamp[] = [];
 
   // All stake events have reward events, but not vice versa
   // so reward events is the longer array and a superset
@@ -37,10 +37,18 @@ export default function getGraphDataFromLogData(
     sortedRewardEventsQueue.shift();
 
     const timestamp = rewardEvent.timestampInMs;
-    timestampsInMs.push(timestamp);
+    const readableTimestamp = new Date(timestamp).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: false,
+    });
+    readableTimestamps.push(readableTimestamp);
 
     const stakeEvent = sortedStakeEventsQueue[0];
-    let stakedAmt: StakedAmtVal | null = null;
+    let stakedAmt: StakedAmtVal = stakedAmtVals.at(-1) || 0;
     const doesStakeEventCorrespondingToTimestampExist
       = stakeEvent?.timestampInMs === timestamp;
     if (doesStakeEventCorrespondingToTimestampExist) {
@@ -50,5 +58,5 @@ export default function getGraphDataFromLogData(
     stakedAmtVals.push(stakedAmt);
   }
 
-  return { stakedAmtVals, rewardAmtVals, timestampsInMs };
+  return { stakedAmtVals, rewardAmtVals, readableTimestamps };
 }
