@@ -35,20 +35,13 @@ export default class FinthetixStakingContractHandler {
    */
 
   async getUserData() {
-    const stakingTokenDecimals = await this.getStakingTokenDecimals();
-    const rewardTokenDecimals = Number(await this._rewardToken.decimals());
     const userAddr = this._signer.address;
 
-    const stakedAmt = await this._stakingContract.viewMyStakedAmt();
-    const rewardAmt = await this._getRewardAmt();
-    const stakingTokenBalAmt = await this._stakingToken.balanceOf(userAddr);
+    const stakedAmtVal = await this._stakingContract.viewMyStakedAmt();
+    const rewardAmtVal = await this._getRewardAmt();
+    const stakingTokenBalVal = await this._stakingToken.balanceOf(userAddr);
 
-    return {
-      stakedAmt: { value: stakedAmt, decimals: stakingTokenDecimals },
-      rewardAmt: { value: rewardAmt, decimals: rewardTokenDecimals },
-      stakingTokenBal:
-        { value: stakingTokenBalAmt, decimals: stakingTokenDecimals },
-    };
+    return { stakedAmtVal, rewardAmtVal, stakingTokenBalVal };
   }
 
   async requestSampleTokens() {
@@ -145,12 +138,18 @@ export default class FinthetixStakingContractHandler {
     return decodedLogs;
   }
 
-  async getStakingTokenDecimals() {
-    return Number(await this._stakingToken.decimals());
-  }
+  async getMetadata() {
+    const stakingToken = {
+      decimals: Number(await this._stakingToken.decimals()),
+      symbol: await this._stakingToken.symbol(),
+    };
 
-  async getRewardTokenDecimals() {
-    return Number(await this._rewardToken.decimals());
+    const rewardToken = {
+      decimals: Number(await this._rewardToken.decimals()),
+      symbol: await this._rewardToken.symbol(),
+    };
+
+    return { stakingToken, rewardToken };
   }
 
   /**

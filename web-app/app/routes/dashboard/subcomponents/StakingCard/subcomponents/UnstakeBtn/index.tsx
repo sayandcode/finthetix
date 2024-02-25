@@ -1,13 +1,12 @@
 import { Dialog, DialogContent, DialogTrigger } from '~/components/ui/dialog';
 import { useCallback, useState } from 'react';
 import { Button } from '~/components/ui/button';
-import { FinthetixUserData } from '~/contracts/FinthetixStakingContract';
-import { StringifyBigIntsInObj } from '~/lib/utils/stringifyBigIntsInObj';
 import { UnstakeDialogContent } from './UnstakeBtnDialogContent';
+import { StringifiedTokenCount } from '~/lib/types';
 
 export default function UnstakeBtn(
   { amtCurrentlyStaked }:
-  { amtCurrentlyStaked: StringifyBigIntsInObj<FinthetixUserData>['stakedAmt'] | undefined },
+  { amtCurrentlyStaked: StringifiedTokenCount | null },
 ) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const closeModal = useCallback(() => {

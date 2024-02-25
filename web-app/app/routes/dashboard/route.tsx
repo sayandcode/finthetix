@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
 import { selectActiveAddress, selectIsUserLoading } from '~/redux/features/user/slice';
 import { useAppSelector } from '~/redux/hooks';
-import { useLazyGetFinthetixUserInfoQuery } from '~/redux/services/metamask';
+import { useLazyGetFinthetixMetadataQuery, useLazyGetFinthetixUserInfoQuery } from '~/redux/services/metamask';
 import SampleTokensBanner from './subcomponents/SampleTokensBanner';
 import StakingCard from './subcomponents/StakingCard';
 import RewardsCard from './subcomponents/RewardsCard';
@@ -19,10 +19,10 @@ export default function Route() {
   const isUserLoading = useAppSelector(selectIsUserLoading);
   const navigate = useNavigate();
   const { dappInfo } = useRootLoaderData();
-  const [
-    getFinthetixUserInfoQuery,
-    { data: userInfo, isFetching: isInfoFetching },
-  ] = useLazyGetFinthetixUserInfoQuery();
+  const [getFinthetixUserInfoQuery, { data: userInfo }]
+    = useLazyGetFinthetixUserInfoQuery();
+  const [getFinthetixMetadata, { data: finthetixMetadata }]
+    = useLazyGetFinthetixMetadataQuery();
 
   // fetch the users's staked info
   useEffect(() => {
@@ -37,6 +37,7 @@ export default function Route() {
     }
 
     getFinthetixUserInfoQuery(dappInfo);
+    getFinthetixMetadata(dappInfo);
   },
   [
     activeAddress,
@@ -44,14 +45,21 @@ export default function Route() {
     isUserLoading,
     getFinthetixUserInfoQuery,
     dappInfo,
+    getFinthetixMetadata,
   ]);
 
   return (
     <div className="m-4">
       <SampleTokensBanner />
       <div className="flex flex-col sm:flex-row gap-y-2 sm:gap-x-2 mb-4">
-        <StakingCard userInfo={userInfo} isInfoFetching={isInfoFetching} />
-        <RewardsCard userInfo={userInfo} isInfoFetching={isInfoFetching} />
+        <StakingCard
+          userInfo={userInfo}
+          finthetixMetadata={finthetixMetadata}
+        />
+        <RewardsCard
+          userInfo={userInfo}
+          finthetixMetadata={finthetixMetadata}
+        />
       </div>
       <UserLogDataGraph />
     </div>

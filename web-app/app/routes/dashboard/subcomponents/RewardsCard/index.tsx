@@ -8,15 +8,15 @@ import { FinthetixUserData } from '~/contracts/FinthetixStakingContract';
 import { StringifyBigIntsInObj } from '~/lib/utils/stringifyBigIntsInObj';
 import getReadableERC20TokenCount from '~/lib/utils/readableERC20';
 import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
-import { useWithdrawRewardsFromFinthetixMutation } from '~/redux/services/metamask';
+import { FinthetixMetadata, useWithdrawRewardsFromFinthetixMutation } from '~/redux/services/metamask';
 
 const MAX_DIGITS_TO_DISPLAY_IN_AMT_STR = 4;
 
 export default function RewardsCard(
-  { userInfo, isInfoFetching }:
+  { userInfo, finthetixMetadata }:
   {
-    userInfo?: StringifyBigIntsInObj<FinthetixUserData>
-    isInfoFetching: boolean
+    userInfo: StringifyBigIntsInObj<FinthetixUserData> | undefined
+    finthetixMetadata: FinthetixMetadata | undefined
   }) {
   const { dappInfo } = useRootLoaderData();
 
@@ -28,11 +28,15 @@ export default function RewardsCard(
     [dappInfo, sendWithdrawRequest]);
 
   const readableRewardAmtStr = useMemo(() => {
-    if (!userInfo) return null;
+    if (!(userInfo && finthetixMetadata)) return null;
     return getReadableERC20TokenCount(
-      userInfo.rewardAmt, MAX_DIGITS_TO_DISPLAY_IN_AMT_STR,
+      {
+        value: userInfo.rewardAmtVal,
+        decimals: finthetixMetadata?.rewardToken.decimals,
+      }
+      , MAX_DIGITS_TO_DISPLAY_IN_AMT_STR,
     );
-  }, [userInfo]);
+  }, [userInfo, finthetixMetadata]);
 
   const isWithdrawalDisabled = readableRewardAmtStr === '0' || isWithdrawalInProgress;
 
@@ -46,9 +50,8 @@ export default function RewardsCard(
       </CardHeader>
       <CardContent>
         <span className="font-bold text-5xl mr-2">
-          {isInfoFetching || !readableRewardAmtStr
-            ? <Loader2Icon className="mx-10 w-10 h-10 inline-block animate-spin" />
-            : readableRewardAmtStr}
+          {readableRewardAmtStr
+          || <Loader2Icon className="mx-10 w-10 h-10 inline-block animate-spin" />}
         </span>
         <span>FRT</span>
       </CardContent>

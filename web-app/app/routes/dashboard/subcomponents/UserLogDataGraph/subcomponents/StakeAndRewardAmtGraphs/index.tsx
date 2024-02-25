@@ -14,14 +14,11 @@ import { Chart } from 'react-chartjs-2';
 import getGraphDataFromLogData from '../../lib/getGraphDataFromLogData';
 import getReadableERC20TokenCount from '~/lib/utils/readableERC20';
 import { z } from 'zod';
+import { FinthetixMetadata } from '~/redux/services/metamask';
 
 type GraphData = ReturnType<typeof getGraphDataFromLogData>;
 
 const MAX_DECIMALS_IN_LABELS = 4;
-const FST_DECIMALS = 18; // this needs to be passed as prop
-const FRT_DECIMALS = 18; // this needs to be passed as prop
-const FST_SYMBOL = 'FST';
-const FRT_SYMBOL = 'FRT';
 const FST_TOKEN_LABEL = 'Staked Amount';
 const FRT_TOKEN_LABEL = 'Reward Balance';
 
@@ -47,7 +44,8 @@ ChartJS.register(
 );
 
 export default function StakeAndRewardAmtGraphs(
-  { graphData }: { graphData: GraphData },
+  { graphData, finthetixMetadata }:
+  { graphData: GraphData, finthetixMetadata: FinthetixMetadata },
 ) {
   return (
     <div className="w-full h-72 bg-white shadow-sm px-4 py-6">
@@ -89,8 +87,10 @@ export default function StakeAndRewardAmtGraphs(
                   if (!getIsValidYAxisID(yAxisID)) throw new Error('`yAxisID` is required to format tooltip label');
 
                   const decimals = ({
-                    [Y_AXIS_IDS.STAKED_AMT]: FST_DECIMALS,
-                    [Y_AXIS_IDS.REWARD_AMT]: FRT_DECIMALS,
+                    [Y_AXIS_IDS.STAKED_AMT]:
+                      finthetixMetadata.stakingToken.decimals,
+                    [Y_AXIS_IDS.REWARD_AMT]:
+                      finthetixMetadata.rewardToken.decimals,
                   } as const)[yAxisID];
 
                   const rawVal = ctx.raw;
@@ -102,8 +102,10 @@ export default function StakeAndRewardAmtGraphs(
                   }, MAX_DECIMALS_IN_LABELS);
 
                   const tokenSymbol = ({
-                    [Y_AXIS_IDS.STAKED_AMT]: FST_SYMBOL,
-                    [Y_AXIS_IDS.REWARD_AMT]: FRT_SYMBOL,
+                    [Y_AXIS_IDS.STAKED_AMT]:
+                      finthetixMetadata.stakingToken.symbol,
+                    [Y_AXIS_IDS.REWARD_AMT]:
+                      finthetixMetadata.rewardToken.symbol,
                   } as const)[yAxisID];
 
                   const label = ctx.dataset.label;
@@ -130,7 +132,7 @@ export default function StakeAndRewardAmtGraphs(
                   const typedTickVal = stakedAmtValSchema.parse(tickVal);
                   return getReadableERC20TokenCount({
                     value: Intl.NumberFormat('en-US', { useGrouping: false }).format(typedTickVal),
-                    decimals: FST_DECIMALS,
+                    decimals: finthetixMetadata.stakingToken.decimals,
                   }, MAX_DECIMALS_IN_LABELS);
                 }
                 ,
@@ -147,7 +149,7 @@ export default function StakeAndRewardAmtGraphs(
                   const typedTickVal = rewardAmtValSchema.parse(tickVal);
                   return getReadableERC20TokenCount({
                     value: Intl.NumberFormat('en-US', { useGrouping: false }).format(typedTickVal),
-                    decimals: FRT_DECIMALS,
+                    decimals: finthetixMetadata.rewardToken.decimals,
                   }, MAX_DECIMALS_IN_LABELS);
                 },
               },
@@ -161,7 +163,7 @@ export default function StakeAndRewardAmtGraphs(
 }
 
 function getIsValidYAxisID(str: string | undefined): str is Y_AXIS_IDS {
-  // if (!str) return false;
+  if (!str) return false;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return Object.values(Y_AXIS_IDS).includes(str as any);
 }

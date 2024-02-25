@@ -5,8 +5,8 @@ type RewardAmtVal = number;
 type ReadableTimestamp = string;
 
 export default function getGraphDataFromLogData(
-  stakeEventHistoricalData: FinthetixLogDataQueryResult['stakedAmt']['historicalData'],
-  rewardEventHistoricalData: FinthetixLogDataQueryResult['rewardAmt']['historicalData'],
+  stakingLogData: FinthetixLogDataQueryResult['stakedAmt'],
+  rewardsLogData: FinthetixLogDataQueryResult['rewardAmt'],
 ):
   {
     stakedAmtVals: StakedAmtVal[]
@@ -15,10 +15,10 @@ export default function getGraphDataFromLogData(
   } {
   // sort the input arrays
   const sortedStakeEventsQueue
-    = structuredClone(stakeEventHistoricalData)
+    = structuredClone(stakingLogData)
       .sort((a, b) => a.timestampInMs - b.timestampInMs);
   const sortedRewardEventsQueue
-    = structuredClone(rewardEventHistoricalData)
+    = structuredClone(rewardsLogData)
       .sort((a, b) => a.timestampInMs - b.timestampInMs);
 
   const stakedAmtVals: StakedAmtVal[] = [];
@@ -27,7 +27,7 @@ export default function getGraphDataFromLogData(
 
   // All stake events have reward events, but not vice versa
   // so reward events is the longer array and a superset
-  const noOfDatapoints = rewardEventHistoricalData.length;
+  const noOfDatapoints = rewardsLogData.length;
   for (let i = 0; i < noOfDatapoints; i++) {
     const rewardEvent = sortedRewardEventsQueue[0];
     if (!rewardEvent) throw new Error('All reward events must exist in queue');

@@ -20,9 +20,11 @@ export type DappInfo = {
   rewardTokenAddr: string
 };
 
+export type TokenDecimals = number;
+
 export type StringifiedTokenCount = {
   value: string
-  decimals: number
+  decimals: TokenDecimals
 };
 
 export type TimestampInMs = number;

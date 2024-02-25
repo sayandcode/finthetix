@@ -1,13 +1,12 @@
 import { Dialog, DialogContent, DialogTrigger } from '~/components/ui/dialog';
 import { useCallback, useState } from 'react';
 import { Button } from '~/components/ui/button';
-import { FinthetixUserData } from '~/contracts/FinthetixStakingContract';
-import { StringifyBigIntsInObj } from '~/lib/utils/stringifyBigIntsInObj';
 import { StakeDialogContent } from './subcomponents/StakeBtnDialogContent';
+import { StringifiedTokenCount } from '~/lib/types';
 
 export default function StakeBtn(
   { stakingTokenBal }:
-  { stakingTokenBal: StringifyBigIntsInObj<FinthetixUserData>['stakingTokenBal'] | undefined },
+  { stakingTokenBal: StringifiedTokenCount | null },
 ) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const closeModal = useCallback(() => {

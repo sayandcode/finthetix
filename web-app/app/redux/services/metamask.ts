@@ -11,15 +11,11 @@ import { getIsEndpointError, makeErrorableQueryFn } from './lib/utils';
 const FALLBACK_ERROR_DESCRIPTION = 'Something went wrong when interacting with the Blockchain';
 
 export type FinthetixLogDataQueryResult = {
-  stakedAmt: {
-    historicalData: StringifyBigIntsInObj<HistoricalStakedAmtData>
-    decimals: number
-  }
-  rewardAmt: {
-    historicalData: StringifyBigIntsInObj<HistoricalRewardAmtData>
-    decimals: number
-  }
+  stakedAmt: StringifyBigIntsInObj<HistoricalStakedAmtData>
+  rewardAmt: StringifyBigIntsInObj<HistoricalRewardAmtData>
 };
+
+export type FinthetixMetadata = Awaited<ReturnType<FinthetixStakingContractHandler['getMetadata']>>;
 
 export const metamaskApi = createApi({
   reducerPath: 'metamaskApi',
@@ -358,43 +354,60 @@ export const metamaskApi = createApi({
 
     getFinthetixLogData:
       builder.query<FinthetixLogDataQueryResult, DappInfo>({
-        queryFn: makeErrorableQueryFn(async (dappInfo) => {
-          const metamaskHandler = new MetamaskHandler();
-          const fscHandler = await FinthetixStakingContractHandler.make(
-            metamaskHandler.provider, dappInfo,
-          );
+        queryFn: makeErrorableQueryFn(
+          async (dappInfo) => {
+            const metamaskHandler = new MetamaskHandler();
+            const fscHandler = await FinthetixStakingContractHandler.make(
+              metamaskHandler.provider, dappInfo,
+            );
 
-          const historicalStakedAmt = await fscHandler.getHistoricalStakedAmt();
-          const stakingTokenDecimals
-            = await fscHandler.getStakingTokenDecimals();
+            const historicalStakedAmt
+              = await fscHandler.getHistoricalStakedAmt();
+            const historicalRewardAmt
+              = await fscHandler.getHistoricalRewardAmt();
 
-          const historicalRewardAmt = await fscHandler.getHistoricalRewardAmt();
-          const rewardTokenDecimals = await fscHandler.getRewardTokenDecimals();
-
-          return {
-            stakedAmt: {
-              historicalData: historicalStakedAmt.map(stringifyBigIntsInObj),
-              decimals: stakingTokenDecimals,
-            },
-            rewardAmt: {
-              historicalData: historicalRewardAmt.map(stringifyBigIntsInObj),
-              decimals: rewardTokenDecimals,
-            },
-          };
-        },
-        (internalErr) => {
+            return {
+              stakedAmt: historicalStakedAmt.map(stringifyBigIntsInObj),
+              rewardAmt: historicalRewardAmt.map(stringifyBigIntsInObj),
+            };
+          },
+          (internalErr) => {
           // default error paths
-          if (internalErr.startsWith('Metamask not installed'))
-            return 'Install Metamask browser extension and try again';
+            if (internalErr.startsWith('Metamask not installed'))
+              return 'Install Metamask browser extension and try again';
 
-          // as of now the following request has no expected error paths
-          // other than default paths which are handled above
-          else return FALLBACK_ERROR_DESCRIPTION;
-        },
-        FALLBACK_ERROR_DESCRIPTION,
+            // as of now the following request has no expected error paths
+            // other than default paths which are handled above
+            else return FALLBACK_ERROR_DESCRIPTION;
+          },
+          FALLBACK_ERROR_DESCRIPTION,
         ),
 
         providesTags: ['User'],
+      }),
+
+    getFinthetixMetadata:
+      builder.query<FinthetixMetadata, DappInfo>({
+        queryFn: makeErrorableQueryFn(
+          async (dappInfo) => {
+            const metamaskHandler = new MetamaskHandler();
+            const fscHandler = await FinthetixStakingContractHandler.make(
+              metamaskHandler.provider, dappInfo,
+            );
+
+            return fscHandler.getMetadata();
+          },
+          (internalErr) => {
+          // default error paths
+            if (internalErr.startsWith('Metamask not installed'))
+              return 'Install Metamask browser extension and try again';
+
+            // as of now the following request has no expected error paths
+            // other than default paths which are handled above
+            else return FALLBACK_ERROR_DESCRIPTION;
+          },
+          FALLBACK_ERROR_DESCRIPTION,
+        ),
       }),
   }),
 });
@@ -408,4 +421,5 @@ export const {
   useUnstakeWithFinthetixMutation,
   useWithdrawRewardsFromFinthetixMutation,
   useLazyGetFinthetixLogDataQuery,
+  useLazyGetFinthetixMetadataQuery,
 } = metamaskApi;
