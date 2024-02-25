@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
 import { selectActiveAddress, selectIsUserLoading } from '~/redux/features/user/slice';
 import { useAppSelector } from '~/redux/hooks';
-import { useLazyGetFinthetixLogDataQuery, useLazyGetFinthetixUserInfoQuery } from '~/redux/services/metamask';
+import { useLazyFetchFinthetixLogDataQuery, useLazyFetchFinthetixUserInfoQuery } from '~/redux/services/metamask';
 import SampleTokensBanner from './subcomponents/SampleTokensBanner';
 import StakingCard from './subcomponents/StakingCard';
 import RewardsCard from './subcomponents/RewardsCard';
@@ -33,12 +33,14 @@ export default function Route() {
   const [
     getUserInfo,
     { data: _userInfo = null, isFetching: isFetchingUserInfo },
-  ] = useLazyGetFinthetixUserInfoQuery();
+  ] = useLazyFetchFinthetixUserInfoQuery();
+  const userInfo = isFetchingUserInfo ? null : _userInfo;
 
   const [
     getLogData,
     { data: _logData = null, isFetching: isFetchingLogData },
-  ] = useLazyGetFinthetixLogDataQuery();
+  ] = useLazyFetchFinthetixLogDataQuery();
+  const logData = isFetchingLogData ? null : _logData;
 
   const activeAddress = useAppSelector(selectActiveAddress);
   const isUserLoading = useAppSelector(selectIsUserLoading);
@@ -67,9 +69,6 @@ export default function Route() {
     dappInfo,
     getLogData,
   ]);
-
-  const userInfo = isFetchingUserInfo ? null : _userInfo;
-  const logData = isFetchingLogData ? null : _logData;
 
   return (
     <div className="m-4">

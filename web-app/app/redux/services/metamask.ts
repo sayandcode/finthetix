@@ -123,7 +123,7 @@ export const metamaskApi = createApi({
       invalidatesTags: ['User'],
     }),
 
-    getFinthetixUserInfo:
+    fetchFinthetixUserInfo:
       builder.query<StringifyBigIntsInObj<FinthetixUserData>, DappInfo>({
         queryFn: makeErrorableQueryFn(
           async (dappInfo) => {
@@ -350,7 +350,7 @@ export const metamaskApi = createApi({
         invalidatesTags: ['User'],
       }),
 
-    getFinthetixLogData:
+    fetchFinthetixLogData:
       builder.query<FinthetixLogDataQueryResult, DappInfo>({
         queryFn: makeErrorableQueryFn(
           async (dappInfo) => {
@@ -389,10 +389,10 @@ export const metamaskApi = createApi({
 export const {
   useRequestMetamaskAddressMutation,
   useRefreshActiveMetamaskAddressMutation,
-  useLazyGetFinthetixUserInfoQuery,
+  useLazyFetchFinthetixUserInfoQuery,
   useRequestSampleTokensMutation,
   useStakeWithFinthetixMutation,
   useUnstakeWithFinthetixMutation,
   useWithdrawRewardsFromFinthetixMutation,
-  useLazyGetFinthetixLogDataQuery,
+  useLazyFetchFinthetixLogDataQuery,
 } = metamaskApi;
