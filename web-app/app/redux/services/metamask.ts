@@ -15,8 +15,6 @@ export type FinthetixLogDataQueryResult = {
   rewardAmt: StringifyBigIntsInObj<HistoricalRewardAmtData>
 };
 
-export type FinthetixMetadataQueryResult = Awaited<ReturnType<FinthetixStakingContractHandler['getMetadata']>>;
-
 export const metamaskApi = createApi({
   reducerPath: 'metamaskApi',
   baseQuery: fakeBaseQuery(),
@@ -385,30 +383,6 @@ export const metamaskApi = createApi({
 
         providesTags: ['User'],
       }),
-
-    getFinthetixMetadata:
-      builder.query<FinthetixMetadataQueryResult, DappInfo>({
-        queryFn: makeErrorableQueryFn(
-          async (dappInfo) => {
-            const metamaskHandler = new MetamaskHandler();
-            const fscHandler = await FinthetixStakingContractHandler.make(
-              metamaskHandler.provider, dappInfo,
-            );
-
-            return fscHandler.getMetadata();
-          },
-          (internalErr) => {
-          // default error paths
-            if (internalErr.startsWith('Metamask not installed'))
-              return 'Install Metamask browser extension and try again';
-
-            // as of now the following request has no expected error paths
-            // other than default paths which are handled above
-            else return FALLBACK_ERROR_DESCRIPTION;
-          },
-          FALLBACK_ERROR_DESCRIPTION,
-        ),
-      }),
   }),
 });
 
@@ -421,5 +395,4 @@ export const {
   useUnstakeWithFinthetixMutation,
   useWithdrawRewardsFromFinthetixMutation,
   useLazyGetFinthetixLogDataQuery,
-  useLazyGetFinthetixMetadataQuery,
 } = metamaskApi;

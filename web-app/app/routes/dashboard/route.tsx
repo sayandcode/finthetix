@@ -1,23 +1,34 @@
-import { MetaFunction } from '@remix-run/node';
-import { useNavigate } from '@remix-run/react';
+import { MetaFunction, json } from '@remix-run/node';
+import { useLoaderData, useNavigate } from '@remix-run/react';
 import { useEffect } from 'react';
 import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
 import { selectActiveAddress, selectIsUserLoading } from '~/redux/features/user/slice';
 import { useAppSelector } from '~/redux/hooks';
-import { useLazyGetFinthetixLogDataQuery, useLazyGetFinthetixMetadataQuery, useLazyGetFinthetixUserInfoQuery } from '~/redux/services/metamask';
+import { useLazyGetFinthetixLogDataQuery, useLazyGetFinthetixUserInfoQuery } from '~/redux/services/metamask';
 import SampleTokensBanner from './subcomponents/SampleTokensBanner';
 import StakingCard from './subcomponents/StakingCard';
 import RewardsCard from './subcomponents/RewardsCard';
 import UserLogDataGraph from './subcomponents/UserLogDataGraph';
+import { ReadonlyFinthetixStakingContractHandler } from '~/contracts/FinthetixStakingContract';
+import { getChainInfo, getDappInfo } from '~/lib/loaders';
 
 export const meta: MetaFunction = () => {
   return [{ title: 'Dashboard | Finthetix', dashboard: 'View your stake and rewards' }];
 };
 
+export const loader = async () => {
+  const chainInfo = getChainInfo();
+  const dappInfo = getDappInfo();
+  const fscReadonlyHandler
+    = new ReadonlyFinthetixStakingContractHandler(
+      chainInfo.rpcUrls[0], dappInfo,
+    );
+  const finthetixMetadata = await fscReadonlyHandler.getMetadata();
+  return json({ finthetixMetadata });
+};
+
 export default function Route() {
-  const activeAddress = useAppSelector(selectActiveAddress);
-  const isUserLoading = useAppSelector(selectIsUserLoading);
-  const navigate = useNavigate();
+  const { finthetixMetadata } = useLoaderData<typeof loader>();
   const { dappInfo } = useRootLoaderData();
   const [
     getUserInfo,
@@ -25,15 +36,13 @@ export default function Route() {
   ] = useLazyGetFinthetixUserInfoQuery();
 
   const [
-    getFinthetixMetadata,
-    { data: _finthetixMetadata = null,
-      isFetching: isFetchingFinthetixMetadata },
-  ] = useLazyGetFinthetixMetadataQuery();
-
-  const [
     getLogData,
     { data: _logData = null, isFetching: isFetchingLogData },
   ] = useLazyGetFinthetixLogDataQuery();
+
+  const activeAddress = useAppSelector(selectActiveAddress);
+  const isUserLoading = useAppSelector(selectIsUserLoading);
+  const navigate = useNavigate();
 
   // fetch the users' info
   useEffect(() => {
@@ -48,7 +57,6 @@ export default function Route() {
 
     // else fetch data
     getUserInfo(dappInfo);
-    getFinthetixMetadata(dappInfo);
     getLogData(dappInfo);
   },
   [
@@ -57,13 +65,10 @@ export default function Route() {
     isUserLoading,
     getUserInfo,
     dappInfo,
-    getFinthetixMetadata,
     getLogData,
   ]);
 
   const userInfo = isFetchingUserInfo ? null : _userInfo;
-  const finthetixMetadata
-    = isFetchingFinthetixMetadata ? null : _finthetixMetadata;
   const logData = isFetchingLogData ? null : _logData;
 
   return (

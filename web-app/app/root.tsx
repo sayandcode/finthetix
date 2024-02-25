@@ -14,13 +14,11 @@ import {
 import tailwindCss from './tailwind.css';
 import cairoFontStylesheet from '@fontsource-variable/cairo/wght.css';
 import { Toaster } from './components/ui/toaster';
-import { PARSED_PROCESS_ENV } from './lib/env';
-import { ChainInfo, DappInfo } from './lib/types';
 import Navbar from './components/root/Navbar';
-import { LOCAL_CHAIN_INFO } from './lib/constants';
 import { Provider as ReduxProvider } from 'react-redux';
 import { store } from './redux/store';
 import ReduxInitializer from './redux/Initializer';
+import { getChainInfo, getDappInfo } from './lib/loaders';
 
 export const ROUTE_PATH = 'root';
 
@@ -30,13 +28,9 @@ export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: cairoFontStylesheet },
 ];
 
-export const loader = async () => {
-  const chainInfo: ChainInfo = PARSED_PROCESS_ENV.NODE_ENV === 'development' ? LOCAL_CHAIN_INFO : {};
-  const dappInfo: DappInfo = {
-    stakingContractAddr: PARSED_PROCESS_ENV.STAKING_CONTRACT_ADDRESS,
-    stakingTokenAddr: PARSED_PROCESS_ENV.STAKING_TOKEN_ADDRESS,
-    rewardTokenAddr: PARSED_PROCESS_ENV.REWARD_TOKEN_ADDRESS,
-  };
+export const loader = () => {
+  const chainInfo = getChainInfo();
+  const dappInfo = getDappInfo();
   return json({ chainInfo, dappInfo });
 };
 

@@ -1,14 +1,15 @@
 import { Loader2Icon } from 'lucide-react';
 import { useMemo } from 'react';
-import { FinthetixLogDataQueryResult, FinthetixMetadataQueryResult } from '~/redux/services/metamask';
+import { FinthetixLogDataQueryResult } from '~/redux/services/metamask';
 import getGraphDataFromLogData from './lib/getGraphDataFromLogData';
 import StakeAndRewardAmtGraphs from './subcomponents/StakeAndRewardAmtGraphs';
+import { FinthetixMetadata } from '~/contracts/FinthetixStakingContract';
 
 export default function UserLogDataGraph(
   { logData, finthetixMetadata }:
   {
     logData: FinthetixLogDataQueryResult | null
-    finthetixMetadata: FinthetixMetadataQueryResult | null
+    finthetixMetadata: FinthetixMetadata
   },
 ) {
   const graphData = useMemo(() => {
