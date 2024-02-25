@@ -14,7 +14,7 @@ import { Chart } from 'react-chartjs-2';
 import getGraphDataFromLogData from '../../lib/getGraphDataFromLogData';
 import getReadableERC20TokenCount from '~/lib/utils/readableERC20';
 import { z } from 'zod';
-import { FinthetixMetadata } from '~/redux/services/metamask';
+import { FinthetixMetadataQueryResult } from '~/redux/services/metamask';
 
 type GraphData = ReturnType<typeof getGraphDataFromLogData>;
 
@@ -45,7 +45,7 @@ ChartJS.register(
 
 export default function StakeAndRewardAmtGraphs(
   { graphData, finthetixMetadata }:
-  { graphData: GraphData, finthetixMetadata: FinthetixMetadata },
+  { graphData: GraphData, finthetixMetadata: FinthetixMetadataQueryResult },
 ) {
   return (
     <div className="w-full h-72 bg-white shadow-sm px-4 py-6">

@@ -1,22 +1,16 @@
 import { Loader2Icon } from 'lucide-react';
-import { useEffect, useMemo } from 'react';
-import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
-import { selectIsUserLoggedIn } from '~/redux/features/user/slice';
-import { useAppSelector } from '~/redux/hooks';
-import { useLazyGetFinthetixLogDataQuery, useLazyGetFinthetixMetadataQuery } from '~/redux/services/metamask';
+import { useMemo } from 'react';
+import { FinthetixLogDataQueryResult, FinthetixMetadataQueryResult } from '~/redux/services/metamask';
 import getGraphDataFromLogData from './lib/getGraphDataFromLogData';
 import StakeAndRewardAmtGraphs from './subcomponents/StakeAndRewardAmtGraphs';
 
-export default function UserLogDataGraph() {
-  const isUserLoggedIn = useAppSelector(selectIsUserLoggedIn);
-  const { dappInfo } = useRootLoaderData();
-  const [getLogData, { data: logData, isFetching: isFetchingLogData = false }]
-    = useLazyGetFinthetixLogDataQuery();
-  const [
-    getFinthetixMetadata,
-    { data: finthetixMetadata, isFetching: isFetchingMetadata = false },
-  ] = useLazyGetFinthetixMetadataQuery();
-
+export default function UserLogDataGraph(
+  { logData, finthetixMetadata }:
+  {
+    logData: FinthetixLogDataQueryResult | null
+    finthetixMetadata: FinthetixMetadataQueryResult | null
+  },
+) {
   const graphData = useMemo(() => {
     if (!logData) return null;
 
@@ -24,20 +18,11 @@ export default function UserLogDataGraph() {
     return getGraphDataFromLogData(stakedAmt, rewardAmt);
   }, [logData]);
 
-  useEffect(() => {
-    if (!isUserLoggedIn) return;
-
-    getLogData(dappInfo);
-    getFinthetixMetadata(dappInfo);
-  }, [isUserLoggedIn, getLogData, getFinthetixMetadata, dappInfo]);
-
-  if (isFetchingLogData || isFetchingMetadata) return (
+  if (!(graphData && finthetixMetadata)) return (
     <div className="w-full h-72 flex justify-center items-center bg-white shadow-sm">
       <Loader2Icon className="animate-spin h-10 w-10" />
     </div>
   );
-
-  if (!(graphData && finthetixMetadata)) return null;
 
   return (
     <StakeAndRewardAmtGraphs

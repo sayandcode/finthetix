@@ -8,15 +8,15 @@ import { StringifyBigIntsInObj } from '~/lib/utils/stringifyBigIntsInObj';
 import getReadableERC20TokenCount from '~/lib/utils/readableERC20';
 import StakeBtn from './subcomponents/StakeBtn';
 import UnstakeBtn from './subcomponents/UnstakeBtn';
-import { FinthetixMetadata } from '~/redux/services/metamask';
+import { FinthetixMetadataQueryResult } from '~/redux/services/metamask';
 
 const MAX_DIGITS_TO_DISPLAY_IN_AMT_STR = 4;
 
 export default function StakingCard(
   { userInfo, finthetixMetadata }:
   {
-    userInfo: StringifyBigIntsInObj<FinthetixUserData> | undefined
-    finthetixMetadata: FinthetixMetadata | undefined
+    userInfo: StringifyBigIntsInObj<FinthetixUserData> | null
+    finthetixMetadata: FinthetixMetadataQueryResult | null
   }) {
   const stakedAmt = useMemo(() => {
     if (!(userInfo && finthetixMetadata)) return null;
@@ -53,11 +53,14 @@ export default function StakingCard(
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <span className="font-bold text-5xl mr-2">
-          {readableStakedAmtStr
-          || <Loader2Icon className="mx-10 w-10 h-10 inline-block animate-spin" />}
-        </span>
-        <span>FST</span>
+        {!(readableStakedAmtStr && finthetixMetadata)
+          ? <Loader2Icon className="mx-10 w-10 h-12 inline-block animate-spin" />
+          : (
+            <>
+              <span className="font-bold text-5xl mr-2">{readableStakedAmtStr}</span>
+              <span>{finthetixMetadata.stakingToken.symbol}</span>
+            </>
+            )}
       </CardContent>
       <CardFooter className="flex justify-end gap-2">
         <StakeBtn stakingTokenBal={stakingTokenBal} />

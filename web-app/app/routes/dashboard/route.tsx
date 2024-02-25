@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
 import { selectActiveAddress, selectIsUserLoading } from '~/redux/features/user/slice';
 import { useAppSelector } from '~/redux/hooks';
-import { useLazyGetFinthetixMetadataQuery, useLazyGetFinthetixUserInfoQuery } from '~/redux/services/metamask';
+import { useLazyGetFinthetixLogDataQuery, useLazyGetFinthetixMetadataQuery, useLazyGetFinthetixUserInfoQuery } from '~/redux/services/metamask';
 import SampleTokensBanner from './subcomponents/SampleTokensBanner';
 import StakingCard from './subcomponents/StakingCard';
 import RewardsCard from './subcomponents/RewardsCard';
@@ -19,16 +19,26 @@ export default function Route() {
   const isUserLoading = useAppSelector(selectIsUserLoading);
   const navigate = useNavigate();
   const { dappInfo } = useRootLoaderData();
-  const [getFinthetixUserInfoQuery, { data: userInfo }]
-    = useLazyGetFinthetixUserInfoQuery();
-  const [getFinthetixMetadata, { data: finthetixMetadata }]
-    = useLazyGetFinthetixMetadataQuery();
+  const [
+    getUserInfo,
+    { data: _userInfo = null, isFetching: isFetchingUserInfo },
+  ] = useLazyGetFinthetixUserInfoQuery();
 
-  // fetch the users's staked info
+  const [
+    getFinthetixMetadata,
+    { data: _finthetixMetadata = null,
+      isFetching: isFetchingFinthetixMetadata },
+  ] = useLazyGetFinthetixMetadataQuery();
+
+  const [
+    getLogData,
+    { data: _logData = null, isFetching: isFetchingLogData },
+  ] = useLazyGetFinthetixLogDataQuery();
+
+  // fetch the users' info
   useEffect(() => {
-    // wait for key dependencies and loading of user
-    if (!navigate || isUserLoading || !dappInfo || !getFinthetixUserInfoQuery)
-      return;
+    // wait for loading of user
+    if (isUserLoading) return;
 
     //  redirect to home if user isn't logged in
     if (!activeAddress) {
@@ -36,17 +46,25 @@ export default function Route() {
       return;
     }
 
-    getFinthetixUserInfoQuery(dappInfo);
+    // else fetch data
+    getUserInfo(dappInfo);
     getFinthetixMetadata(dappInfo);
+    getLogData(dappInfo);
   },
   [
     activeAddress,
     navigate,
     isUserLoading,
-    getFinthetixUserInfoQuery,
+    getUserInfo,
     dappInfo,
     getFinthetixMetadata,
+    getLogData,
   ]);
+
+  const userInfo = isFetchingUserInfo ? null : _userInfo;
+  const finthetixMetadata
+    = isFetchingFinthetixMetadata ? null : _finthetixMetadata;
+  const logData = isFetchingLogData ? null : _logData;
 
   return (
     <div className="m-4">
@@ -61,7 +79,10 @@ export default function Route() {
           finthetixMetadata={finthetixMetadata}
         />
       </div>
-      <UserLogDataGraph />
+      <UserLogDataGraph
+        logData={logData}
+        finthetixMetadata={finthetixMetadata}
+      />
     </div>
   );
 }

@@ -8,15 +8,15 @@ import { FinthetixUserData } from '~/contracts/FinthetixStakingContract';
 import { StringifyBigIntsInObj } from '~/lib/utils/stringifyBigIntsInObj';
 import getReadableERC20TokenCount from '~/lib/utils/readableERC20';
 import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
-import { FinthetixMetadata, useWithdrawRewardsFromFinthetixMutation } from '~/redux/services/metamask';
+import { FinthetixMetadataQueryResult, useWithdrawRewardsFromFinthetixMutation } from '~/redux/services/metamask';
 
 const MAX_DIGITS_TO_DISPLAY_IN_AMT_STR = 4;
 
 export default function RewardsCard(
   { userInfo, finthetixMetadata }:
   {
-    userInfo: StringifyBigIntsInObj<FinthetixUserData> | undefined
-    finthetixMetadata: FinthetixMetadata | undefined
+    userInfo: StringifyBigIntsInObj<FinthetixUserData> | null
+    finthetixMetadata: FinthetixMetadataQueryResult | null
   }) {
   const { dappInfo } = useRootLoaderData();
 
@@ -32,9 +32,8 @@ export default function RewardsCard(
     return getReadableERC20TokenCount(
       {
         value: userInfo.rewardAmtVal,
-        decimals: finthetixMetadata?.rewardToken.decimals,
-      }
-      , MAX_DIGITS_TO_DISPLAY_IN_AMT_STR,
+        decimals: finthetixMetadata.rewardToken.decimals,
+      }, MAX_DIGITS_TO_DISPLAY_IN_AMT_STR,
     );
   }, [userInfo, finthetixMetadata]);
 
@@ -49,11 +48,14 @@ export default function RewardsCard(
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <span className="font-bold text-5xl mr-2">
-          {readableRewardAmtStr
-          || <Loader2Icon className="mx-10 w-10 h-10 inline-block animate-spin" />}
-        </span>
-        <span>FRT</span>
+        {!(readableRewardAmtStr && finthetixMetadata)
+          ? <Loader2Icon className="mx-10 w-10 h-12 inline-block animate-spin" />
+          : (
+            <>
+              <span className="font-bold text-5xl mr-2">{readableRewardAmtStr}</span>
+              <span>{finthetixMetadata.rewardToken.symbol}</span>
+            </>
+            )}
       </CardContent>
       <CardFooter className="flex justify-end gap-2">
         <Button

@@ -15,7 +15,7 @@ export type FinthetixLogDataQueryResult = {
   rewardAmt: StringifyBigIntsInObj<HistoricalRewardAmtData>
 };
 
-export type FinthetixMetadata = Awaited<ReturnType<FinthetixStakingContractHandler['getMetadata']>>;
+export type FinthetixMetadataQueryResult = Awaited<ReturnType<FinthetixStakingContractHandler['getMetadata']>>;
 
 export const metamaskApi = createApi({
   reducerPath: 'metamaskApi',
@@ -387,7 +387,7 @@ export const metamaskApi = createApi({
       }),
 
     getFinthetixMetadata:
-      builder.query<FinthetixMetadata, DappInfo>({
+      builder.query<FinthetixMetadataQueryResult, DappInfo>({
         queryFn: makeErrorableQueryFn(
           async (dappInfo) => {
             const metamaskHandler = new MetamaskHandler();
