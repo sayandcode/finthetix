@@ -96,15 +96,15 @@ export default class FinthetixStakingContractHandler extends Base {
   async getUserData() {
     const userAddr = this._signer.address;
 
-    const stakedAmtVal = await super._stakingContract.viewMyStakedAmt();
+    const stakedAmtVal = await this._stakingContract.viewMyStakedAmt();
     const rewardAmtVal = await this._getRewardAmt();
-    const stakingTokenBalVal = await super._stakingToken.balanceOf(userAddr);
+    const stakingTokenBalVal = await this._stakingToken.balanceOf(userAddr);
 
     return { stakedAmtVal, rewardAmtVal, stakingTokenBalVal };
   }
 
   async requestSampleTokens() {
-    const txn = await super._stakingToken.requestSampleTokens();
+    const txn = await this._stakingToken.requestSampleTokens();
     await txn.wait();
   }
 
@@ -117,36 +117,36 @@ export default class FinthetixStakingContractHandler extends Base {
   async stake(amtToStake: bigint) {
     // approve
     const approvalTxn
-      = await super._stakingToken.approve(
-        super._dappInfo.stakingContractAddr, amtToStake,
+      = await this._stakingToken.approve(
+        this._dappInfo.stakingContractAddr, amtToStake,
       );
     await approvalTxn.wait();
 
     // stake
-    const stakeTxn = await super._stakingContract.stake(amtToStake);
+    const stakeTxn = await this._stakingContract.stake(amtToStake);
     await stakeTxn.wait();
   }
 
   async unstake(amtToUnstake: bigint) {
-    const txn = await super._stakingContract.unstake(amtToUnstake);
+    const txn = await this._stakingContract.unstake(amtToUnstake);
     await txn.wait();
   }
 
   async withdrawReward() {
-    const txn = await super._stakingContract.withdrawRewards();
+    const txn = await this._stakingContract.withdrawRewards();
     await txn.wait();
   }
 
   async getHistoricalStakedAmt(): Promise<HistoricalStakedAmtData> {
     const senderAddr = this._signer.address;
     const eventFilter
-      = super._stakingContract.filters.StakeBalChanged(senderAddr);
-    const eventLogs = await super._stakingContract.queryFilter(eventFilter);
+      = this._stakingContract.filters.StakeBalChanged(senderAddr);
+    const eventLogs = await this._stakingContract.queryFilter(eventFilter);
 
     // process the logs
     const decodeLogsPromises = eventLogs.map(async (log) => {
       const decodedEventLog
-        = super._stakingContract.interface
+        = this._stakingContract.interface
           .decodeEventLog(log.fragment, log.data, log.topics);
       const decodedEventLogSchema
         = z.tuple([z.string(), z.bigint()]) satisfies
@@ -168,13 +168,13 @@ export default class FinthetixStakingContractHandler extends Base {
   async getHistoricalRewardAmt(): Promise<HistoricalRewardAmtData> {
     const senderAddr = this._signer.address;
     const eventFilter
-      = super._stakingContract.filters.UserRewardUpdated(senderAddr);
-    const eventLogs = await super._stakingContract.queryFilter(eventFilter);
+      = this._stakingContract.filters.UserRewardUpdated(senderAddr);
+    const eventLogs = await this._stakingContract.queryFilter(eventFilter);
 
     // process the logs
     const decodeLogPromises = eventLogs.map(async (log) => {
       const decodedEventLog
-        = super
+        = this
           ._stakingContract
           .interface
           .decodeEventLog(log.fragment, log.data, log.topics);
@@ -204,7 +204,7 @@ export default class FinthetixStakingContractHandler extends Base {
 
   private async _getRewardAmt() {
     const publishedReward
-      = await super._stakingContract.viewMyPublishedRewards();
+      = await this._stakingContract.viewMyPublishedRewards();
     const accruedReward
       = await this._calculateAccruedReward();
     const currRewardAmt = publishedReward + accruedReward;
@@ -212,21 +212,21 @@ export default class FinthetixStakingContractHandler extends Base {
   }
 
   private async _calculateAccruedReward() {
-    const stakedAmt = await super._stakingContract.viewMyStakedAmt();
+    const stakedAmt = await this._stakingContract.viewMyStakedAmt();
     const totalRewardsPerSec
-      = await super._stakingContract.TOTAL_REWARDS_PER_SECOND();
+      = await this._stakingContract.TOTAL_REWARDS_PER_SECOND();
     const alphaNow
-      = await super._stakingContract.alphaNow()
+      = await this._stakingContract.alphaNow()
       + await this._calculateAccruedAlpha();
     const alphaOfUserAtLastInteraction
-      = await super._stakingContract.viewAlphaAtMyLastInteraction();
-    const cooldownConstant = await super._stakingContract.COOLDOWN_CONSTANT();
+      = await this._stakingContract.viewAlphaAtMyLastInteraction();
+    const cooldownConstant = await this._stakingContract.COOLDOWN_CONSTANT();
     return stakedAmt * totalRewardsPerSec
       * (alphaNow - alphaOfUserAtLastInteraction) / cooldownConstant;
   }
 
   private async _calculateAccruedAlpha() {
-    const totalStakedAmt = await super._stakingContract.totalStakedAmt();
+    const totalStakedAmt = await this._stakingContract.totalStakedAmt();
     if (totalStakedAmt === 0n) return 0n;
 
     const currBlockNo = await this._signer.provider.getBlockNumber();
@@ -237,8 +237,8 @@ export default class FinthetixStakingContractHandler extends Base {
 
     const blockTimestamp = BigInt(blockTimestampAsNumber);
     const lastUpdatedRewardAt
-      = await super._stakingContract.lastUpdatedRewardAt();
-    const cooldownConstant = await super._stakingContract.COOLDOWN_CONSTANT();
+      = await this._stakingContract.lastUpdatedRewardAt();
+    const cooldownConstant = await this._stakingContract.COOLDOWN_CONSTANT();
 
     return (blockTimestamp - lastUpdatedRewardAt) * cooldownConstant
       / totalStakedAmt;
@@ -259,13 +259,13 @@ export class ReadonlyFinthetixStakingContractHandler extends Base {
 
   async getMetadata(): Promise<FinthetixMetadata> {
     const stakingToken = {
-      decimals: Number(await super._stakingToken.decimals()),
-      symbol: await super._stakingToken.symbol(),
+      decimals: Number(await this._stakingToken.decimals()),
+      symbol: await this._stakingToken.symbol(),
     };
 
     const rewardToken = {
-      decimals: Number(await super._rewardToken.decimals()),
-      symbol: await super._rewardToken.symbol(),
+      decimals: Number(await this._rewardToken.decimals()),
+      symbol: await this._rewardToken.symbol(),
     };
 
     return { stakingToken, rewardToken };
