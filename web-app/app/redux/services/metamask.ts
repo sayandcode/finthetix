@@ -359,10 +359,14 @@ export const metamaskApi = createApi({
               metamaskHandler.provider, dappInfo,
             );
 
-            const historicalStakedAmt
-              = await fscHandler.getHistoricalStakedAmt();
-            const historicalRewardAmt
-              = await fscHandler.getHistoricalRewardAmt();
+            const historicalStakedAmtPromise
+              = fscHandler.getHistoricalStakedAmt();
+            const historicalRewardAmtPromise
+              = fscHandler.getHistoricalRewardAmt();
+            const [historicalStakedAmt, historicalRewardAmt]
+              = await Promise.all(
+                [historicalStakedAmtPromise, historicalRewardAmtPromise],
+              );
 
             return {
               stakedAmt: historicalStakedAmt.map(stringifyBigIntsInObj),

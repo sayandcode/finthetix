@@ -39,7 +39,7 @@ class Base {
 
   /**
    * Contract Handler Getters:
-   * These are a awrapper around the contract factories
+   * These are a wrapper around the contract factories
    */
 
   protected get _stakingContract(): FinthetixStakingContract {
@@ -96,9 +96,15 @@ export default class FinthetixStakingContractHandler extends Base {
   async getUserData() {
     const userAddr = this._signer.address;
 
-    const stakedAmtVal = await this._stakingContract.viewMyStakedAmt();
-    const rewardAmtVal = await this._getRewardAmt();
-    const stakingTokenBalVal = await this._stakingToken.balanceOf(userAddr);
+    const stakedAmtValPromise = this._stakingContract.viewMyStakedAmt();
+    const rewardAmtValPromise = this._getRewardAmt();
+    const stakingTokenBalValPromise
+      = this._stakingToken.balanceOf(userAddr);
+
+    const [stakedAmtVal, rewardAmtVal, stakingTokenBalVal]
+      = await Promise.all(
+        [stakedAmtValPromise, rewardAmtValPromise, stakingTokenBalValPromise],
+      );
 
     return { stakedAmtVal, rewardAmtVal, stakingTokenBalVal };
   }
@@ -198,29 +204,49 @@ export default class FinthetixStakingContractHandler extends Base {
   }
 
   /**
-   * Handler Query Functions:
-   * These only need provider not signer in the constract handler
+   * Internal Fns
    * */
 
   private async _getRewardAmt() {
-    const publishedReward
-      = await this._stakingContract.viewMyPublishedRewards();
-    const accruedReward
-      = await this._calculateAccruedReward();
+    const publishedRewardPromise
+      = this._stakingContract.viewMyPublishedRewards();
+    const accruedRewardPromise = this._calculateAccruedReward();
+
+    const [publishedReward, accruedReward]
+      = await Promise.all([publishedRewardPromise, accruedRewardPromise]);
+
     const currRewardAmt = publishedReward + accruedReward;
     return currRewardAmt;
   }
 
   private async _calculateAccruedReward() {
-    const stakedAmt = await this._stakingContract.viewMyStakedAmt();
-    const totalRewardsPerSec
-      = await this._stakingContract.TOTAL_REWARDS_PER_SECOND();
-    const alphaNow
-      = await this._stakingContract.alphaNow()
-      + await this._calculateAccruedAlpha();
-    const alphaOfUserAtLastInteraction
-      = await this._stakingContract.viewAlphaAtMyLastInteraction();
-    const cooldownConstant = await this._stakingContract.COOLDOWN_CONSTANT();
+    const stakedAmtPromise = this._stakingContract.viewMyStakedAmt();
+    const totalRewardsPerSecPromise
+      = this._stakingContract.TOTAL_REWARDS_PER_SECOND();
+    const alphaOfUserAtLastInteractionPromise
+      = this._stakingContract.viewAlphaAtMyLastInteraction();
+    const cooldownConstantPromise = this._stakingContract.COOLDOWN_CONSTANT();
+    const publishedAlphaNowPromise = this._stakingContract.alphaNow();
+    const calculatedAccruedAlphaPromise = this._calculateAccruedAlpha();
+
+    const [
+      stakedAmt,
+      totalRewardsPerSec,
+      alphaOfUserAtLastInteraction,
+      cooldownConstant,
+      publishedAlphaNow,
+      calculatedAccruedAlpha,
+    ]
+      = await Promise.all([
+        stakedAmtPromise,
+        totalRewardsPerSecPromise,
+        alphaOfUserAtLastInteractionPromise,
+        cooldownConstantPromise,
+        publishedAlphaNowPromise,
+        calculatedAccruedAlphaPromise,
+      ]);
+
+    const alphaNow = publishedAlphaNow + calculatedAccruedAlpha;
     return stakedAmt * totalRewardsPerSec
       * (alphaNow - alphaOfUserAtLastInteraction) / cooldownConstant;
   }
@@ -229,16 +255,21 @@ export default class FinthetixStakingContractHandler extends Base {
     const totalStakedAmt = await this._stakingContract.totalStakedAmt();
     if (totalStakedAmt === 0n) return 0n;
 
-    const currBlockNo = await this._signer.provider.getBlockNumber();
+    const lastUpdatedRewardAtPromise
+      = this._stakingContract.lastUpdatedRewardAt();
+    const cooldownConstantPromise = this._stakingContract.COOLDOWN_CONSTANT();
+
     const blockTimestampAsNumber
-      = (await this._signer.provider.getBlock(currBlockNo))?.timestamp;
+      = (await this._signer.provider.getBlock('latest'))?.timestamp;
     if (!blockTimestampAsNumber)
-      throw new Error(`Current block (${currBlockNo}) doesn't exist`);
+      throw new Error(`Current block doesn't exist`);
 
     const blockTimestamp = BigInt(blockTimestampAsNumber);
-    const lastUpdatedRewardAt
-      = await this._stakingContract.lastUpdatedRewardAt();
-    const cooldownConstant = await this._stakingContract.COOLDOWN_CONSTANT();
+
+    const [lastUpdatedRewardAt, cooldownConstant]
+      = await Promise.all(
+        [lastUpdatedRewardAtPromise, cooldownConstantPromise],
+      );
 
     return (blockTimestamp - lastUpdatedRewardAt) * cooldownConstant
       / totalStakedAmt;
@@ -258,14 +289,24 @@ export class ReadonlyFinthetixStakingContractHandler extends Base {
   }
 
   async getMetadata(): Promise<FinthetixMetadata> {
+    const stakingTokenPromises = {
+      decimals: this._stakingToken.decimals(),
+      symbol: this._stakingToken.symbol(),
+    };
+
+    const rewardTokenPromises = {
+      decimals: this._rewardToken.decimals(),
+      symbol: this._rewardToken.symbol(),
+    };
+
     const stakingToken = {
-      decimals: Number(await this._stakingToken.decimals()),
-      symbol: await this._stakingToken.symbol(),
+      decimals: Number(await stakingTokenPromises.decimals),
+      symbol: await stakingTokenPromises.symbol,
     };
 
     const rewardToken = {
-      decimals: Number(await this._rewardToken.decimals()),
-      symbol: await this._rewardToken.symbol(),
+      decimals: Number(await rewardTokenPromises.decimals),
+      symbol: await rewardTokenPromises.symbol,
     };
 
     return { stakingToken, rewardToken };
