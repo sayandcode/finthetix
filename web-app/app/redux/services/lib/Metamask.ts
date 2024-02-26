@@ -8,12 +8,13 @@ enum MetamaskHandlerErrors {
 }
 export default class MetamaskHandler {
   public readonly provider: BrowserProvider;
+  public readonly ethereum: NonNullable<typeof window.ethereum>;
 
   constructor() {
     if (!window.ethereum) {
       throw new Error(MetamaskHandlerErrors.ERR1);
     }
-
+    this.ethereum = window.ethereum;
     this.provider = new BrowserProvider(window.ethereum);
   }
 

@@ -4,7 +4,7 @@ import { Button } from '~/components/ui/button';
 import { Loader2Icon } from 'lucide-react';
 import { useNavigate } from '@remix-run/react';
 import { useAppSelector } from '~/redux/hooks';
-import { selectActiveAddress, selectIsUserLoading } from '~/redux/features/user/slice';
+import { selectIsUserLoggedIn, selectIsUserLoading } from '~/redux/features/user/slice';
 import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
 import { useRequestMetamaskAddressMutation } from '~/redux/services/metamask';
 
@@ -18,21 +18,20 @@ export const meta: MetaFunction = () => {
 export default function Route() {
   const { chainInfo } = useRootLoaderData();
   const navigate = useNavigate();
-  const activeAddress = useAppSelector(selectActiveAddress);
+  const isUserLoggedIn = useAppSelector(selectIsUserLoggedIn);
   const isUserLoading = useAppSelector(selectIsUserLoading);
-  const hasActiveAddress = !isUserLoading && !!activeAddress;
   const [requestMetamaskAddress] = useRequestMetamaskAddressMutation();
 
   useEffect(() => {
-    if (hasActiveAddress) navigate('/dashboard');
-  }, [hasActiveAddress, navigate]);
+    if (isUserLoggedIn) navigate('/dashboard');
+  }, [isUserLoggedIn, navigate]);
 
   const handleClick = useCallback(() => {
     requestMetamaskAddress(chainInfo);
   }, [requestMetamaskAddress, chainInfo]);
 
   // if active address is available, a redirect is pending, so disable the btn
-  const isBtnDisabled = isUserLoading || hasActiveAddress;
+  const isBtnDisabled = isUserLoading || isUserLoggedIn;
   return (
     <div>
       <section className="flex flex-col gap-y-2 items-center justify-center h-screen text-center">

@@ -19,6 +19,7 @@ import { Provider as ReduxProvider } from 'react-redux';
 import { store } from './redux/store';
 import ReduxInitializer from './redux/Initializer';
 import { getChainInfo, getDappInfo } from './lib/loaders';
+import AutoLogin from './components/root/AutoLogin';
 
 export const ROUTE_PATH = 'root';
 
@@ -47,6 +48,7 @@ export default function App() {
         <Toaster />
         <ReduxProvider store={store}>
           <ReduxInitializer store={store} />
+          <AutoLogin />
           <Navbar />
           <Outlet />
         </ReduxProvider>

@@ -8,11 +8,13 @@ const SLICE_LOCALSTORAGE_KEY = SLICE_NAME;
 export type ActiveAddress = string | null;
 
 export type UserState = {
+  isFromLocalStorage: boolean
   activeAddress: ActiveAddress
   isLoading: boolean
 };
 
 const initialState: UserState = {
+  isFromLocalStorage: false,
   activeAddress: null,
   isLoading: true,
 };
@@ -24,6 +26,8 @@ export const userSlice = createSlice({
     setActiveAddress:
       (state, action: PayloadAction<UserState['activeAddress']>) => {
         state.activeAddress = action.payload;
+        // user only sets to local storage when remembering
+        state.isFromLocalStorage = false;
       },
 
     setIsUserLoading: (state, action: PayloadAction<UserState['isLoading']>) => {
@@ -32,9 +36,7 @@ export const userSlice = createSlice({
     remember: (state, action: PayloadAction<DataToPersist>) => {
       const activeAddress = action.payload?.activeAddress;
       state.activeAddress = activeAddress || null;
-      // if active address exists, we still need to validate it via metamask.
-      // Till then, our user is still loading
-      state.isLoading = activeAddress ? true : false;
+      state.isFromLocalStorage = true;
     },
   },
 });
@@ -64,7 +66,9 @@ export const selectActiveAddress
 export const selectIsUserLoading
   = (state: RootState) => state.user.isLoading;
 export const selectIsUserLoggedIn
-  = ({ user }: RootState) => !user.isLoading && user.activeAddress;
+  = ({ user }: RootState) => !user.isLoading && !!user.activeAddress;
+export const selectIsUserFromLocalStorage
+  = ({ user }: RootState) => user.isFromLocalStorage;
 
 /* Reducer */
 const userReducer = userSlice.reducer;
