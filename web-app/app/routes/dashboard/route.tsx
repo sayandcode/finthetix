@@ -31,13 +31,13 @@ export default function Route() {
   const { finthetixMetadata } = useLoaderData<typeof loader>();
   const { dappInfo } = useRootLoaderData();
   const [
-    getUserInfo,
+    triggerFetchUserInfo,
     { data: _userInfo = null, isFetching: isFetchingUserInfo },
   ] = useLazyFetchFinthetixUserInfoQuery();
   const userInfo = isFetchingUserInfo ? null : _userInfo;
 
   const [
-    getLogData,
+    triggerFetchLogData,
     { data: _logData = null, isFetching: isFetchingLogData },
   ] = useLazyFetchFinthetixLogDataQuery();
   const logData = isFetchingLogData ? null : _logData;
@@ -58,16 +58,16 @@ export default function Route() {
     }
 
     // else fetch data
-    getUserInfo(dappInfo);
-    getLogData(dappInfo);
+    triggerFetchUserInfo(dappInfo, true);
+    triggerFetchLogData(dappInfo, true);
   },
   [
     activeAddress,
     navigate,
     isUserLoading,
-    getUserInfo,
+    triggerFetchUserInfo,
     dappInfo,
-    getLogData,
+    triggerFetchLogData,
   ]);
 
   return (
