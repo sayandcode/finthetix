@@ -50,8 +50,19 @@ export default function StakeAndRewardAmtGraphs(
     finthetixMetadata: FinthetixMetadata
   },
 ) {
+  const isDatasetEmpty = graphData.readableTimestamps.length === 0;
   return (
-    <div className="w-full h-72 bg-white shadow-sm px-4 py-6">
+    <div className="w-full h-72 bg-white shadow-sm px-4 py-6 relative flex justify-center items-center">
+      {isDatasetEmpty
+        ? (
+          <div className="absolute text-center mx-20">
+            <span className="text-xl font-bold">No data available.</span>
+            <br />
+            <span>Interact with the contract to see data</span>
+          </div>
+          )
+        : null}
+
       <Chart
         type="line"
         data={{
@@ -133,10 +144,12 @@ export default function StakeAndRewardAmtGraphs(
               ticks: {
                 callback: (tickVal) => {
                   const typedTickVal = stakedAmtValSchema.parse(tickVal);
-                  return getReadableERC20TokenCount({
-                    value: Intl.NumberFormat('en-US', { useGrouping: false }).format(typedTickVal),
-                    decimals: finthetixMetadata.stakingToken.decimals,
-                  }, MAX_DECIMALS_IN_LABELS);
+                  return typedTickVal < 1
+                    ? typedTickVal
+                    : getReadableERC20TokenCount({
+                      value: Intl.NumberFormat('en-US', { useGrouping: false }).format(Math.floor(typedTickVal)),
+                      decimals: finthetixMetadata.stakingToken.decimals,
+                    }, MAX_DECIMALS_IN_LABELS);
                 }
                 ,
               },
@@ -150,10 +163,12 @@ export default function StakeAndRewardAmtGraphs(
               ticks: {
                 callback: (tickVal) => {
                   const typedTickVal = rewardAmtValSchema.parse(tickVal);
-                  return getReadableERC20TokenCount({
-                    value: Intl.NumberFormat('en-US', { useGrouping: false }).format(typedTickVal),
-                    decimals: finthetixMetadata.rewardToken.decimals,
-                  }, MAX_DECIMALS_IN_LABELS);
+                  return typedTickVal < 1
+                    ? typedTickVal
+                    : getReadableERC20TokenCount({
+                      value: Intl.NumberFormat('en-US', { useGrouping: false }).format(Math.floor(typedTickVal)),
+                      decimals: finthetixMetadata.rewardToken.decimals,
+                    }, MAX_DECIMALS_IN_LABELS);
                 },
               },
             },
