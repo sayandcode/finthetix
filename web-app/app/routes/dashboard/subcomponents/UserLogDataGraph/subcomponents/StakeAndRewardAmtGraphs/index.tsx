@@ -16,6 +16,7 @@ import EmptyChartDatasetMsg from './subcomponents/EmptyChartDatasetMsg';
 import useChartOptions from './lib/useChartOptions';
 import { DashboardGraphData } from './lib/useChartOptions/lib/types';
 import useChartData from './lib/useChartData';
+import { Card, CardContent } from '~/components/ui/card';
 
 const MAX_ALLOWED_DECIMALS_IN_LABELS = 4;
 ChartJS.register(
@@ -42,7 +43,7 @@ export default function StakeAndRewardAmtGraphs(
   const isDatasetEmpty = graphData.readableTimestamps.length === 0;
 
   return (
-    <div className="w-full h-72 bg-white shadow-sm px-4 py-6 relative flex justify-center items-center">
+    <div className="w-full h-72 bg-white shadow-sm border border-black px-4 py-6 relative flex justify-center items-center">
       {isDatasetEmpty ? <div className="absolute "><EmptyChartDatasetMsg /></div> : null}
       <Chart type="line" data={data} options={options} />
     </div>

@@ -15,7 +15,7 @@ export default function SampleTokensBanner() {
     <div className="bg-primary p-4 my-4 flex gap-2">
       <div><HandCoinsIcon className="h-6 w-6" /></div>
       <div>
-        <h2 className="text-xl font-bold">Try out Finthetix for free!</h2>
+        <h2 className="text-lg font-bold">Try out Finthetix for free!</h2>
         <p>
           Claim your sample FST tokens to see how it works and get started
           with staking immediately
