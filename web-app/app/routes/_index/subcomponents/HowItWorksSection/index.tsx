@@ -1,32 +1,39 @@
+import UnderlineLink from '~/components/ui/underline-link';
+import illustration from './assets/staking.svg';
+import { Card } from '~/components/ui/card';
+
+const REWARD_UNLOCK_DURATION = '1 second';
+const REWARD_RATE = '500';
+const REWARD_TOKEN_SYMBOL = 'FRT';
+const STAKING_TOKEN_SYMBOL = 'FST';
+
 export default function HowItWorksSection() {
   return (
-    <section className="mx-8">
-      <h2 className="font-bold text-4xl mb-2">How it works</h2>
-      <p>
-        Lorem ipsum dolor sit amet consectetur adipisicing elit.  Illo,
-        ratione sapiente ut id recusandae totam nesciunt culpa dicta odit
-        deleniti voluptas soluta vel ipsum commodi voluptatem distinctio
-        provident necessitatibus earum magnam, nostrum eius natus, beatae
-        perspiciatis. Suscipit fugit nam nisi quisquam voluptas blanditiis
-        eligendi fuga odit quibusdam minus aspernatur quod voluptate rem odio
-        est ipsa veniam aperiam vero explicabo, neque iure.  Debitis facilis
-        autem tempora sapiente aliquam! Cum reprehenderit velit odit magni
-        numquam, perferendis tempore. Odio ratione ex, error distinctio itaque
-        minima consectetur, nam cupiditate, a debitis recusandae eligendi
-        ducimus. Iste, repudiandae obcaecati dolor placeat sunt pariatur
-        asperiores, magni magnam, id perspiciatis consequuntur ut. Amet
-        perferendis accusamus repellat, vero dolore distinctio nemo saepe
-        molestias nam delectus fuga rerum maxime mollitia explicabo fugiat
-        maiores adipisci voluptatibus architecto earum corrupti hic officia
-        aspernatur doloremque? Eum dolores quod est expedita non suscipit quas
-        voluptate nostrum corporis, quos voluptatibus rem perferendis ullam
-        autem, assumenda quisquam eveniet eaque, quae minima voluptates iusto
-        praesentium quaerat! Iste ipsa officiis accusantium minus eius quam ex
-        hic dolorum harum tempora, nobis veritatis rem?  Culpa, provident
-        facere. Nisi porro molestias repellendus laudantium accusantium eaque
-        repudiandae ut fuga eligendi. Asperiores enim sit quidem! Culpa magnam
-        beatae possimus officiis voluptate saepe quasi.
-      </p>
+    <section className="mx-8 mb-8">
+      <Card className="p-4">
+        <h2 className="font-bold text-xl sm:text-3xl mb-2">How it works</h2>
+        <p>
+          {`Every ${REWARD_UNLOCK_DURATION}, ${REWARD_RATE}`}
+          <UnderlineLink href="www.etherscan.io">
+            {`${REWARD_TOKEN_SYMBOL} tokens`}
+          </UnderlineLink>
+          are awarded. You earn a fraction of these, based on how much of
+          the total staking pool (of
+          <UnderlineLink href="www.etherscan.io">
+            {`${STAKING_TOKEN_SYMBOL} tokens`}
+          </UnderlineLink>
+          you contribute. Read the
+          <UnderlineLink href="github.com/sayandcode/finthetix">official white paper</UnderlineLink>
+          to learn more.
+        </p>
+        <img src={illustration} alt="" title="" aria-hidden className="mx-auto w-96 h-96" />
+        <UnderlineLink
+          className="text-sm mx-auto text-center block"
+          href="https://www.freepik.com/free-vector/investment-gold-web-template_7660910.htm#fromView=search&page=1&position=2&uuid=66abb94f-5127-4005-9127-aed6ab73705c"
+        >
+          Image by vectorpouch on Freepik
+        </UnderlineLink>
+      </Card>
     </section>
   );
 }
