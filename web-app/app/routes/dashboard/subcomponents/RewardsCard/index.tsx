@@ -5,7 +5,7 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter,
 } from '~/components/ui/card';
 import { FinthetixMetadata, FinthetixUserData } from '~/contracts/FinthetixStakingContract';
-import { StringifyBigIntsInObj } from '~/lib/utils/stringifyBigIntsInObj';
+import { type StringifyBigIntsInObj } from '~/lib/utils/stringifyBigIntsInObj';
 import getReadableERC20TokenCount from '~/lib/utils/readableERC20';
 import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
 import { useWithdrawRewardsFromFinthetixMutation } from '~/redux/services/metamask';
@@ -16,7 +16,7 @@ export default function RewardsCard(
   { userInfo, finthetixMetadata }:
   {
     userInfo: StringifyBigIntsInObj<FinthetixUserData> | null
-    finthetixMetadata: FinthetixMetadata
+    finthetixMetadata: StringifyBigIntsInObj<FinthetixMetadata>
   }) {
   const { dappInfo } = useRootLoaderData();
 

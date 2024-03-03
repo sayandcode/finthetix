@@ -5,6 +5,7 @@ import { ChainInfo, DappInfo } from './types';
 export function getChainInfo(): ChainInfo {
   return PARSED_PROCESS_ENV.NODE_ENV === 'development' ? LOCAL_CHAIN_INFO : {};
 }
+
 export function getDappInfo(): DappInfo {
   return {
     stakingContractAddr: PARSED_PROCESS_ENV.STAKING_CONTRACT_ADDRESS,

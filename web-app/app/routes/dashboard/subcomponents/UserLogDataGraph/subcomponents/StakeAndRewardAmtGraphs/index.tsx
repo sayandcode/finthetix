@@ -16,7 +16,7 @@ import EmptyChartDatasetMsg from './subcomponents/EmptyChartDatasetMsg';
 import useChartOptions from './lib/useChartOptions';
 import { DashboardGraphData } from './lib/useChartOptions/lib/types';
 import useChartData from './lib/useChartData';
-import { Card, CardContent } from '~/components/ui/card';
+import { StringifyBigIntsInObj } from '~/lib/utils/stringifyBigIntsInObj';
 
 const MAX_ALLOWED_DECIMALS_IN_LABELS = 4;
 ChartJS.register(
@@ -33,7 +33,10 @@ ChartJS.register(
 
 export default function StakeAndRewardAmtGraphs(
   { graphData, finthetixMetadata }:
-  { graphData: DashboardGraphData, finthetixMetadata: FinthetixMetadata },
+  {
+    graphData: DashboardGraphData
+    finthetixMetadata: StringifyBigIntsInObj<FinthetixMetadata>
+  },
 ) {
   const data = useChartData(graphData);
   const options = useChartOptions(

@@ -1,27 +1,53 @@
 import UnderlineLink from '~/components/ui/underline-link';
 import illustration from './assets/staking.svg';
 import { Card } from '~/components/ui/card';
-
-const REWARD_UNLOCK_DURATION = '1 second';
-const REWARD_RATE = '500';
-const REWARD_TOKEN_SYMBOL = 'FRT';
-const STAKING_TOKEN_SYMBOL = 'FST';
+import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
+import { FINTHETIX_GITHUB_URL } from '~/lib/constants';
+import getReadableERC20TokenCount from '~/lib/utils/readableERC20';
+import { useMemo } from 'react';
 
 export default function HowItWorksSection() {
+  const { dappInfo:
+    { rewardTokenAddr, stakingContractAddr, stakingTokenAddr },
+  finthetixMetadata: {
+    stakingToken, rewardToken, totalRewardsPerSec,
+  },
+  } = useRootLoaderData();
+
+  const readableRewardRate
+    = useMemo(() =>
+      getReadableERC20TokenCount(
+        {
+          value: totalRewardsPerSec.toString(),
+          decimals: stakingToken.decimals,
+        },
+        4,
+      ), [totalRewardsPerSec, stakingToken.decimals]);
   return (
     <section className="mx-8 mb-8">
       <Card className="p-4">
         <h2 className="font-bold text-xl sm:text-3xl mb-2">How it works</h2>
         <p>
-          {`Every ${REWARD_UNLOCK_DURATION}, ${REWARD_RATE}`}
-          <UnderlineLink href="www.etherscan.io">
-            {`${REWARD_TOKEN_SYMBOL} tokens`}
+          {`Every second, ${readableRewardRate}`}
+          <UnderlineLink
+            href={`https://etherscan.io/address/${rewardTokenAddr}`}
+          >
+            {`${rewardToken.symbol} tokens`}
           </UnderlineLink>
           are awarded. You earn a fraction of these, based on how much of
-          the total staking pool (of
-          <UnderlineLink href="www.etherscan.io">
-            {`${STAKING_TOKEN_SYMBOL} tokens`}
+          the
+          <UnderlineLink
+            href={`https://etherscan.io/address/${stakingContractAddr}`}
+          >
+            total staking pool
           </UnderlineLink>
+          (of
+          <UnderlineLink
+            href={`https://etherscan.io/address/${stakingTokenAddr}`}
+          >
+            {`${stakingToken.symbol} tokens`}
+          </UnderlineLink>
+          ) you contribute. Read the
           <UnderlineLink href={FINTHETIX_GITHUB_URL}>
             official white paper
           </UnderlineLink>

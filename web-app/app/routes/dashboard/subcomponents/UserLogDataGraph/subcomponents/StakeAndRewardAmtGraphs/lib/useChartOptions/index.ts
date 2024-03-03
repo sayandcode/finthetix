@@ -5,9 +5,10 @@ import useStakedAmtTickFormatter from './lib/useStakedAmtTickFormatter';
 import useRewardAmtTickFormatter from './lib/useRewardAmtTickFormatter';
 import { useMemo } from 'react';
 import { DASHBOARD_CHART_Y_AXIS_IDS } from './lib/types';
+import { StringifyBigIntsInObj } from '~/lib/utils/stringifyBigIntsInObj';
 
 export default function useDashboardChartOptions(
-  finthetixMetadata: FinthetixMetadata,
+  finthetixMetadata: StringifyBigIntsInObj<FinthetixMetadata>,
   maxAllowedDecimalsInLabels: number,
 ): ChartProps<'bar' | 'line', number[], string>['options'] {
   const stakingTokenDecimals = finthetixMetadata.stakingToken.decimals;

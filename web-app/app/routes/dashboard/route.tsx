@@ -1,5 +1,5 @@
-import { MetaFunction, json } from '@remix-run/node';
-import { useLoaderData, useNavigate } from '@remix-run/react';
+import { MetaFunction } from '@remix-run/node';
+import { useNavigate } from '@remix-run/react';
 import { useEffect } from 'react';
 import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
 import { selectActiveAddress, selectIsUserLoading } from '~/redux/features/user/slice';
@@ -9,27 +9,13 @@ import SampleTokensBanner from './subcomponents/SampleTokensBanner';
 import StakingCard from './subcomponents/StakingCard';
 import RewardsCard from './subcomponents/RewardsCard';
 import UserLogDataGraph from './subcomponents/UserLogDataGraph';
-import { ReadonlyFinthetixStakingContractHandler } from '~/contracts/FinthetixStakingContract';
-import { getChainInfo, getDappInfo } from '~/lib/loaders';
 
 export const meta: MetaFunction = () => {
   return [{ title: 'Dashboard | Finthetix', dashboard: 'View your stake and rewards' }];
 };
 
-export const loader = async () => {
-  const chainInfo = getChainInfo();
-  const dappInfo = getDappInfo();
-  const fscReadonlyHandler
-    = new ReadonlyFinthetixStakingContractHandler(
-      chainInfo.rpcUrls[0], dappInfo,
-    );
-  const finthetixMetadata = await fscReadonlyHandler.getMetadata();
-  return json({ finthetixMetadata });
-};
-
 export default function Route() {
-  const { finthetixMetadata } = useLoaderData<typeof loader>();
-  const { dappInfo } = useRootLoaderData();
+  const { dappInfo, finthetixMetadata } = useRootLoaderData();
   const [
     triggerFetchUserInfo,
     { data: _userInfo = null, isFetching: isFetchingUserInfo },

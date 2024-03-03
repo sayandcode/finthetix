@@ -25,6 +25,7 @@ export type FinthetixMetadata = {
     decimals: number
     symbol: string
   }
+  totalRewardsPerSec: bigint
 };
 
 class Base {
@@ -289,6 +290,9 @@ export class ReadonlyFinthetixStakingContractHandler extends Base {
   }
 
   async getMetadata(): Promise<FinthetixMetadata> {
+    const totalRewardsPerSecPromise
+      = this._stakingContract.TOTAL_REWARDS_PER_SECOND();
+
     const stakingTokenPromises = {
       decimals: this._stakingToken.decimals(),
       symbol: this._stakingToken.symbol(),
@@ -309,6 +313,8 @@ export class ReadonlyFinthetixStakingContractHandler extends Base {
       symbol: await rewardTokenPromises.symbol,
     };
 
-    return { stakingToken, rewardToken };
+    const totalRewardsPerSec = await totalRewardsPerSecPromise;
+
+    return { stakingToken, rewardToken, totalRewardsPerSec };
   }
 }

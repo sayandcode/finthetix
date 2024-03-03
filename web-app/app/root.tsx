@@ -20,6 +20,8 @@ import { store } from './redux/store';
 import ReduxInitializer from './redux/Initializer';
 import { getChainInfo, getDappInfo } from './lib/loaders';
 import AutoLogin from './components/root/AutoLogin';
+import { ReadonlyFinthetixStakingContractHandler } from './contracts/FinthetixStakingContract';
+import stringifyBigIntsInObj from './lib/utils/stringifyBigIntsInObj';
 
 export const ROUTE_PATH = 'root';
 
@@ -29,10 +31,17 @@ export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: cairoFontStylesheet },
 ];
 
-export const loader = () => {
+export const loader = async () => {
   const chainInfo = getChainInfo();
   const dappInfo = getDappInfo();
-  return json({ chainInfo, dappInfo });
+
+  const fscReadonlyHandler
+    = new ReadonlyFinthetixStakingContractHandler(
+      chainInfo.rpcUrls[0], dappInfo,
+    );
+  const finthetixMetadata
+    = stringifyBigIntsInObj(await fscReadonlyHandler.getMetadata());
+  return json({ chainInfo, dappInfo, finthetixMetadata });
 };
 
 export default function App() {
