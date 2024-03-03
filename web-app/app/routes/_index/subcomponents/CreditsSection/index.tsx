@@ -10,16 +10,28 @@ export default function CreditsSection() {
           className="underline italic"
           href={DEVELOPER_PORTFOLIO_URL}
           aria-label="Link to developer's portfolio"
+          target="_blank"
+          rel="noreferrer"
         >
           sayandcode
         </a>
         {' © 2024'}
       </span>
       <div className="flex gap-x-2">
-        <a href={FINTHETIX_GITHUB_URL} aria-label="Link to project github">
+        <a
+          target="_blank"
+          rel="noreferrer"
+          href={FINTHETIX_GITHUB_URL}
+          aria-label="Link to project github"
+        >
           <GithubIcon />
         </a>
-        <a href={DEVELOPER_SOCIAL_MEDIA_URL} aria-label="Link to developer social media">
+        <a
+          target="_blank"
+          rel="noreferrer"
+          href={DEVELOPER_SOCIAL_MEDIA_URL}
+          aria-label="Link to developer social media"
+        >
           <XIcon />
         </a>
       </div>
