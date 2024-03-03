@@ -4,7 +4,7 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter,
 } from '~/components/ui/card';
 import { FinthetixMetadata, FinthetixUserData } from '~/contracts/FinthetixStakingContract';
-import { type StringifyBigIntsInObj } from '~/lib/utils/stringifyBigIntsInObj';
+import { type WithStringifiedBigints } from '~/lib/utils/stringifyBigIntsInObj';
 import getReadableERC20TokenCount from '~/lib/utils/readableERC20';
 import StakeBtn from './subcomponents/StakeBtn';
 import UnstakeBtn from './subcomponents/UnstakeBtn';
@@ -14,8 +14,8 @@ const MAX_DIGITS_TO_DISPLAY_IN_AMT_STR = 4;
 export default function StakingCard(
   { userInfo, finthetixMetadata }:
   {
-    userInfo: StringifyBigIntsInObj<FinthetixUserData> | null
-    finthetixMetadata: StringifyBigIntsInObj<FinthetixMetadata>
+    userInfo: WithStringifiedBigints<FinthetixUserData> | null
+    finthetixMetadata: WithStringifiedBigints<FinthetixMetadata>
   }) {
   const stakedAmt = useMemo(() => {
     if (!(userInfo && finthetixMetadata)) return null;

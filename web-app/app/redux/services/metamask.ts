@@ -1,7 +1,7 @@
 import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
 import MetamaskHandler from '~/redux/services/lib/Metamask';
 import { ChainInfo, DappInfo } from '~/lib/types';
-import stringifyBigIntsInObj, { StringifyBigIntsInObj } from '~/lib/utils/stringifyBigIntsInObj';
+import stringifyBigIntsInObj, { WithStringifiedBigints } from '~/lib/utils/stringifyBigIntsInObj';
 import { setIsUserLoading, type ActiveAddress, setActiveAddress } from '../features/user/slice';
 import { toast } from '~/components/ui/use-toast';
 import FinthetixStakingContractHandler, { FinthetixUserData, HistoricalRewardAmtData, HistoricalStakedAmtData } from '~/contracts/FinthetixStakingContract';
@@ -11,8 +11,8 @@ import { getIsEndpointError, makeErrorableQueryFn } from './lib/utils';
 const FALLBACK_ERROR_DESCRIPTION = 'Something went wrong when interacting with the Blockchain';
 
 export type FinthetixLogDataQueryResult = {
-  stakedAmt: StringifyBigIntsInObj<HistoricalStakedAmtData>
-  rewardAmt: StringifyBigIntsInObj<HistoricalRewardAmtData>
+  stakedAmt: WithStringifiedBigints<HistoricalStakedAmtData>
+  rewardAmt: WithStringifiedBigints<HistoricalRewardAmtData>
 };
 
 export const metamaskApi = createApi({
@@ -124,7 +124,7 @@ export const metamaskApi = createApi({
     }),
 
     fetchFinthetixUserInfo:
-      builder.query<StringifyBigIntsInObj<FinthetixUserData>, DappInfo>({
+      builder.query<WithStringifiedBigints<FinthetixUserData>, DappInfo>({
         queryFn: makeErrorableQueryFn(
           async (dappInfo) => {
             const metamaskHandler = new MetamaskHandler();

@@ -2,17 +2,17 @@
  * We can use this type to stringify all bigints in an object,
  * so that redux can properly serialize them
  */
-export type StringifyBigIntsInObj<Obj> = {
+export type WithStringifiedBigints<Obj> = {
   [K in keyof Obj]:
   Obj[K] extends bigint
     ? string
     : Obj[K] extends object
-      ? StringifyBigIntsInObj<Obj[K]>
+      ? WithStringifiedBigints<Obj[K]>
       : Obj[K];
 };
 
 export default function stringifyBigIntsInObj<Obj extends object>(obj: Obj):
-StringifyBigIntsInObj<Obj> {
+WithStringifiedBigints<Obj> {
   return Object.fromEntries(
     Object
       .entries(obj)
@@ -25,5 +25,5 @@ StringifyBigIntsInObj<Obj> {
 
         return [k, serializedVal];
       }),
-  ) as StringifyBigIntsInObj<Obj>;
+  ) as WithStringifiedBigints<Obj>;
 }

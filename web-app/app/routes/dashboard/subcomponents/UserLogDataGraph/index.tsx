@@ -4,13 +4,13 @@ import { FinthetixLogDataQueryResult } from '~/redux/services/metamask';
 import getGraphDataFromLogData from './lib/getGraphDataFromLogData';
 import StakeAndRewardAmtGraphs from './subcomponents/StakeAndRewardAmtGraphs';
 import { FinthetixMetadata } from '~/contracts/FinthetixStakingContract';
-import { type StringifyBigIntsInObj } from '~/lib/utils/stringifyBigIntsInObj';
+import { type WithStringifiedBigints } from '~/lib/utils/stringifyBigIntsInObj';
 
 export default function UserLogDataGraph(
   { logData, finthetixMetadata }:
   {
     logData: FinthetixLogDataQueryResult | null
-    finthetixMetadata: StringifyBigIntsInObj<FinthetixMetadata>
+    finthetixMetadata: WithStringifiedBigints<FinthetixMetadata>
   },
 ) {
   const graphData = useMemo(() => {
