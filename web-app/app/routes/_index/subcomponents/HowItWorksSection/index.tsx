@@ -22,8 +22,9 @@ export default function HowItWorksSection() {
           <UnderlineLink href="www.etherscan.io">
             {`${STAKING_TOKEN_SYMBOL} tokens`}
           </UnderlineLink>
-          you contribute. Read the
-          <UnderlineLink href="github.com/sayandcode/finthetix">official white paper</UnderlineLink>
+          <UnderlineLink href={FINTHETIX_GITHUB_URL}>
+            official white paper
+          </UnderlineLink>
           to learn more.
         </p>
         <img src={illustration} alt="" title="" aria-hidden className="mx-auto w-96 h-96" />

@@ -2,6 +2,7 @@ import { type MetaFunction } from '@remix-run/node';
 import RippleHeroBg from './subcomponents/RippleHeroBg';
 import HeroSection from './subcomponents/HeroSection';
 import HowItWorksSection from './subcomponents/HowItWorksSection';
+import CreditsSection from './subcomponents/CreditsSection';
 
 export const meta: MetaFunction = () => {
   return [
@@ -16,6 +17,7 @@ export default function Route() {
       <RippleHeroBg />
       <HeroSection />
       <HowItWorksSection />
+      <CreditsSection />
     </div>
   );
 }
