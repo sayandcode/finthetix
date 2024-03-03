@@ -32,11 +32,11 @@ export default function Navbar() {
 
   return (
     <>
-      <div ref={dummyRef} className="h-20 w-full absolute" />
+      <div ref={dummyRef} className="h-16 w-full absolute" />
       <nav
         className={
           cn(
-            'h-20 flex items-center p-4 gap-x-4 backdrop-blur-sm sticky top-0 z-10 animate-[box-shadow] duration-200',
+            'h-16 flex items-center px-4 py-0 gap-x-4 backdrop-blur-sm sticky top-0 z-10 animate-[box-shadow] duration-200',
             isNavStuck && 'shadow-sm shadow-primary-foreground/90')
         }
       >

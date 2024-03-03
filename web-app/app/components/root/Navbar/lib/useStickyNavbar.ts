@@ -17,7 +17,7 @@ export default function useStickyNavbar(overlapThreshold: number) {
       threshold: overlapThreshold,
     });
     observer.observe(dummyRef.current);
-  }, []);
+  }, [overlapThreshold]);
 
   return { isNavStuck, dummyRef };
 }
