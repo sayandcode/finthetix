@@ -4,9 +4,10 @@ import { ChainInfo, DappInfo } from '~/lib/types';
 import stringifyBigIntsInObj, { WithStringifiedBigints } from '~/lib/utils/stringifyBigIntsInObj';
 import { setIsUserLoading, type ActiveAddress, setActiveAddress } from '../features/user/slice';
 import { toast } from '~/components/ui/use-toast';
-import FinthetixStakingContractHandler, { FinthetixUserData, HistoricalRewardAmtData, HistoricalStakedAmtData } from '~/contracts/FinthetixStakingContract';
+import FinthetixStakingContractHandler, { FinthetixUserData, HistoricalRewardAmtData, HistoricalStakedAmtData, TxnHash } from '~/contracts/FinthetixStakingContract';
 import { UI_ERRORS } from '~/lib/ui-errors';
 import { getIsEndpointError, makeErrorableQueryFn } from './lib/utils';
+import UnderlineLink from '~/components/ui/underline-link';
 
 const FALLBACK_ERROR_DESCRIPTION = 'Something went wrong when interacting with the Blockchain';
 
@@ -208,7 +209,7 @@ export const metamaskApi = createApi({
 
     stakeWithFinthetix:
       builder.mutation<
-        void,
+        TxnHash,
         { amtToStakeStr: string, dappInfo: DappInfo }
       >({
         queryFn: makeErrorableQueryFn(
@@ -218,7 +219,8 @@ export const metamaskApi = createApi({
               metamaskHandler.provider, dappInfo,
             );
             const amtToStake = BigInt(amtToStakeStr);
-            await fscHandler.stake(amtToStake);
+            const txnHash = await fscHandler.stake(amtToStake);
+            return txnHash;
           },
           (internalErr) => {
             // default error paths
@@ -235,10 +237,15 @@ export const metamaskApi = createApi({
 
         onQueryStarted: async (_, { queryFulfilled }) => {
           try {
-            await queryFulfilled;
+            const { data: txnHash } = await queryFulfilled;
             toast({
               variant: 'success',
               title: 'Staked successfully',
+              description: (
+                <UnderlineLink href={`https://etherscan.io/tx/${txnHash}`}>
+                  View on block explorer
+                </UnderlineLink>
+              ),
             });
           }
           catch (err) {
@@ -258,61 +265,70 @@ export const metamaskApi = createApi({
       }),
 
     unstakeWithFinthetix:
-      builder.mutation<void, { amtToUnstakeStr: string, dappInfo: DappInfo }>({
-        queryFn: makeErrorableQueryFn(
-          async ({ amtToUnstakeStr, dappInfo }) => {
-            const metamaskHandler = new MetamaskHandler();
-            const fscHandler = await FinthetixStakingContractHandler.make(
-              metamaskHandler.provider, dappInfo,
-            );
-            const amtToStake = BigInt(amtToUnstakeStr);
-            await fscHandler.unstake(amtToStake);
-          },
-          (internalErr) => {
+      builder.mutation<
+        TxnHash,
+        { amtToUnstakeStr: string, dappInfo: DappInfo }>({
+          queryFn: makeErrorableQueryFn(
+            async ({ amtToUnstakeStr, dappInfo }) => {
+              const metamaskHandler = new MetamaskHandler();
+              const fscHandler = await FinthetixStakingContractHandler.make(
+                metamaskHandler.provider, dappInfo,
+              );
+              const amtToStake = BigInt(amtToUnstakeStr);
+              const txnHash = await fscHandler.unstake(amtToStake);
+              return txnHash;
+            },
+            (internalErr) => {
             // default error paths
-            if (internalErr.startsWith('Metamask not installed'))
-              return 'Install Metamask browser extension and try again';
+              if (internalErr.startsWith('Metamask not installed'))
+                return 'Install Metamask browser extension and try again';
 
-            // endpoint specific errors
-            else if (internalErr.match(/reason="rejected"/))
-              return 'Please accept the unstaking transactions';
-            else return FALLBACK_ERROR_DESCRIPTION;
-          },
-          FALLBACK_ERROR_DESCRIPTION,
-        ),
+              // endpoint specific errors
+              else if (internalErr.match(/reason="rejected"/))
+                return 'Please accept the unstaking transactions';
+              else return FALLBACK_ERROR_DESCRIPTION;
+            },
+            FALLBACK_ERROR_DESCRIPTION,
+          ),
 
-        onQueryStarted: async (_, { queryFulfilled }) => {
-          try {
-            await queryFulfilled;
-            toast({
-              variant: 'success',
-              title: 'Unstaked successfully',
-            });
-          }
-          catch (err) {
-            const isEndpointError = getIsEndpointError(err);
-            const errDescription
+          onQueryStarted: async (_, { queryFulfilled }) => {
+            try {
+              const { data: txnHash } = await queryFulfilled;
+              toast({
+                variant: 'success',
+                title: 'Unstaked successfully',
+                description: (
+                  <UnderlineLink href={`https://etherscan.io/tx/${txnHash}`}>
+                    View on block explorer
+                  </UnderlineLink>
+                ),
+              });
+            }
+            catch (err) {
+              const isEndpointError = getIsEndpointError(err);
+              const errDescription
               = isEndpointError ? err.error : FALLBACK_ERROR_DESCRIPTION;
-            toast({
-              variant: 'destructive',
-              title: UI_ERRORS.ERR6,
-              description: errDescription,
-            });
-          }
-        },
+              toast({
+                variant: 'destructive',
+                title: UI_ERRORS.ERR6,
+                description: errDescription,
+              });
+            }
+          },
 
-        invalidatesTags: ['User'],
-      }),
+          invalidatesTags: ['User'],
+        }),
 
     withdrawRewardsFromFinthetix:
-      builder.mutation<void, DappInfo>({
+      builder.mutation<TxnHash, DappInfo>({
         queryFn: makeErrorableQueryFn(
           async (dappInfo) => {
             const metamaskHandler = new MetamaskHandler();
             const fscHandler = await FinthetixStakingContractHandler.make(
               metamaskHandler.provider, dappInfo,
             );
-            await fscHandler.withdrawReward();
+            const txnHash = await fscHandler.withdrawReward();
+            return txnHash;
           },
           (internalErr) => {
             // default error paths
@@ -329,10 +345,15 @@ export const metamaskApi = createApi({
 
         onQueryStarted: async (_, { queryFulfilled }) => {
           try {
-            await queryFulfilled;
+            const { data: txnHash } = await queryFulfilled;
             toast({
               variant: 'success',
               title: 'Withdrawal successful',
+              description: (
+                <UnderlineLink href={`https://etherscan.io/tx/${txnHash}`}>
+                  View on block explorer
+                </UnderlineLink>
+              ),
             });
           }
           catch (err) {

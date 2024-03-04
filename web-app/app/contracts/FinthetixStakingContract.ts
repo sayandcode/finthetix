@@ -28,6 +28,8 @@ export type FinthetixMetadata = {
   totalRewardsPerSec: bigint
 };
 
+export type TxnHash = string;
+
 class Base {
   private __stakingContract?: FinthetixStakingContract;
   private __stakingToken?: FinthetixStakingToken;
@@ -120,8 +122,9 @@ export default class FinthetixStakingContractHandler extends Base {
    * staking contract, and then stakes said amount.
    *
    * @param amtToStake The amount to stake
+   * @returns A promise containing the transaction hash
    */
-  async stake(amtToStake: bigint) {
+  async stake(amtToStake: bigint): Promise<TxnHash> {
     // approve
     const approvalTxn
       = await this._stakingToken.approve(
@@ -132,16 +135,19 @@ export default class FinthetixStakingContractHandler extends Base {
     // stake
     const stakeTxn = await this._stakingContract.stake(amtToStake);
     await stakeTxn.wait();
+    return stakeTxn.hash;
   }
 
-  async unstake(amtToUnstake: bigint) {
+  async unstake(amtToUnstake: bigint): Promise<TxnHash> {
     const txn = await this._stakingContract.unstake(amtToUnstake);
     await txn.wait();
+    return txn.hash;
   }
 
-  async withdrawReward() {
+  async withdrawReward(): Promise<TxnHash> {
     const txn = await this._stakingContract.withdrawRewards();
     await txn.wait();
+    return txn.hash;
   }
 
   async getHistoricalStakedAmt(): Promise<HistoricalStakedAmtData> {
