@@ -6,10 +6,13 @@ import { setIsUserLoading, type ActiveAddress, setActiveAddress } from '../featu
 import { toast } from '~/components/ui/use-toast';
 import FinthetixStakingContractHandler, { FinthetixUserData, HistoricalRewardAmtData, HistoricalStakedAmtData, TxnHash } from '~/contracts/FinthetixStakingContract';
 import { UI_ERRORS } from '~/lib/ui-errors';
-import { getIsEndpointError, makeErrorableQueryFn } from './lib/utils';
+import { getIsContractCoolingDown, getIsEndpointError, makeErrorableQueryFn } from './lib/utils';
 import UnderlineLink from '~/components/ui/underline-link';
 
 const FALLBACK_ERROR_DESCRIPTION = 'Something went wrong when interacting with the Blockchain';
+
+const COOLING_DOWN_INTERNAL_ERROR = 'Cooling down';
+const COOLING_DOWN_USER_ERROR = 'The staking contract is cooling down, please try again later';
 
 export type FinthetixLogDataQueryResult = {
   stakedAmt: WithStringifiedBigints<HistoricalStakedAmtData>
@@ -218,6 +221,10 @@ export const metamaskApi = createApi({
             const fscHandler = await FinthetixStakingContractHandler.make(
               metamaskHandler.provider, dappInfo,
             );
+
+            const isCoolingDown = await getIsContractCoolingDown(fscHandler);
+            if (isCoolingDown) throw new Error(COOLING_DOWN_INTERNAL_ERROR);
+
             const amtToStake = BigInt(amtToStakeStr);
             const txnHash = await fscHandler.stake(amtToStake);
             return txnHash;
@@ -230,6 +237,8 @@ export const metamaskApi = createApi({
             // endpoint specific errors
             else if (internalErr.match(/reason="rejected"/))
               return 'Please accept the approval and staking transactions';
+            else if (internalErr.match(COOLING_DOWN_INTERNAL_ERROR))
+              return COOLING_DOWN_USER_ERROR;
             else return FALLBACK_ERROR_DESCRIPTION;
           },
           FALLBACK_ERROR_DESCRIPTION,
@@ -274,6 +283,10 @@ export const metamaskApi = createApi({
               const fscHandler = await FinthetixStakingContractHandler.make(
                 metamaskHandler.provider, dappInfo,
               );
+
+              const isCoolingDown = await getIsContractCoolingDown(fscHandler);
+              if (isCoolingDown) throw new Error(COOLING_DOWN_INTERNAL_ERROR);
+
               const amtToStake = BigInt(amtToUnstakeStr);
               const txnHash = await fscHandler.unstake(amtToStake);
               return txnHash;
@@ -286,6 +299,8 @@ export const metamaskApi = createApi({
               // endpoint specific errors
               else if (internalErr.match(/reason="rejected"/))
                 return 'Please accept the unstaking transactions';
+              else if (internalErr.match(COOLING_DOWN_INTERNAL_ERROR))
+                return COOLING_DOWN_USER_ERROR;
               else return FALLBACK_ERROR_DESCRIPTION;
             },
             FALLBACK_ERROR_DESCRIPTION,
@@ -327,6 +342,10 @@ export const metamaskApi = createApi({
             const fscHandler = await FinthetixStakingContractHandler.make(
               metamaskHandler.provider, dappInfo,
             );
+
+            const isCoolingDown = await getIsContractCoolingDown(fscHandler);
+            if (isCoolingDown) throw new Error(COOLING_DOWN_INTERNAL_ERROR);
+
             const txnHash = await fscHandler.withdrawReward();
             return txnHash;
           },
@@ -338,6 +357,8 @@ export const metamaskApi = createApi({
             // endpoint specific errors
             else if (internalErr.match(/reason="rejected"/))
               return 'Please accept the reward withdrawal transaction';
+            else if (internalErr.match(COOLING_DOWN_INTERNAL_ERROR))
+              return COOLING_DOWN_USER_ERROR;
             else return FALLBACK_ERROR_DESCRIPTION;
           },
           FALLBACK_ERROR_DESCRIPTION,

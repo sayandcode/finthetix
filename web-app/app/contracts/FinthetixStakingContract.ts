@@ -28,6 +28,10 @@ export type FinthetixMetadata = {
   totalRewardsPerSec: bigint
 };
 
+export type FinthetixStatus = {
+  cooldownAtMs: number
+};
+
 export type TxnHash = string;
 
 class Base {
@@ -208,6 +212,29 @@ export default class FinthetixStakingContractHandler extends Base {
 
     const decodedLogs = await Promise.all(decodeLogPromises);
     return decodedLogs;
+  }
+
+  async getStatus(): Promise<FinthetixStatus> {
+    // make queries
+    const cooldownConstantPromise = this._stakingContract.COOLDOWN_CONSTANT();
+    const totalStakedAmtPromise = this._stakingContract.totalStakedAmt();
+    const lastUpdatedRewardAtPromise
+      = this._stakingContract.lastUpdatedRewardAt();
+
+    // wait
+    const [cooldownConstant, totalStakedAmt, lastUpdatedRewardAt]
+      = await Promise.all([
+        cooldownConstantPromise,
+        totalStakedAmtPromise,
+        lastUpdatedRewardAtPromise,
+      ]);
+
+    // calculate
+    const cooldownTime = totalStakedAmt / cooldownConstant;
+    const cooldownAt = lastUpdatedRewardAt + cooldownTime;
+    const cooldownAtMs = Number(cooldownAt * 1000n);
+
+    return { cooldownAtMs };
   }
 
   /**

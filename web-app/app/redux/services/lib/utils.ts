@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import FinthetixStakingContractHandler from '~/contracts/FinthetixStakingContract';
 import tryItAsync from '~/lib/utils/tryItAsync';
 
 const endpointErrSchema = z.object({ error: z.string() });
@@ -54,4 +55,12 @@ export function makeErrorableQueryFn<ReturnVal, Arg >(
     }
     return { data: trial.data };
   };
+}
+
+export async function getIsContractCoolingDown(
+  fscHandler: FinthetixStakingContractHandler,
+) {
+  const { cooldownAtMs } = await fscHandler.getStatus();
+  const currTimeMs = new Date().getTime();
+  return currTimeMs < cooldownAtMs;
 }
