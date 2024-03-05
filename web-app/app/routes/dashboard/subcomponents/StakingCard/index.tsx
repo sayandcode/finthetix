@@ -1,5 +1,5 @@
 import { Loader2Icon } from 'lucide-react';
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter,
 } from '~/components/ui/card';
@@ -11,11 +11,12 @@ import UnstakeBtn from './subcomponents/UnstakeBtn';
 
 const MAX_DIGITS_TO_DISPLAY_IN_AMT_STR = 4;
 
-export default function StakingCard(
-  { userInfo, finthetixMetadata }:
+export default memo(function StakingCard(
+  { userInfo, finthetixMetadata, disabled }:
   {
     userInfo: WithStringifiedBigints<FinthetixUserData> | null
     finthetixMetadata: WithStringifiedBigints<FinthetixMetadata>
+    disabled: boolean
   }) {
   const stakedAmt = useMemo(() => {
     if (!(userInfo && finthetixMetadata)) return null;
@@ -62,9 +63,9 @@ export default function StakingCard(
             )}
       </CardContent>
       <CardFooter className="flex justify-end gap-2">
-        <StakeBtn stakingTokenBal={stakingTokenBal} />
-        <UnstakeBtn amtCurrentlyStaked={stakedAmt} />
+        <StakeBtn disabled={disabled} stakingTokenBal={stakingTokenBal} />
+        <UnstakeBtn disabled={disabled} amtCurrentlyStaked={stakedAmt} />
       </CardFooter>
     </Card>
   );
-}
+});

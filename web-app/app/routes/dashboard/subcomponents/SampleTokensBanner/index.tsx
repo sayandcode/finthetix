@@ -1,10 +1,10 @@
 import { HandCoinsIcon, Loader2Icon } from 'lucide-react';
-import { useCallback } from 'react';
+import { memo, useCallback } from 'react';
 import { Button } from '~/components/ui/button';
 import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
 import { useRequestSampleTokensMutation } from '~/redux/services/metamask';
 
-export default function SampleTokensBanner() {
+export default memo(function SampleTokensBanner() {
   const { dappInfo } = useRootLoaderData();
   const [requestSampleTokens, { isLoading }]
     = useRequestSampleTokensMutation();
@@ -31,4 +31,4 @@ export default function SampleTokensBanner() {
       </Button>
     </div>
   );
-}
+});

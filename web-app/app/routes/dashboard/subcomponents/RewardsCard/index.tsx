@@ -1,5 +1,5 @@
 import { Loader2Icon } from 'lucide-react';
-import { useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { Button } from '~/components/ui/button';
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter,
@@ -12,11 +12,12 @@ import { useWithdrawRewardsFromFinthetixMutation } from '~/redux/services/metama
 
 const MAX_DIGITS_TO_DISPLAY_IN_AMT_STR = 4;
 
-export default function RewardsCard(
-  { userInfo, finthetixMetadata }:
+export default memo(function RewardsCard(
+  { userInfo, finthetixMetadata, disabled }:
   {
     userInfo: WithStringifiedBigints<FinthetixUserData> | null
     finthetixMetadata: WithStringifiedBigints<FinthetixMetadata>
+    disabled: boolean
   }) {
   const { dappInfo } = useRootLoaderData();
 
@@ -37,7 +38,7 @@ export default function RewardsCard(
     );
   }, [userInfo, finthetixMetadata]);
 
-  const isWithdrawalDisabled = readableRewardAmtStr === '0' || isWithdrawalInProgress;
+  const isWithdrawalDisabled = disabled || readableRewardAmtStr === '0' || isWithdrawalInProgress;
 
   return (
     <Card className="w-full flex flex-col justify-between">
@@ -69,4 +70,4 @@ export default function RewardsCard(
       </CardFooter>
     </Card>
   );
-}
+});

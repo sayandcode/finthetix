@@ -1,12 +1,12 @@
 import { Loader2Icon } from 'lucide-react';
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { FinthetixLogDataQueryResult } from '~/redux/services/metamask';
 import getGraphDataFromLogData from './lib/getGraphDataFromLogData';
 import StakeAndRewardAmtGraphs from './subcomponents/StakeAndRewardAmtGraphs';
 import { FinthetixMetadata } from '~/contracts/FinthetixStakingContract';
 import { type WithStringifiedBigints } from '~/lib/utils/stringifyBigIntsInObj';
 
-export default function UserLogDataGraph(
+export default memo(function UserLogDataGraph(
   { logData, finthetixMetadata }:
   {
     logData: FinthetixLogDataQueryResult | null
@@ -32,4 +32,4 @@ export default function UserLogDataGraph(
       finthetixMetadata={finthetixMetadata}
     />
   );
-}
+});

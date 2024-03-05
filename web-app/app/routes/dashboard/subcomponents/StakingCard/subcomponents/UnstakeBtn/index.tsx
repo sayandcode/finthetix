@@ -5,15 +5,15 @@ import { UnstakeDialogContent } from './UnstakeBtnDialogContent';
 import { StringifiedTokenCount } from '~/lib/types';
 
 export default function UnstakeBtn(
-  { amtCurrentlyStaked }:
-  { amtCurrentlyStaked: StringifiedTokenCount | null },
+  { amtCurrentlyStaked, disabled }:
+  { amtCurrentlyStaked: StringifiedTokenCount | null, disabled: boolean },
 ) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const closeModal = useCallback(() => {
     setIsDialogOpen(false);
   }, []);
 
-  const isBtnDisabled = !amtCurrentlyStaked || amtCurrentlyStaked.value === '0';
+  const isBtnDisabled = disabled || !amtCurrentlyStaked || amtCurrentlyStaked.value === '0';
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

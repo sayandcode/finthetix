@@ -5,8 +5,8 @@ import { StakeDialogContent } from './subcomponents/StakeBtnDialogContent';
 import { StringifiedTokenCount } from '~/lib/types';
 
 export default function StakeBtn(
-  { stakingTokenBal }:
-  { stakingTokenBal: StringifiedTokenCount | null },
+  { stakingTokenBal, disabled }:
+  { stakingTokenBal: StringifiedTokenCount | null, disabled: boolean },
 ) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const closeModal = useCallback(() => {
@@ -15,7 +15,7 @@ export default function StakeBtn(
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-      <DialogTrigger asChild disabled={!stakingTokenBal}>
+      <DialogTrigger asChild disabled={disabled || !stakingTokenBal}>
         <Button>Stake</Button>
       </DialogTrigger>
       <DialogContent>

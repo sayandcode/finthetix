@@ -9,12 +9,17 @@ import SampleTokensBanner from './subcomponents/SampleTokensBanner';
 import StakingCard from './subcomponents/StakingCard';
 import RewardsCard from './subcomponents/RewardsCard';
 import UserLogDataGraph from './subcomponents/UserLogDataGraph';
+import CooldownBanner from './subcomponents/CooldownBanner';
+import useTimeLeftToCooldownMs from './lib/useTimeLeftToCooldownMs';
 
 export const meta: MetaFunction = () => {
   return [{ title: 'Dashboard | Finthetix', dashboard: 'View your stake and rewards' }];
 };
 
 export default function Route() {
+  // dummy value. Will need to be fetched from backend
+  const cooldownAtMs = 1709604883105;
+
   const { dappInfo, finthetixMetadata } = useRootLoaderData();
   const [
     triggerFetchUserInfo,
@@ -56,15 +61,21 @@ export default function Route() {
     triggerFetchLogData,
   ]);
 
+  const timeLeftToCooldownMs = useTimeLeftToCooldownMs(cooldownAtMs);
+  const isCoolingDown = timeLeftToCooldownMs > 0;
+
   return (
     <div className="m-4">
       <SampleTokensBanner />
+      <CooldownBanner timeLeftToCooldownMs={timeLeftToCooldownMs} />
       <div className="flex flex-col sm:flex-row gap-y-2 sm:gap-x-2 mb-4">
         <StakingCard
+          disabled={isCoolingDown}
           userInfo={userInfo}
           finthetixMetadata={finthetixMetadata}
         />
         <RewardsCard
+          disabled={isCoolingDown}
           userInfo={userInfo}
           finthetixMetadata={finthetixMetadata}
         />
