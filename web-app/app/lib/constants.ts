@@ -1,4 +1,4 @@
-import { ChainInfo } from './types';
+import { ChainInfo } from './loaders/chainInfo';
 
 export const LOCAL_CHAIN_INFO: ChainInfo = {
   iconUrls: [],

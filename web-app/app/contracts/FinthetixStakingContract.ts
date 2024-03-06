@@ -1,5 +1,6 @@
 import { BrowserProvider, ContractRunner, JsonRpcProvider, JsonRpcSigner } from 'ethers';
-import { DappInfo, TimestampInMs } from '~/lib/types';
+import { TimestampInMs } from '~/lib/types';
+import { DappInfo } from '~/lib/loaders/dappInfo';
 import { FinthetixRewardToken, FinthetixRewardToken__factory, FinthetixStakingContract, FinthetixStakingContract__factory, FinthetixStakingToken, FinthetixStakingToken__factory } from './types';
 import { StakeBalChangedEvent, UserRewardUpdatedEvent } from './types/FinthetixStakingContract.sol/FSCEvents';
 import { z } from 'zod';

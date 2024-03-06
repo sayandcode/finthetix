@@ -24,7 +24,7 @@ export default function HowItWorksSection() {
         4,
       ), [totalRewardsPerSec, stakingToken.decimals]);
   return (
-    <section className="mx-8 mb-8">
+    <section className="mx-8 mb-8 mt-2">
       <Card className="p-4">
         <h2 className="font-bold text-xl sm:text-3xl mb-2">How it works</h2>
         <p>
