@@ -6,7 +6,7 @@ import { setIsUserLoading, type ActiveAddress, setActiveAddress } from '../featu
 import { toast } from '~/components/ui/use-toast';
 import FinthetixStakingContractHandler, { FinthetixStatus, FinthetixUserData, HistoricalRewardAmtData, HistoricalStakedAmtData, TxnHash } from '~/contracts/FinthetixStakingContract';
 import { UI_ERRORS } from '~/lib/ui-errors';
-import { getIsContractCoolingDown, getIsEndpointError, makeErrorableQueryFn } from './lib/utils';
+import { getIsEndpointError, makeErrorableQueryFn } from './lib/utils';
 import UnderlineLink from '~/components/ui/underline-link';
 
 const FALLBACK_ERROR_DESCRIPTION = 'Something went wrong when interacting with the Blockchain';
@@ -222,7 +222,7 @@ export const metamaskApi = createApi({
               metamaskHandler.provider, dappInfo,
             );
 
-            const isCoolingDown = await getIsContractCoolingDown(fscHandler);
+            const isCoolingDown = await fscHandler.getIsContractCoolingDown();
             if (isCoolingDown) throw new Error(COOLING_DOWN_INTERNAL_ERROR);
 
             const amtToStake = BigInt(amtToStakeStr);
@@ -284,7 +284,7 @@ export const metamaskApi = createApi({
                 metamaskHandler.provider, dappInfo,
               );
 
-              const isCoolingDown = await getIsContractCoolingDown(fscHandler);
+              const isCoolingDown = await fscHandler.getIsContractCoolingDown();
               if (isCoolingDown) throw new Error(COOLING_DOWN_INTERNAL_ERROR);
 
               const amtToStake = BigInt(amtToUnstakeStr);
@@ -343,7 +343,7 @@ export const metamaskApi = createApi({
               metamaskHandler.provider, dappInfo,
             );
 
-            const isCoolingDown = await getIsContractCoolingDown(fscHandler);
+            const isCoolingDown = await fscHandler.getIsContractCoolingDown();
             if (isCoolingDown) throw new Error(COOLING_DOWN_INTERNAL_ERROR);
 
             const txnHash = await fscHandler.withdrawReward();

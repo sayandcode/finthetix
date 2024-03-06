@@ -215,26 +215,14 @@ export default class FinthetixStakingContractHandler extends Base {
   }
 
   async getStatus(): Promise<FinthetixStatus> {
-    // make queries
-    const cooldownConstantPromise = this._stakingContract.COOLDOWN_CONSTANT();
-    const totalStakedAmtPromise = this._stakingContract.totalStakedAmt();
-    const lastUpdatedRewardAtPromise
-      = this._stakingContract.lastUpdatedRewardAt();
-
-    // wait
-    const [cooldownConstant, totalStakedAmt, lastUpdatedRewardAt]
-      = await Promise.all([
-        cooldownConstantPromise,
-        totalStakedAmtPromise,
-        lastUpdatedRewardAtPromise,
-      ]);
-
-    // calculate
-    const cooldownTime = totalStakedAmt / cooldownConstant;
-    const cooldownAt = lastUpdatedRewardAt + cooldownTime;
-    const cooldownAtMs = Number(cooldownAt * 1000n);
-
+    const cooldownAtMs = await this._getCooldownAtMs();
     return { cooldownAtMs };
+  }
+
+  async getIsContractCoolingDown() {
+    const cooldownAtMs = await this._getCooldownAtMs();
+    const currTimeMs = new Date().getTime();
+    return currTimeMs < cooldownAtMs;
   }
 
   /**
@@ -307,6 +295,28 @@ export default class FinthetixStakingContractHandler extends Base {
 
     return (blockTimestamp - lastUpdatedRewardAt) * cooldownConstant
       / totalStakedAmt;
+  }
+
+  private async _getCooldownAtMs() {
+    // make queries
+    const cooldownConstantPromise = this._stakingContract.COOLDOWN_CONSTANT();
+    const totalStakedAmtPromise = this._stakingContract.totalStakedAmt();
+    const lastUpdatedRewardAtPromise
+      = this._stakingContract.lastUpdatedRewardAt();
+
+    // wait
+    const [cooldownConstant, totalStakedAmt, lastUpdatedRewardAt]
+      = await Promise.all([
+        cooldownConstantPromise,
+        totalStakedAmtPromise,
+        lastUpdatedRewardAtPromise,
+      ]);
+
+    // calculate
+    const cooldownTime = totalStakedAmt / cooldownConstant;
+    const cooldownAt = lastUpdatedRewardAt + cooldownTime;
+    const cooldownAtMs = Number(cooldownAt * 1000n);
+    return cooldownAtMs;
   }
 }
 
