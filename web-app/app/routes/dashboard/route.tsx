@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
 import { selectActiveAddress, selectIsUserLoading } from '~/redux/features/user/slice';
 import { useAppSelector } from '~/redux/hooks';
-import { useLazyFetchFinthetixLogDataQuery, useLazyFetchFinthetixUserInfoQuery } from '~/redux/services/metamask';
+import { useFinthetixStatusQuery, useLazyFetchFinthetixLogDataQuery, useLazyFetchFinthetixUserInfoQuery } from '~/redux/services/metamask';
 import SampleTokensBanner from './subcomponents/SampleTokensBanner';
 import StakingCard from './subcomponents/StakingCard';
 import RewardsCard from './subcomponents/RewardsCard';
@@ -17,10 +17,11 @@ export const meta: MetaFunction = () => {
 };
 
 export default function Route() {
-  // dummy value. Will need to be fetched from backend
-  const cooldownAtMs = 1709604883105;
-
   const { dappInfo, finthetixMetadata } = useRootLoaderData();
+  const { data: _finthetixStatus = null, isFetching: isFetchingFinthetixStatus }
+    = useFinthetixStatusQuery(dappInfo);
+  const finthetixStatus = isFetchingFinthetixStatus ? null : _finthetixStatus;
+
   const [
     triggerFetchUserInfo,
     { data: _userInfo = null, isFetching: isFetchingUserInfo },
@@ -61,7 +62,8 @@ export default function Route() {
     triggerFetchLogData,
   ]);
 
-  const timeLeftToCooldownMs = useTimeLeftToCooldownMs(cooldownAtMs);
+  const timeLeftToCooldownMs
+    = useTimeLeftToCooldownMs(finthetixStatus?.cooldownAtMs);
   const isCoolingDown = timeLeftToCooldownMs > 0;
 
   return (

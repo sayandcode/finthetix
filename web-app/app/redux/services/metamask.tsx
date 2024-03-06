@@ -4,7 +4,7 @@ import { ChainInfo, DappInfo } from '~/lib/types';
 import stringifyBigIntsInObj, { WithStringifiedBigints } from '~/lib/utils/stringifyBigIntsInObj';
 import { setIsUserLoading, type ActiveAddress, setActiveAddress } from '../features/user/slice';
 import { toast } from '~/components/ui/use-toast';
-import FinthetixStakingContractHandler, { FinthetixUserData, HistoricalRewardAmtData, HistoricalStakedAmtData, TxnHash } from '~/contracts/FinthetixStakingContract';
+import FinthetixStakingContractHandler, { FinthetixStatus, FinthetixUserData, HistoricalRewardAmtData, HistoricalStakedAmtData, TxnHash } from '~/contracts/FinthetixStakingContract';
 import { UI_ERRORS } from '~/lib/ui-errors';
 import { getIsContractCoolingDown, getIsEndpointError, makeErrorableQueryFn } from './lib/utils';
 import UnderlineLink from '~/components/ui/underline-link';
@@ -22,7 +22,7 @@ export type FinthetixLogDataQueryResult = {
 export const metamaskApi = createApi({
   reducerPath: 'metamaskApi',
   baseQuery: fakeBaseQuery(),
-  tagTypes: ['User'],
+  tagTypes: ['User', 'FinthetixStatus'],
   endpoints: builder => ({
     requestMetamaskAddress:
       builder.mutation<NonNullable<ActiveAddress>, ChainInfo>({
@@ -269,7 +269,7 @@ export const metamaskApi = createApi({
           }
         },
 
-        invalidatesTags: ['User'],
+        invalidatesTags: ['User', 'FinthetixStatus'],
 
       }),
 
@@ -292,7 +292,7 @@ export const metamaskApi = createApi({
               return txnHash;
             },
             (internalErr) => {
-            // default error paths
+              // default error paths
               if (internalErr.startsWith('Metamask not installed'))
                 return 'Install Metamask browser extension and try again';
 
@@ -331,7 +331,7 @@ export const metamaskApi = createApi({
             }
           },
 
-          invalidatesTags: ['User'],
+          invalidatesTags: ['User', 'FinthetixStatus'],
         }),
 
     withdrawRewardsFromFinthetix:
@@ -389,7 +389,7 @@ export const metamaskApi = createApi({
           }
         },
 
-        invalidatesTags: ['User'],
+        invalidatesTags: ['User', 'FinthetixStatus'],
       }),
 
     fetchFinthetixLogData:
@@ -416,7 +416,7 @@ export const metamaskApi = createApi({
             };
           },
           (internalErr) => {
-          // default error paths
+            // default error paths
             if (internalErr.startsWith('Metamask not installed'))
               return 'Install Metamask browser extension and try again';
 
@@ -428,6 +428,47 @@ export const metamaskApi = createApi({
         ),
 
         providesTags: ['User'],
+      }),
+
+    finthetixStatus:
+      builder.query<FinthetixStatus, DappInfo>({
+        queryFn: makeErrorableQueryFn(
+          async (dappInfo) => {
+            const metamaskHandler = new MetamaskHandler();
+            const fscHandler = await FinthetixStakingContractHandler.make(
+              metamaskHandler.provider, dappInfo,
+            );
+            return fscHandler.getStatus();
+          },
+          (internalErr) => {
+            // default error paths
+            if (internalErr.startsWith('Metamask not installed'))
+              return 'Install Metamask browser extension and try again';
+
+            // as of now the following request has no expected error paths
+            // other than default paths which are handled above
+            else return FALLBACK_ERROR_DESCRIPTION;
+          },
+          FALLBACK_ERROR_DESCRIPTION,
+        ),
+
+        onQueryStarted: async (_, { queryFulfilled }) => {
+          try {
+            await queryFulfilled;
+          }
+          catch (err) {
+            const isEndpointError = getIsEndpointError(err);
+            const errDescription
+              = isEndpointError ? err.error : FALLBACK_ERROR_DESCRIPTION;
+            toast({
+              variant: 'destructive',
+              title: UI_ERRORS.ERR8,
+              description: errDescription,
+            });
+          }
+        },
+
+        providesTags: ['FinthetixStatus'],
       }),
   }),
 });
@@ -441,4 +482,5 @@ export const {
   useUnstakeWithFinthetixMutation,
   useWithdrawRewardsFromFinthetixMutation,
   useLazyFetchFinthetixLogDataQuery,
+  useFinthetixStatusQuery,
 } = metamaskApi;
