@@ -60,7 +60,8 @@ contract FinthetixStakingContract_UnitTest is Test {
      */
     function test_StakingTransfersTokensBetweenUserAndStakingContract(uint128 amtToStake, address userAddr) public {
         // assumptions
-        vm.assume(userAddr != address(0) && amtToStake != 0);
+        _assumeAddressDoesntConflictWithFinthetix(userAddr);
+        vm.assume(amtToStake != 0);
 
         // definitions
         address stakingContractAddr = address(stakingContract);
@@ -250,7 +251,7 @@ contract FinthetixStakingContract_UnitTest is Test {
      */
     function test_InitialRewardsIsZero(address userAddr) public {
         // assumptions
-        vm.assume(userAddr != address(0));
+        _assumeAddressDoesntConflictWithFinthetix(userAddr);
 
         // act
         vm.prank(userAddr);
@@ -686,11 +687,13 @@ contract FinthetixStakingContract_UnitTest is Test {
         // assumptions
         uint256 amtToStake1 = uint256(_amtToStake1);
         uint256 amtToStake2 = uint256(_amtToStake2);
-        vm.assume(userAddr != address(0) && amtToStake1 > 0 && amtToStake2 > 0);
+        address otherUserAddr = vm.addr(0xB0b);
+        vm.assume(userAddr != otherUserAddr);
+        _assumeAddressDoesntConflictWithFinthetix(userAddr);
+        vm.assume(amtToStake1 > 0 && amtToStake2 > 0);
 
         // setup
         /// make sure total supply is different from user1 balances
-        address otherUserAddr = vm.addr(0xB0b);
         uint8 otherAmtToStake = type(uint8).max;
         _approveAndStake(otherUserAddr, otherAmtToStake, true);
         _waitForCoolDown();
@@ -734,12 +737,14 @@ contract FinthetixStakingContract_UnitTest is Test {
         public
     {
         // assumptions
-        vm.assume(userAddr != address(0) && amtToStake > 0);
+        vm.assume(amtToStake > 0);
+        address otherUserAddr = vm.addr(0xB0b);
+        vm.assume(userAddr != otherUserAddr);
+        _assumeAddressDoesntConflictWithFinthetix(userAddr);
         uint256 amtToUnstake = bound(_amtToUnstake, 1, amtToStake); // should only unstake less than what's staked
 
         // setup
         /// make sure total supply is different from user1 balances
-        address otherUserAddr = vm.addr(0xB0b);
         uint8 otherAmtToStake = type(uint8).max;
         _approveAndStake(otherUserAddr, otherAmtToStake, true);
         _waitForCoolDown();
@@ -766,7 +771,8 @@ contract FinthetixStakingContract_UnitTest is Test {
     }
 
     function test_RewardWithdrawalHasEvents(address userAddr, uint248 amtToStake, uint128 timeToWait) public {
-        vm.assume(userAddr != address(0) && amtToStake > 0);
+        vm.assume(amtToStake > 0);
+        _assumeAddressDoesntConflictWithFinthetix(userAddr);
         _approveAndStake(userAddr, amtToStake, true);
         _waitForCoolDown();
         vm.warp(block.timestamp + timeToWait);
@@ -916,5 +922,12 @@ contract FinthetixStakingContract_UnitTest is Test {
             return op1Result * (alphaNow - alphaAtLastUserInteraction);
         }
         return Math.mulDiv(prod1, (alphaNow - alphaAtLastUserInteraction), stakingContract.COOLDOWN_CONSTANT());
+    }
+
+    function _assumeAddressDoesntConflictWithFinthetix(address mainAddr) private view {
+        vm.assume(
+            mainAddr != address(0) && mainAddr != address(stakingToken) && mainAddr != address(rewardToken)
+                && mainAddr != address(stakingContract)
+        );
     }
 }
