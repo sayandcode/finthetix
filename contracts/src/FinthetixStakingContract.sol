@@ -14,23 +14,9 @@ interface FSCEvents {
     /**
      * @notice User has staked tokens
      * @param userAddr The address of the user who stakes
-     * @param amtStaked The amount of tokens staked by user
+     * @param totalAmtStakedByUser The total amount of tokens staked by user after this transaction
      */
-    event Staked(address indexed userAddr, uint256 amtStaked);
-
-    /**
-     * @notice User has unstaked tokens
-     * @param userAddr The address of the user who unstakes
-     * @param amtUnstaked The amount of tokens unstaked by user
-     */
-    event Unstaked(address indexed userAddr, uint256 amtUnstaked);
-
-    /**
-     * @notice User has withdrawn a reward
-     * @param userAddr The address of the user who has withdrawn a reward
-     * @param rewardAmt The reward amount withdrawn by the user
-     */
-    event RewardWithdrawn(address indexed userAddr, uint256 rewardAmt);
+    event StakeBalChanged(address indexed userAddr, uint256 totalAmtStakedByUser);
 
     /**
      * @notice The alpha has been updated
@@ -40,12 +26,12 @@ interface FSCEvents {
     event AlphaUpdated(uint256 newAlpha);
 
     /**
-     * @notice Reward has been published for a user
+     * @notice Reward has been updated for a user
      * @dev This happens on every interaction of user with the contract
      * @param userAddr The address of the user who has interacted with the contract
      * @param newReward The new value of published reward for this user
      */
-    event RewardPublished(address indexed userAddr, uint256 newReward);
+    event UserRewardUpdated(address indexed userAddr, uint256 newReward);
 }
 
 interface FSCErrors {
@@ -193,7 +179,7 @@ contract FinthetixStakingContract is FSCEvents, FSCErrors {
 
         // interactions
         stakingToken.transferFrom(msg.sender, address(this), amtToStake);
-        emit Staked(msg.sender, amtToStake);
+        emit StakeBalChanged(msg.sender, mapAddrToStakedAmt[msg.sender]);
     }
 
     /**
@@ -215,7 +201,7 @@ contract FinthetixStakingContract is FSCEvents, FSCErrors {
 
         // interactions
         stakingToken.transfer(msg.sender, amtToUnstake);
-        emit Unstaked(msg.sender, amtToUnstake);
+        emit StakeBalChanged(msg.sender, mapAddrToStakedAmt[msg.sender]);
     }
 
     /**
@@ -234,7 +220,7 @@ contract FinthetixStakingContract is FSCEvents, FSCErrors {
 
         // interactions
         rewardToken.mint(msg.sender, rewardBal);
-        emit RewardWithdrawn(msg.sender, rewardBal);
+        emit UserRewardUpdated(msg.sender, 0);
     }
 
     /**
@@ -275,7 +261,7 @@ contract FinthetixStakingContract is FSCEvents, FSCErrors {
         alphaNow += _calculateAccruedAlpha();
         emit AlphaUpdated(alphaNow);
         mapAddrToPublishedReward[msg.sender] += _calculateAccruedRewards();
-        emit RewardPublished(msg.sender, mapAddrToPublishedReward[msg.sender]);
+        emit UserRewardUpdated(msg.sender, mapAddrToPublishedReward[msg.sender]);
         lastUpdatedRewardAt = block.timestamp;
         mapAddrToAlphaAtLastUserInteraction[msg.sender] = alphaNow;
     }

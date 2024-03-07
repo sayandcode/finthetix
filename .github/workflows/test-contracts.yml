@@ -39,6 +39,9 @@ jobs:
         id: build
 
       - name: Run Forge tests
+        env:
+          FOUNDRY_ENV: ${{ secrets.FOUNDRY_ENV }}
         run: |
+          echo $FOUNDRY_ENV > .env
           forge test -vvv
         id: test

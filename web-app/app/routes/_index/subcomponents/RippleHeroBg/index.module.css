@@ -1,0 +1,21 @@
+@property --ripple-center {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+
+.ripple {
+  background-image: repeating-radial-gradient(circle at var(--ripple-center) var(--ripple-center), transparent 0, #ffffff 500px), repeating-linear-gradient(#facc15dd, #facc1555);
+  animation: move-ripple-center 10s linear infinite;
+  mask: linear-gradient(to bottom, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0) 95%);
+}
+
+@keyframes move-ripple-center {
+  0% {
+    --ripple-center: -150%;
+  }
+
+  100% {
+    --ripple-center: -122%;
+  }
+}

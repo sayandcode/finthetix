@@ -6,6 +6,7 @@ import {FinthetixStakingToken} from "src/FinthetixStakingToken.sol";
 import {FinthetixRewardToken} from "src/FinthetixRewardToken.sol";
 import {Test, console} from "forge-std/Test.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {DappDeployer} from "script/01_Deploy.s.sol";
 
 contract FinthetixStakingContract_UnitTest is Test {
     /**
@@ -35,9 +36,10 @@ contract FinthetixStakingContract_UnitTest is Test {
     error HighValueTransaction(address userAddr);
 
     function setUp() public {
-        stakingToken = new FinthetixStakingToken();
-        stakingContract = new FinthetixStakingContract(address(stakingToken));
-        rewardToken = stakingContract.rewardToken();
+        (address stakingTokenAddr, address stakingContractAddr, address rewardTokenAddr) = new DappDeployer().run();
+        stakingToken = FinthetixStakingToken(stakingTokenAddr);
+        stakingContract = FinthetixStakingContract(stakingContractAddr);
+        rewardToken = FinthetixRewardToken(rewardTokenAddr);
         REWARD_PRECISION = stakingContract.TOTAL_REWARDS_PER_SECOND() * 2;
     }
 
@@ -670,22 +672,31 @@ contract FinthetixStakingContract_UnitTest is Test {
 
     /**
      * @param userAddr Address of user who stakes
-     * @param amtToStake1 Amt initially staked in the contract before main interaction.
+     * @param _amtToStake1 Amt initially staked in the contract before main interaction.
      *  This helps to test variations in alpha and rewards owed.
-     * @param amtToStake2 Amt staked for main staking interaction.
+     * @param _amtToStake2 Amt staked for main staking interaction.
      * @param timeToWait The time to wait before main staking interaction
      * @notice Tests that staking emits the relevant events.
      * @dev We stake an initial amount so that we can vary the alpha and
      *  rewards, and check that event data is as expected
      */
-    function test_StakingHasEvents(address userAddr, uint8 amtToStake1, uint248 amtToStake2, uint128 timeToWait)
+    function test_StakingHasEvents(address userAddr, uint8 _amtToStake1, uint248 _amtToStake2, uint128 timeToWait)
         public
     {
         // assumptions
+        uint256 amtToStake1 = uint256(_amtToStake1);
+        uint256 amtToStake2 = uint256(_amtToStake2);
         vm.assume(userAddr != address(0) && amtToStake1 > 0 && amtToStake2 > 0);
 
         // setup
-        _approveAndStake(userAddr, amtToStake1, true); // stake initial amount for varying alpha and rewards
+        /// make sure total supply is different from user1 balances
+        address otherUserAddr = vm.addr(0xB0b);
+        uint8 otherAmtToStake = type(uint8).max;
+        _approveAndStake(otherUserAddr, otherAmtToStake, true);
+        _waitForCoolDown();
+
+        /// stake initial amount for varying alpha and rewards
+        _approveAndStake(userAddr, amtToStake1, true);
         _waitForCoolDown();
         vm.warp(block.timestamp + timeToWait);
         deal(address(stakingToken), userAddr, amtToStake2, true);
@@ -699,10 +710,11 @@ contract FinthetixStakingContract_UnitTest is Test {
 
         uint256 expectedNewUserReward = _getExpectedNewUserReward(userAddr);
         vm.expectEmit(true, false, false, true, address(stakingContract));
-        emit FSCEvents.RewardPublished(userAddr, expectedNewUserReward);
+        emit FSCEvents.UserRewardUpdated(userAddr, expectedNewUserReward);
 
-        vm.expectEmit(true, true, false, true, address(stakingContract));
-        emit FSCEvents.Staked(userAddr, amtToStake2);
+        uint256 expectedNewStakeBal = amtToStake1 + amtToStake2;
+        vm.expectEmit(true, true, true, true, address(stakingContract));
+        emit FSCEvents.StakeBalChanged(userAddr, expectedNewStakeBal);
 
         vm.prank(userAddr);
         stakingContract.stake(amtToStake2);
@@ -726,7 +738,14 @@ contract FinthetixStakingContract_UnitTest is Test {
         uint256 amtToUnstake = bound(_amtToUnstake, 1, amtToStake); // should only unstake less than what's staked
 
         // setup
-        _approveAndStake(userAddr, amtToStake, true); // stake initial amount for varying alpha and rewards
+        /// make sure total supply is different from user1 balances
+        address otherUserAddr = vm.addr(0xB0b);
+        uint8 otherAmtToStake = type(uint8).max;
+        _approveAndStake(otherUserAddr, otherAmtToStake, true);
+        _waitForCoolDown();
+
+        /// stake initial amount for varying alpha and rewards
+        _approveAndStake(userAddr, amtToStake, true);
         _waitForCoolDown();
         vm.warp(block.timestamp + timeToWait);
 
@@ -737,10 +756,10 @@ contract FinthetixStakingContract_UnitTest is Test {
 
         uint256 expectedNewUserReward = _getExpectedNewUserReward(userAddr);
         vm.expectEmit(true, false, false, true, address(stakingContract));
-        emit FSCEvents.RewardPublished(userAddr, expectedNewUserReward);
+        emit FSCEvents.UserRewardUpdated(userAddr, expectedNewUserReward);
 
-        vm.expectEmit(true, true, false, true, address(stakingContract));
-        emit FSCEvents.Unstaked(userAddr, amtToUnstake);
+        vm.expectEmit(true, true, true, true, address(stakingContract));
+        emit FSCEvents.StakeBalChanged(userAddr, amtToStake - amtToUnstake);
 
         vm.prank(userAddr);
         stakingContract.unstake(amtToUnstake);
@@ -758,10 +777,9 @@ contract FinthetixStakingContract_UnitTest is Test {
 
         uint256 expectedNewUserReward = _getExpectedNewUserReward(userAddr);
         vm.expectEmit(true, false, false, true, address(stakingContract));
-        emit FSCEvents.RewardPublished(userAddr, expectedNewUserReward);
-
-        vm.expectEmit(true, true, false, true, address(stakingContract));
-        emit FSCEvents.RewardWithdrawn(userAddr, expectedNewUserReward);
+        emit FSCEvents.UserRewardUpdated(userAddr, expectedNewUserReward);
+        vm.expectEmit(true, false, false, true, address(stakingContract));
+        emit FSCEvents.UserRewardUpdated(userAddr, 0);
 
         vm.prank(userAddr);
         stakingContract.withdrawRewards();
