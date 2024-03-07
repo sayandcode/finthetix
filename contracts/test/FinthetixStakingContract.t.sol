@@ -26,6 +26,8 @@ contract FinthetixStakingContract_UnitTest is Test {
     FinthetixStakingContract stakingContract;
     FinthetixStakingToken stakingToken;
     FinthetixRewardToken rewardToken;
+    address immutable randomUserAddr1 = vm.addr(0xB0b);
+    address immutable randomUserAddr2 = vm.addr(0xAb3);
 
     /**
      * @param userAddr The address of the user who has triggered this error.
@@ -40,6 +42,10 @@ contract FinthetixStakingContract_UnitTest is Test {
         stakingToken = FinthetixStakingToken(stakingTokenAddr);
         stakingContract = FinthetixStakingContract(stakingContractAddr);
         rewardToken = FinthetixRewardToken(rewardTokenAddr);
+
+        _assumeAddressDoesntConflictWithFinthetix(randomUserAddr1);
+        _assumeAddressDoesntConflictWithFinthetix(randomUserAddr2);
+
         REWARD_PRECISION = stakingContract.TOTAL_REWARDS_PER_SECOND() * 2;
     }
 
@@ -60,7 +66,8 @@ contract FinthetixStakingContract_UnitTest is Test {
      */
     function test_StakingTransfersTokensBetweenUserAndStakingContract(uint128 amtToStake, address userAddr) public {
         // assumptions
-        vm.assume(userAddr != address(0) && amtToStake != 0);
+        _assumeAddressDoesntConflictWithFinthetix(userAddr);
+        vm.assume(amtToStake != 0);
 
         // definitions
         address stakingContractAddr = address(stakingContract);
@@ -108,7 +115,7 @@ contract FinthetixStakingContract_UnitTest is Test {
      */
     function test_CanNotStakeInvalidAmt() public {
         // setup
-        address userAddr = vm.addr(0xB0b);
+        address userAddr = randomUserAddr1;
         uint64 initTokenBalForUser = 10 ether;
         deal(address(stakingToken), userAddr, initTokenBalForUser, true);
         vm.startPrank(userAddr);
@@ -125,7 +132,7 @@ contract FinthetixStakingContract_UnitTest is Test {
      */
     function test_CanNotUnstakeInvalidAmt() public {
         // setup
-        address userAddr = vm.addr(0xB0b);
+        address userAddr = randomUserAddr1;
         uint64 initTokenBalForUser = 10 ether;
         _approveAndStake(userAddr, initTokenBalForUser, true);
 
@@ -147,7 +154,7 @@ contract FinthetixStakingContract_UnitTest is Test {
         uint256 boundedAmtToUnstake = bound(_amtToUnstake, boundedAmtToStake + 1, type(uint256).max); // unstake more than staked amt
 
         // setup
-        address userAddr = vm.addr(0xB0b);
+        address userAddr = randomUserAddr1;
         _approveAndStake(userAddr, boundedAmtToStake, true);
 
         // act & verify
@@ -250,7 +257,7 @@ contract FinthetixStakingContract_UnitTest is Test {
      */
     function test_InitialRewardsIsZero(address userAddr) public {
         // assumptions
-        vm.assume(userAddr != address(0));
+        _assumeAddressDoesntConflictWithFinthetix(userAddr);
 
         // act
         vm.prank(userAddr);
@@ -274,8 +281,8 @@ contract FinthetixStakingContract_UnitTest is Test {
 
         // setup
         /// user 1 stakes
-        address userAddr1 = vm.addr(0xB0b);
-        address userAddr2 = vm.addr(0xAbe);
+        address userAddr1 = randomUserAddr1;
+        address userAddr2 = randomUserAddr2;
         _approveAndStake(userAddr1, amtToStake1, true);
         _waitForCoolDown();
 
@@ -317,7 +324,7 @@ contract FinthetixStakingContract_UnitTest is Test {
         vm.assume(timeToWait > 0);
 
         // setup
-        address userAddr = vm.addr(0xB0b);
+        address userAddr = randomUserAddr1;
         uint256 amtToStake = 10 ether;
         uint256 newTime = block.timestamp + timeToWait;
         vm.warp(newTime);
@@ -341,7 +348,7 @@ contract FinthetixStakingContract_UnitTest is Test {
         vm.assume(uint256(timeToWait) * stakingContract.COOLDOWN_CONSTANT() > amtToStake);
 
         // setup
-        address userAddr = vm.addr(0xB0b);
+        address userAddr = randomUserAddr1;
         _approveAndStake(userAddr, amtToStake, true);
         uint256 newTime = block.timestamp + timeToWait;
         vm.warp(newTime);
@@ -366,7 +373,7 @@ contract FinthetixStakingContract_UnitTest is Test {
         vm.assume(stakingContract.COOLDOWN_CONSTANT() * uint256(timeToWait) < uint256(initAmtToStake));
 
         // setup
-        address userAddr = vm.addr(0xB0b);
+        address userAddr = randomUserAddr1;
         uint256 amtToApprove = type(uint256).max;
         deal(address(stakingToken), userAddr, amtToApprove, true);
         vm.prank(userAddr);
@@ -395,7 +402,7 @@ contract FinthetixStakingContract_UnitTest is Test {
         vm.assume(uint256(timeToWait) * stakingContract.COOLDOWN_CONSTANT() < initAmtToStake);
 
         // setup
-        address userAddr = vm.addr(0xB0b);
+        address userAddr = randomUserAddr1;
         _approveAndStake(userAddr, initAmtToStake, true);
         uint256 initTime = block.timestamp;
         uint256 newTime = initTime + timeToWait;
@@ -420,7 +427,7 @@ contract FinthetixStakingContract_UnitTest is Test {
         vm.assume((stakingContract.COOLDOWN_CONSTANT() * timeToWait > initAmtToStake));
 
         // setup
-        address userAddr1 = vm.addr(0xB0b);
+        address userAddr1 = randomUserAddr1;
         _approveAndStake(userAddr1, initAmtToStake, true);
         uint256 initAlphaNow = stakingContract.alphaNow();
         vm.warp(block.timestamp + timeToWait);
@@ -447,7 +454,7 @@ contract FinthetixStakingContract_UnitTest is Test {
         vm.assume((stakingContract.COOLDOWN_CONSTANT() * timeToWait > initAmtToStake));
 
         // setup
-        address userAddr1 = vm.addr(0xB0b);
+        address userAddr1 = randomUserAddr1;
         _approveAndStake(userAddr1, initAmtToStake, true);
         uint256 initAlphaNow = stakingContract.alphaNow();
         vm.warp(block.timestamp + timeToWait);
@@ -469,7 +476,7 @@ contract FinthetixStakingContract_UnitTest is Test {
     function test_CanHandlePhantomOverflowInRewardCalc() public {
         // setup
         uint256 amtToStake = type(uint256).max / stakingContract.TOTAL_REWARDS_PER_SECOND() + 1; // makes the first product (mapAddrToStakedAmt[msg.sender] * TOTAL_REWARDS_PER_SECOND) overflow
-        address userAddr = vm.addr(0xB0b);
+        address userAddr = randomUserAddr1;
         _approveAndStake(userAddr, amtToStake, true);
         _waitForCoolDown();
 
@@ -491,7 +498,7 @@ contract FinthetixStakingContract_UnitTest is Test {
         /// minimum amount of stake, as we are trying to accomodate highest
         /// possible alpha value. The two are inversely proportional
         uint256 amtToStake = 1;
-        address userAddr = vm.addr(0xB0b);
+        address userAddr = randomUserAddr1;
         _approveAndStake(userAddr, amtToStake, true);
         uint256 minWaitTimeToOverflowAlphaCalc = type(uint256).max / stakingContract.COOLDOWN_CONSTANT() + 1;
         vm.warp(block.timestamp + minWaitTimeToOverflowAlphaCalc);
@@ -515,7 +522,7 @@ contract FinthetixStakingContract_UnitTest is Test {
     function test_CanHandleActualOverflowInRewardCalc_AlphaLeads() private {
         // setup
         uint256 amtToStake = type(uint256).max / stakingContract.TOTAL_REWARDS_PER_SECOND() + 1; // overflows prod1
-        address userAddr = vm.addr(0xB0b);
+        address userAddr = randomUserAddr1;
         _approveAndStake(userAddr, amtToStake, true);
 
         /// To overflow the reward calculation wait until
@@ -549,7 +556,7 @@ contract FinthetixStakingContract_UnitTest is Test {
     function test_CanHandleActualOverflowInRewardCalc_StakedAmtLeads() private {
         // setup
         uint256 amtToStake = type(uint256).max; // the max possible staked amount is used
-        address userAddr = vm.addr(0xB0b);
+        address userAddr = randomUserAddr1;
         _approveAndStake(userAddr, amtToStake, true);
         _waitForCoolDown();
 
@@ -571,7 +578,7 @@ contract FinthetixStakingContract_UnitTest is Test {
     function test_CanHandleActualOverflowInRewardCalc_OverallRewardExceedsBounds() private {
         // setup
         uint256 amtToStake = type(uint256).max / stakingContract.TOTAL_REWARDS_PER_SECOND(); // *doesn't* overflow prod1
-        address userAddr = vm.addr(0xB0b);
+        address userAddr = randomUserAddr1;
         _approveAndStake(userAddr, amtToStake, true);
 
         /// To overflow the reward calculation
@@ -604,7 +611,7 @@ contract FinthetixStakingContract_UnitTest is Test {
         vm.assume(amtToStake > 0);
 
         // setup
-        address userAddr = vm.addr(0xB0b);
+        address userAddr = randomUserAddr1;
         _approveAndStake(userAddr, amtToStake, true);
         _waitForCoolDown();
         vm.startPrank(userAddr);
@@ -628,7 +635,7 @@ contract FinthetixStakingContract_UnitTest is Test {
      *  reward
      */
     function test_CannotWithdrawWithoutRewards() public {
-        address userAddr = vm.addr(0xB0b);
+        address userAddr = randomUserAddr1;
         vm.expectRevert(abi.encodeWithSelector(FSCErrors.NoRewardsAvailable.selector, userAddr));
         vm.prank(userAddr);
         stakingContract.withdrawRewards();
@@ -654,7 +661,7 @@ contract FinthetixStakingContract_UnitTest is Test {
         vm.assume(amtToStake > 0);
 
         // setup
-        address userAddr = vm.addr(0xB0b);
+        address userAddr = randomUserAddr1;
         _approveAndStake(userAddr, amtToStake, true);
         uint256 timeOfStaking = block.timestamp;
         _waitForCoolDown();
@@ -686,11 +693,13 @@ contract FinthetixStakingContract_UnitTest is Test {
         // assumptions
         uint256 amtToStake1 = uint256(_amtToStake1);
         uint256 amtToStake2 = uint256(_amtToStake2);
-        vm.assume(userAddr != address(0) && amtToStake1 > 0 && amtToStake2 > 0);
+        address otherUserAddr = randomUserAddr1;
+        vm.assume(userAddr != otherUserAddr);
+        _assumeAddressDoesntConflictWithFinthetix(userAddr);
+        vm.assume(amtToStake1 > 0 && amtToStake2 > 0);
 
         // setup
         /// make sure total supply is different from user1 balances
-        address otherUserAddr = vm.addr(0xB0b);
         uint8 otherAmtToStake = type(uint8).max;
         _approveAndStake(otherUserAddr, otherAmtToStake, true);
         _waitForCoolDown();
@@ -734,12 +743,14 @@ contract FinthetixStakingContract_UnitTest is Test {
         public
     {
         // assumptions
-        vm.assume(userAddr != address(0) && amtToStake > 0);
+        vm.assume(amtToStake > 0);
+        address otherUserAddr = randomUserAddr1;
+        vm.assume(userAddr != otherUserAddr);
+        _assumeAddressDoesntConflictWithFinthetix(userAddr);
         uint256 amtToUnstake = bound(_amtToUnstake, 1, amtToStake); // should only unstake less than what's staked
 
         // setup
         /// make sure total supply is different from user1 balances
-        address otherUserAddr = vm.addr(0xB0b);
         uint8 otherAmtToStake = type(uint8).max;
         _approveAndStake(otherUserAddr, otherAmtToStake, true);
         _waitForCoolDown();
@@ -766,7 +777,8 @@ contract FinthetixStakingContract_UnitTest is Test {
     }
 
     function test_RewardWithdrawalHasEvents(address userAddr, uint248 amtToStake, uint128 timeToWait) public {
-        vm.assume(userAddr != address(0) && amtToStake > 0);
+        vm.assume(amtToStake > 0);
+        _assumeAddressDoesntConflictWithFinthetix(userAddr);
         _approveAndStake(userAddr, amtToStake, true);
         _waitForCoolDown();
         vm.warp(block.timestamp + timeToWait);
@@ -795,8 +807,8 @@ contract FinthetixStakingContract_UnitTest is Test {
      */
     function test_CanViewAlphaAtLastInteraction(uint128 amtToStake1, uint128 amtToStake2) public {
         vm.assume(amtToStake1 > 0 && amtToStake2 > 0);
-        address userAddr1 = vm.addr(0xB0b);
-        address userAddr2 = vm.addr(0xAbe);
+        address userAddr1 = randomUserAddr1;
+        address userAddr2 = randomUserAddr2;
         _approveAndStake(userAddr1, amtToStake1, true);
         _waitForCoolDown();
         vm.prank(userAddr1);
@@ -916,5 +928,12 @@ contract FinthetixStakingContract_UnitTest is Test {
             return op1Result * (alphaNow - alphaAtLastUserInteraction);
         }
         return Math.mulDiv(prod1, (alphaNow - alphaAtLastUserInteraction), stakingContract.COOLDOWN_CONSTANT());
+    }
+
+    function _assumeAddressDoesntConflictWithFinthetix(address mainAddr) private view {
+        vm.assume(
+            mainAddr != address(0) && mainAddr != address(stakingToken) && mainAddr != address(rewardToken)
+                && mainAddr != address(stakingContract)
+        );
     }
 }
