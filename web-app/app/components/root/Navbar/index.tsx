@@ -1,4 +1,3 @@
-import { useLocation } from '@remix-run/react';
 import { Loader2Icon } from 'lucide-react';
 import { useCallback } from 'react';
 import { Button } from '~/components/ui/button';
@@ -15,7 +14,6 @@ const OVERLAP_THRESHOLD_FOR_STICKY_NAVBAR = 1;
 
 export default function Navbar() {
   const { chainInfo } = useRootLoaderData();
-  const { pathname } = useLocation();
   const activeAddress = useAppSelector(selectActiveAddress);
   const isUserLoading = useAppSelector(selectIsUserLoading);
   const dispatch = useAppDispatch();
@@ -27,8 +25,6 @@ export default function Navbar() {
     if (activeAddress) dispatch(setActiveAddress(null));
     else requestMetamaskAddress(chainInfo);
   }, [activeAddress, chainInfo, dispatch, requestMetamaskAddress]);
-
-  if (pathname === '/') return null;
 
   return (
     <>

@@ -9,7 +9,7 @@ export type ChainInfo = {
     symbol: string
     decimals: number
   }
-  rpcUrls: string[]
+  rpcUrls: [string, ...string[]]
   chainId: string
   chainName: string
 };

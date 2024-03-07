@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 export default function useStickyNavbar(overlapThreshold: number) {
   const [isNavStuck, setIsNavStuck] = useState(false);
   const dummyRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!(dummyRef.current)) return;
 
@@ -17,6 +18,9 @@ export default function useStickyNavbar(overlapThreshold: number) {
       threshold: overlapThreshold,
     });
     observer.observe(dummyRef.current);
+
+    // remove the listener between useEffect's
+    return () => observer.disconnect();
   }, [overlapThreshold]);
 
   return { isNavStuck, dummyRef };

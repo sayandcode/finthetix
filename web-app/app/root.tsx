@@ -9,6 +9,7 @@ import {
   ScrollRestoration,
   isRouteErrorResponse,
   json,
+  useLocation,
   useRouteError,
 } from '@remix-run/react';
 import tailwindCss from './tailwind.css';
@@ -46,6 +47,8 @@ export const loader = async () => {
 };
 
 export default function App() {
+  const { pathname } = useLocation();
+
   return (
     <html lang="en">
       <head>
@@ -59,7 +62,7 @@ export default function App() {
         <ReduxProvider store={store}>
           <ReduxInitializer store={store} />
           <AutoLogin />
-          <Navbar />
+          {pathname !== '/' ? <Navbar /> : null}
           <Outlet />
         </ReduxProvider>
         <ScrollRestoration />
