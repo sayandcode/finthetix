@@ -5,9 +5,15 @@
     "infra": "bin/infra.js"
   },
   "scripts": {
+    "preinstall": "cd ../src && npm ci",
+    "prebuild": "cd ../src && npm run build",
     "build": "tsc",
     "watch": "tsc -w",
-    "deploy": "cdk deploy"
+    "predeploy": "npm run build",
+    "predeploy:ci": "npm run build",
+    "deploy": "cdk deploy",
+    "deploy:ci": "cdk deploy --require-approval never",
+    "undeploy": "cdk destroy"
   },
   "devDependencies": {
     "@types/node": "20.11.19",
