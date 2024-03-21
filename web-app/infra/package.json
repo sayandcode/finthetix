@@ -13,11 +13,16 @@
     "predeploy:ci": "npm run build",
     "deploy": "cdk deploy",
     "deploy:ci": "cdk deploy --require-approval never",
-    "undeploy": "cdk destroy"
+    "undeploy": "cdk destroy",
+    "lint": "eslint . --ext '.ts' --ignore-path .gitignore"
   },
   "devDependencies": {
+    "@stylistic/eslint-plugin": "^1.7.0",
     "@types/node": "20.11.19",
+    "@typescript-eslint/eslint-plugin": "^7.3.1",
+    "@typescript-eslint/parser": "^7.3.1",
     "aws-cdk": "2.133.0",
+    "eslint": "^8.57.0",
     "ts-node": "^10.9.2",
     "typescript": "~5.3.3"
   },
