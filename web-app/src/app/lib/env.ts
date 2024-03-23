@@ -3,7 +3,7 @@ import { chainInfoSchema } from './loaders/chainInfo';
 
 const ethAddressSchema = z.string().regex(/^0x([0-9]|[a-f]){40}$/i);
 
-const envSchema = z.object({
+export const envSchema = z.object({
   NODE_ENV: z.union([
     z.literal('development'), z.literal('production'), z.literal('test'),
   ]) satisfies z.ZodType<typeof process.env.NODE_ENV>,
