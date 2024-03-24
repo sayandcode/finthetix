@@ -14,7 +14,10 @@ export default function StakeBtn(
   }, []);
 
   return (
-    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+    <Dialog
+      open={isDialogOpen && !!stakingTokenBal}
+      onOpenChange={setIsDialogOpen}
+    >
       <DialogTrigger asChild disabled={disabled || !stakingTokenBal}>
         <Button>Stake</Button>
       </DialogTrigger>

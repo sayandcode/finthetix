@@ -16,7 +16,10 @@ export default function UnstakeBtn(
   const isBtnDisabled = disabled || !amtCurrentlyStaked || amtCurrentlyStaked.value === '0';
 
   return (
-    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+    <Dialog
+      open={isDialogOpen && !!amtCurrentlyStaked}
+      onOpenChange={setIsDialogOpen}
+    >
       <DialogTrigger asChild disabled={isBtnDisabled}>
         <Button variant="outline">Unstake</Button>
       </DialogTrigger>
