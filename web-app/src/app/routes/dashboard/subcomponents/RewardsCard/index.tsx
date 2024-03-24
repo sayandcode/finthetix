@@ -7,7 +7,6 @@ import {
 import { FinthetixMetadata, FinthetixUserData } from '~/contracts/FinthetixStakingContract';
 import { type WithStringifiedBigints } from '~/lib/utils/stringifyBigIntsInObj';
 import getReadableERC20TokenCount from '~/lib/utils/readableERC20';
-import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
 import { useWithdrawRewardsFromFinthetixMutation } from '~/redux/services/metamask';
 
 const MAX_DIGITS_TO_DISPLAY_IN_AMT_STR = 4;
@@ -19,14 +18,12 @@ export default memo(function RewardsCard(
     finthetixMetadata: WithStringifiedBigints<FinthetixMetadata>
     disabled: boolean
   }) {
-  const { dappInfo } = useRootLoaderData();
-
   const [sendWithdrawRequest, { isLoading: isWithdrawalInProgress }]
     = useWithdrawRewardsFromFinthetixMutation();
 
   const withdrawReward = useCallback(
-    async () => sendWithdrawRequest(dappInfo),
-    [dappInfo, sendWithdrawRequest]);
+    async () => sendWithdrawRequest(),
+    [sendWithdrawRequest]);
 
   const readableRewardAmtStr = useMemo(() => {
     if (!(userInfo && finthetixMetadata)) return null;

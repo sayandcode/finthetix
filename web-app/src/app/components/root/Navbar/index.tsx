@@ -1,7 +1,6 @@
 import { Loader2Icon } from 'lucide-react';
 import { useCallback } from 'react';
 import { Button } from '~/components/ui/button';
-import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
 import cn from '~/lib/utils/shadcn';
 import { selectActiveAddress, selectIsUserLoading, setActiveAddress } from '~/redux/features/user/slice';
 import { useAppDispatch, useAppSelector } from '~/redux/hooks';
@@ -13,7 +12,6 @@ import { FINTHETIX_GITHUB_URL } from '~/lib/constants';
 const OVERLAP_THRESHOLD_FOR_STICKY_NAVBAR = 1;
 
 export default function Navbar() {
-  const { chainInfo } = useRootLoaderData();
   const activeAddress = useAppSelector(selectActiveAddress);
   const isUserLoading = useAppSelector(selectIsUserLoading);
   const dispatch = useAppDispatch();
@@ -23,8 +21,8 @@ export default function Navbar() {
 
   const handleClick = useCallback(() => {
     if (activeAddress) dispatch(setActiveAddress(null));
-    else requestMetamaskAddress(chainInfo);
-  }, [activeAddress, chainInfo, dispatch, requestMetamaskAddress]);
+    else requestMetamaskAddress();
+  }, [activeAddress, dispatch, requestMetamaskAddress]);
 
   return (
     <>

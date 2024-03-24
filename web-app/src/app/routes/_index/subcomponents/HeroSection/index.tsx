@@ -2,7 +2,6 @@ import { useNavigate } from '@remix-run/react';
 import { Loader2Icon } from 'lucide-react';
 import { useCallback, useEffect } from 'react';
 import { Button } from '~/components/ui/button';
-import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
 import { selectIsUserLoading, selectIsUserLoggedIn } from '~/redux/features/user/slice';
 import { useAppSelector } from '~/redux/hooks';
 import { useRequestMetamaskAddressMutation } from '~/redux/services/metamask';
@@ -31,12 +30,11 @@ export default function HeroSection() {
 }
 
 function useLogin() {
-  const { chainInfo } = useRootLoaderData();
   const [requestMetamaskAddress] = useRequestMetamaskAddressMutation();
 
   const login = useCallback(() => {
-    requestMetamaskAddress(chainInfo);
-  }, [requestMetamaskAddress, chainInfo]);
+    requestMetamaskAddress();
+  }, [requestMetamaskAddress]);
 
   return login;
 }

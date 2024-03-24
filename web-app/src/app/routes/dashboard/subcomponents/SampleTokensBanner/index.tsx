@@ -1,16 +1,14 @@
 import { HandCoinsIcon, Loader2Icon } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { Button } from '~/components/ui/button';
-import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
 import { useRequestSampleTokensMutation } from '~/redux/services/metamask';
 
 export default memo(function SampleTokensBanner() {
-  const { dappInfo } = useRootLoaderData();
   const [requestSampleTokens, { isLoading }]
     = useRequestSampleTokensMutation();
   const claimFreeTokens = useCallback(async () => {
-    await requestSampleTokens(dappInfo);
-  }, [requestSampleTokens, dappInfo]);
+    await requestSampleTokens();
+  }, [requestSampleTokens]);
   return (
     <div className="bg-primary p-4 my-4 flex gap-2">
       <div><HandCoinsIcon className="h-6 w-6" /></div>

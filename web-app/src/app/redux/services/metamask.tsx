@@ -1,7 +1,5 @@
 import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
 import MetamaskHandler from '~/redux/services/lib/Metamask';
-import { DappInfo } from '~/lib/loaders/dappInfo/schema';
-import { ChainInfo } from '~/lib/loaders/chainInfo/schema';
 import stringifyBigIntsInObj, { WithStringifiedBigints } from '~/lib/utils/stringifyBigIntsInObj';
 import { setIsUserLoading, type ActiveAddress, setActiveAddress } from '../features/user/slice';
 import { toast } from '~/components/ui/use-toast';
@@ -9,6 +7,7 @@ import FinthetixStakingContractHandler, { FinthetixStatus, FinthetixUserData, Hi
 import { UI_ERRORS } from '~/lib/ui-errors';
 import { getIsEndpointError, makeErrorableQueryFn } from './lib/utils';
 import UnderlineLink from '~/components/ui/underline-link';
+import { getBrowserEnv } from '~/components/root/BrowserEnv';
 
 const FALLBACK_ERROR_DESCRIPTION = 'Something went wrong when interacting with the Blockchain';
 
@@ -26,10 +25,11 @@ export const metamaskApi = createApi({
   tagTypes: ['User', 'FinthetixStatus'],
   endpoints: builder => ({
     requestMetamaskAddress:
-      builder.mutation<NonNullable<ActiveAddress>, ChainInfo>({
+      builder.mutation<NonNullable<ActiveAddress>, void>({
         queryFn: makeErrorableQueryFn(
-          async (chainInfo) => {
+          async () => {
             const metamaskHandler = new MetamaskHandler();
+            const { chainInfo } = getBrowserEnv();
             return metamaskHandler.requestAddress(chainInfo);
           },
           (internalErr) => {
@@ -129,13 +129,10 @@ export const metamaskApi = createApi({
     }),
 
     fetchFinthetixUserInfo:
-      builder.query<WithStringifiedBigints<FinthetixUserData>, DappInfo>({
+      builder.query<WithStringifiedBigints<FinthetixUserData>, void>({
         queryFn: makeErrorableQueryFn(
-          async (dappInfo) => {
-            const metamaskHandler = new MetamaskHandler();
-            const fscHandler = await FinthetixStakingContractHandler.make(
-              metamaskHandler.provider, dappInfo,
-            );
+          async () => {
+            const fscHandler = await FinthetixStakingContractHandler.make();
             const userData = await fscHandler.getUserData();
             return stringifyBigIntsInObj(userData);
           },
@@ -167,13 +164,10 @@ export const metamaskApi = createApi({
       }),
 
     requestSampleTokens:
-      builder.mutation<void, DappInfo>({
+      builder.mutation<void, void>({
         queryFn: makeErrorableQueryFn(
-          async (dappInfo) => {
-            const metamaskHandler = new MetamaskHandler();
-            const fscHandler = await FinthetixStakingContractHandler.make(
-              metamaskHandler.provider, dappInfo,
-            );
+          async () => {
+            const fscHandler = await FinthetixStakingContractHandler.make();
             return fscHandler.requestSampleTokens();
           },
           (internalErr) => {
@@ -214,14 +208,11 @@ export const metamaskApi = createApi({
     stakeWithFinthetix:
       builder.mutation<
         TxnHash,
-        { amtToStakeStr: string, dappInfo: DappInfo }
+        { amtToStakeStr: string }
       >({
         queryFn: makeErrorableQueryFn(
-          async ({ amtToStakeStr, dappInfo }) => {
-            const metamaskHandler = new MetamaskHandler();
-            const fscHandler = await FinthetixStakingContractHandler.make(
-              metamaskHandler.provider, dappInfo,
-            );
+          async ({ amtToStakeStr }) => {
+            const fscHandler = await FinthetixStakingContractHandler.make();
 
             const isCoolingDown = await fscHandler.getIsContractCoolingDown();
             if (isCoolingDown) throw new Error(COOLING_DOWN_INTERNAL_ERROR);
@@ -277,13 +268,10 @@ export const metamaskApi = createApi({
     unstakeWithFinthetix:
       builder.mutation<
         TxnHash,
-        { amtToUnstakeStr: string, dappInfo: DappInfo }>({
+        { amtToUnstakeStr: string }>({
           queryFn: makeErrorableQueryFn(
-            async ({ amtToUnstakeStr, dappInfo }) => {
-              const metamaskHandler = new MetamaskHandler();
-              const fscHandler = await FinthetixStakingContractHandler.make(
-                metamaskHandler.provider, dappInfo,
-              );
+            async ({ amtToUnstakeStr }) => {
+              const fscHandler = await FinthetixStakingContractHandler.make();
 
               const isCoolingDown = await fscHandler.getIsContractCoolingDown();
               if (isCoolingDown) throw new Error(COOLING_DOWN_INTERNAL_ERROR);
@@ -336,13 +324,10 @@ export const metamaskApi = createApi({
         }),
 
     withdrawRewardsFromFinthetix:
-      builder.mutation<TxnHash, DappInfo>({
+      builder.mutation<TxnHash, void>({
         queryFn: makeErrorableQueryFn(
-          async (dappInfo) => {
-            const metamaskHandler = new MetamaskHandler();
-            const fscHandler = await FinthetixStakingContractHandler.make(
-              metamaskHandler.provider, dappInfo,
-            );
+          async () => {
+            const fscHandler = await FinthetixStakingContractHandler.make();
 
             const isCoolingDown = await fscHandler.getIsContractCoolingDown();
             if (isCoolingDown) throw new Error(COOLING_DOWN_INTERNAL_ERROR);
@@ -394,13 +379,10 @@ export const metamaskApi = createApi({
       }),
 
     fetchFinthetixLogData:
-      builder.query<FinthetixLogDataQueryResult, DappInfo>({
+      builder.query<FinthetixLogDataQueryResult, void>({
         queryFn: makeErrorableQueryFn(
-          async (dappInfo) => {
-            const metamaskHandler = new MetamaskHandler();
-            const fscHandler = await FinthetixStakingContractHandler.make(
-              metamaskHandler.provider, dappInfo,
-            );
+          async () => {
+            const fscHandler = await FinthetixStakingContractHandler.make();
 
             const historicalStakedAmtPromise
               = fscHandler.getHistoricalStakedAmt();
@@ -432,13 +414,10 @@ export const metamaskApi = createApi({
       }),
 
     finthetixStatus:
-      builder.query<FinthetixStatus, DappInfo>({
+      builder.query<FinthetixStatus, void>({
         queryFn: makeErrorableQueryFn(
-          async (dappInfo) => {
-            const metamaskHandler = new MetamaskHandler();
-            const fscHandler = await FinthetixStakingContractHandler.make(
-              metamaskHandler.provider, dappInfo,
-            );
+          async () => {
+            const fscHandler = await FinthetixStakingContractHandler.make();
             return fscHandler.getStatus();
           },
           (internalErr) => {

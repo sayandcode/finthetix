@@ -1,9 +1,11 @@
-import { BrowserProvider, ContractRunner, JsonRpcProvider, JsonRpcSigner } from 'ethers';
+import { ContractRunner, JsonRpcProvider, JsonRpcSigner } from 'ethers';
 import { TimestampInMs } from '~/lib/types';
 import { FinthetixRewardToken, FinthetixRewardToken__factory, FinthetixStakingContract, FinthetixStakingContract__factory, FinthetixStakingToken, FinthetixStakingToken__factory } from './types';
 import { StakeBalChangedEvent, UserRewardUpdatedEvent } from './types/FinthetixStakingContract.sol/FSCEvents';
 import { z } from 'zod';
 import { DappInfo } from '~/lib/loaders/dappInfo/schema';
+import MetamaskHandler from '~/redux/services/lib/Metamask';
+import { getBrowserEnv } from '~/components/root/BrowserEnv';
 
 export type FinthetixUserData = Awaited<ReturnType<FinthetixStakingContractHandler['getUserData']>>;
 
@@ -88,8 +90,11 @@ class Base {
  * this class
  */
 export default class FinthetixStakingContractHandler extends Base {
-  static async make(provider: BrowserProvider, dappInfo: DappInfo) {
-    const signer = await provider.getSigner();
+  static async make() {
+    const metamaskHandler = new MetamaskHandler();
+    const signer = await metamaskHandler.provider.getSigner();
+    // can read from env, as this is used only on client
+    const { dappInfo } = getBrowserEnv();
     return new FinthetixStakingContractHandler(signer, dappInfo);
   }
 

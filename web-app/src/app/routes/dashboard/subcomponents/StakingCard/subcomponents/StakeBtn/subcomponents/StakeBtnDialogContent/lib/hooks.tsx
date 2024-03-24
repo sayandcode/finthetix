@@ -1,5 +1,4 @@
 import { useCallback } from 'react';
-import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
 import { useStakeWithFinthetixMutation } from '~/redux/services/metamask';
 
 export function useStakeCommand(
@@ -7,13 +6,11 @@ export function useStakeCommand(
 ) {
   const [stakeWithFinthetix, { isLoading }] = useStakeWithFinthetixMutation();
 
-  const { dappInfo } = useRootLoaderData();
-
   const stake = useCallback(async () => {
-    const stakingTrial = await stakeWithFinthetix({ amtToStakeStr, dappInfo });
+    const stakingTrial = await stakeWithFinthetix({ amtToStakeStr });
     const isSuccessful = 'data' in stakingTrial;
     if (isSuccessful) closeDialog();
-  }, [amtToStakeStr, closeDialog, dappInfo, stakeWithFinthetix]);
+  }, [amtToStakeStr, closeDialog, stakeWithFinthetix]);
 
   return { stake, isProcessing: isLoading };
 }

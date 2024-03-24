@@ -17,9 +17,9 @@ export const meta: MetaFunction = () => {
 };
 
 export default function Route() {
-  const { dappInfo, finthetixMetadata } = useRootLoaderData();
+  const { finthetixMetadata } = useRootLoaderData();
   const { data: _finthetixStatus = null, isFetching: isFetchingFinthetixStatus }
-    = useFinthetixStatusQuery(dappInfo);
+    = useFinthetixStatusQuery();
   const finthetixStatus = isFetchingFinthetixStatus ? null : _finthetixStatus;
 
   const [
@@ -50,15 +50,14 @@ export default function Route() {
     }
 
     // else fetch data
-    triggerFetchUserInfo(dappInfo, true);
-    triggerFetchLogData(dappInfo, true);
+    triggerFetchUserInfo(undefined, true);
+    triggerFetchLogData(undefined, true);
   },
   [
     activeAddress,
     navigate,
     isUserLoading,
     triggerFetchUserInfo,
-    dappInfo,
     triggerFetchLogData,
   ]);
 
