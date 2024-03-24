@@ -25,6 +25,7 @@ import AutoLogin from './components/root/AutoLogin';
 import { ReadonlyFinthetixStakingContractHandler } from './contracts/FinthetixStakingContract';
 import stringifyBigIntsInObj from './lib/utils/stringifyBigIntsInObj';
 import BrowserEnv from './components/root/BrowserEnv';
+import getBlockExplorerInfo from './lib/loaders/blockExplorerInfo';
 
 export const ROUTE_PATH = 'root';
 
@@ -37,6 +38,7 @@ export const links: LinksFunction = () => [
 export const loader = async () => {
   const chainInfo = getChainInfo();
   const dappInfo = getDappInfo();
+  const blockExplorerInfo = getBlockExplorerInfo();
 
   const fscReadonlyHandler
     = new ReadonlyFinthetixStakingContractHandler(
@@ -44,7 +46,7 @@ export const loader = async () => {
     );
   const finthetixMetadata
     = stringifyBigIntsInObj(await fscReadonlyHandler.getMetadata());
-  return json({ chainInfo, dappInfo, finthetixMetadata });
+  return json({ chainInfo, dappInfo, finthetixMetadata, blockExplorerInfo });
 };
 
 export default function App() {

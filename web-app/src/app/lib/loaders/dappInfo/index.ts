@@ -1,8 +1,8 @@
-import getParsedEnv from '../../env';
+import getServerEnv from '../../env';
 import { DappInfo } from './schema';
 
 export function getDappInfo(): DappInfo {
-  const env = getParsedEnv();
+  const env = getServerEnv();
   return {
     stakingContractAddr: env.STAKING_CONTRACT_ADDRESS,
     stakingTokenAddr: env.STAKING_TOKEN_ADDRESS,

@@ -7,11 +7,10 @@ import getReadableERC20TokenCount from '~/lib/utils/readableERC20';
 import { useMemo } from 'react';
 
 export default function HowItWorksSection() {
-  const { dappInfo:
-    { rewardTokenAddr, stakingContractAddr, stakingTokenAddr },
-  finthetixMetadata: {
-    stakingToken, rewardToken, totalRewardsPerSec,
-  },
+  const {
+    dappInfo: { rewardTokenAddr, stakingContractAddr, stakingTokenAddr },
+    finthetixMetadata: { stakingToken, rewardToken, totalRewardsPerSec },
+    blockExplorerInfo,
   } = useRootLoaderData();
 
   const readableRewardRate
@@ -23,6 +22,7 @@ export default function HowItWorksSection() {
         },
         4,
       ), [totalRewardsPerSec, stakingToken.decimals]);
+
   return (
     <section className="mx-8 mb-8 mt-2">
       <Card className="p-4">
@@ -30,20 +30,20 @@ export default function HowItWorksSection() {
         <p>
           {`Every second, ${readableRewardRate}`}
           <UnderlineLink
-            href={`https://etherscan.io/address/${rewardTokenAddr}`}
+            href={`${blockExplorerInfo.addressUrl}${rewardTokenAddr}`}
           >
             {`${rewardToken.symbol} tokens`}
           </UnderlineLink>
           are awarded. You earn a fraction of these, based on how much of
           the
           <UnderlineLink
-            href={`https://etherscan.io/address/${stakingContractAddr}`}
+            href={`${blockExplorerInfo.addressUrl}${stakingContractAddr}`}
           >
             total staking pool
           </UnderlineLink>
           (of
           <UnderlineLink
-            href={`https://etherscan.io/address/${stakingTokenAddr}`}
+            href={`${blockExplorerInfo.addressUrl}${stakingTokenAddr}`}
           >
             {`${stakingToken.symbol} tokens`}
           </UnderlineLink>

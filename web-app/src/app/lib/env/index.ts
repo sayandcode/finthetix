@@ -1,6 +1,6 @@
 import { envSchema } from './schema';
 
-export default function getParsedEnv() {
+export default function getServerEnv() {
   const parseResult = envSchema.safeParse(process.env);
   if (!parseResult.success) {
     console.error(parseResult.error);

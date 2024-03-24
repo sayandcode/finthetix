@@ -1,26 +1,27 @@
 import { z } from 'zod';
 import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
+import { BlockExplorerInfo, blockExplorerInfoSchema } from '~/lib/loaders/blockExplorerInfo/schema';
 import { ChainInfo, chainInfoSchema } from '~/lib/loaders/chainInfo/schema';
 import { DappInfo, dappInfoSchema } from '~/lib/loaders/dappInfo/schema';
 
 type EnvVars = {
   chainInfo: ChainInfo
   dappInfo: DappInfo
+  blockExplorerInfo: BlockExplorerInfo
 };
 
 const envVarsSchema = z.object({
   chainInfo: chainInfoSchema,
   dappInfo: dappInfoSchema,
+  blockExplorerInfo: blockExplorerInfoSchema,
 }) satisfies z.ZodType<EnvVars>;
 
 const ENV_VAR_KEY_ON_WINDOW_OBJ = 'ENV';
 
 export default function BrowserEnv() {
-  const { chainInfo, dappInfo } = useRootLoaderData();
+  const { chainInfo, dappInfo, blockExplorerInfo } = useRootLoaderData();
 
-  const envVars: EnvVars = {
-    chainInfo, dappInfo,
-  };
+  const envVars: EnvVars = { chainInfo, dappInfo, blockExplorerInfo };
 
   return (
     <script

@@ -237,13 +237,14 @@ export const metamaskApi = createApi({
         ),
 
         onQueryStarted: async (_, { queryFulfilled }) => {
+          const { blockExplorerInfo } = getBrowserEnv();
           try {
             const { data: txnHash } = await queryFulfilled;
             toast({
               variant: 'success',
               title: 'Staked successfully',
               description: (
-                <UnderlineLink href={`https://etherscan.io/tx/${txnHash}`}>
+                <UnderlineLink href={`${blockExplorerInfo.txUrl}${txnHash}`}>
                   View on block explorer
                 </UnderlineLink>
               ),
@@ -296,13 +297,14 @@ export const metamaskApi = createApi({
           ),
 
           onQueryStarted: async (_, { queryFulfilled }) => {
+            const { blockExplorerInfo } = getBrowserEnv();
             try {
               const { data: txnHash } = await queryFulfilled;
               toast({
                 variant: 'success',
                 title: 'Unstaked successfully',
                 description: (
-                  <UnderlineLink href={`https://etherscan.io/tx/${txnHash}`}>
+                  <UnderlineLink href={`${blockExplorerInfo.txUrl}${txnHash}`}>
                     View on block explorer
                   </UnderlineLink>
                 ),
@@ -351,13 +353,14 @@ export const metamaskApi = createApi({
         ),
 
         onQueryStarted: async (_, { queryFulfilled }) => {
+          const { blockExplorerInfo } = getBrowserEnv();
           try {
             const { data: txnHash } = await queryFulfilled;
             toast({
               variant: 'success',
               title: 'Withdrawal successful',
               description: (
-                <UnderlineLink href={`https://etherscan.io/tx/${txnHash}`}>
+                <UnderlineLink href={`${blockExplorerInfo.txUrl}${txnHash}`}>
                   View on block explorer
                 </UnderlineLink>
               ),
