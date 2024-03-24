@@ -164,7 +164,7 @@ export const metamaskApi = createApi({
       }),
 
     requestSampleTokens:
-      builder.mutation<void, void>({
+      builder.mutation<TxnHash, void>({
         queryFn: makeErrorableQueryFn(
           async () => {
             const fscHandler = await FinthetixStakingContractHandler.make();
@@ -184,11 +184,16 @@ export const metamaskApi = createApi({
         ),
 
         onQueryStarted: (_, { queryFulfilled }) => {
-          queryFulfilled.then(() => {
+          const { blockExplorerInfo } = getBrowserEnv();
+          queryFulfilled.then(({ data: txnHash }) => {
             toast({
               variant: 'success',
-              title: 'Request successful',
-              description: 'FST tokens have been added to your address',
+              title: 'Sample tokens granted',
+              description: (
+                <UnderlineLink href={`${blockExplorerInfo.txUrl}${txnHash}`}>
+                  View on block explorer
+                </UnderlineLink>
+              ),
             });
           }).catch((err) => {
             const isEndpointError = getIsEndpointError(err);

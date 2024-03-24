@@ -122,9 +122,10 @@ export default class FinthetixStakingContractHandler extends Base {
     return { stakedAmtVal, rewardAmtVal, stakingTokenBalVal };
   }
 
-  async requestSampleTokens() {
+  async requestSampleTokens(): Promise<TxnHash> {
     const txn = await this._stakingToken.requestSampleTokens();
     await txn.wait();
+    return txn.hash;
   }
 
   /**
