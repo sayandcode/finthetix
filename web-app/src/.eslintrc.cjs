@@ -83,7 +83,7 @@ module.exports = {
 
     // Node
     {
-      files: ['.eslintrc.js'],
+      files: ['.eslintrc.js', 'scripts/**/*.{c,}js'],
       env: {
         node: true,
       },

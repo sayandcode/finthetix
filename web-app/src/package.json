@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "prebuild": "rimraf dist",
-    "build": "remix build && esbuild server/index.ts --bundle --platform=node --target=node20.10 --outfile=dist/lambda.cjs",
+    "build": "remix build && node scripts/build.production.cjs",
     "dev": "remix dev --manual",
     "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
     "start": "remix-serve ./build/index.js",
