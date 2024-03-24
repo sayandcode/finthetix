@@ -1,5 +1,5 @@
 import { BrowserProvider } from 'ethers';
-import { ChainInfo } from '~/lib/loaders/chainInfo';
+import { ChainInfo } from '~/lib/loaders/chainInfo/schema';
 import { ActiveAddress } from '~/redux/features/user/slice';
 
 enum MetamaskHandlerErrors {

@@ -1,7 +1,7 @@
 import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
 import MetamaskHandler from '~/redux/services/lib/Metamask';
-import { DappInfo } from '~/lib/loaders/dappInfo';
-import { ChainInfo } from '~/lib/loaders/chainInfo';
+import { DappInfo } from '~/lib/loaders/dappInfo/schema';
+import { ChainInfo } from '~/lib/loaders/chainInfo/schema';
 import stringifyBigIntsInObj, { WithStringifiedBigints } from '~/lib/utils/stringifyBigIntsInObj';
 import { setIsUserLoading, type ActiveAddress, setActiveAddress } from '../features/user/slice';
 import { toast } from '~/components/ui/use-toast';

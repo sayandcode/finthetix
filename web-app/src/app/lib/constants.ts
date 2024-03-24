@@ -1,4 +1,4 @@
-import { ChainInfo } from './loaders/chainInfo';
+import { ChainInfo } from './loaders/chainInfo/schema';
 
 export const LOCAL_CHAIN_INFO: ChainInfo = {
   iconUrls: [],
