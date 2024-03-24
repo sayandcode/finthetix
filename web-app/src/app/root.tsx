@@ -24,6 +24,7 @@ import { getChainInfo } from './lib/loaders/chainInfo';
 import AutoLogin from './components/root/AutoLogin';
 import { ReadonlyFinthetixStakingContractHandler } from './contracts/FinthetixStakingContract';
 import stringifyBigIntsInObj from './lib/utils/stringifyBigIntsInObj';
+import BrowserEnv from './components/root/BrowserEnv';
 
 export const ROUTE_PATH = 'root';
 
@@ -58,6 +59,7 @@ export default function App() {
         <Links />
       </head>
       <body>
+        <BrowserEnv />
         <Toaster />
         <ReduxProvider store={store}>
           <ReduxInitializer store={store} />
