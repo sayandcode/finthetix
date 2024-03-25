@@ -1,7 +1,16 @@
 import { createRequestHandler } from '@remix-run/express';
 import express from 'express';
-import * as build from 'build/index';
 import { ServerBuild } from '@remix-run/node';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import * as build from '../build/index';
+
+const __filename
+  // Our production bundler (esbuild) and local production server bundler(tsx)
+  // both allow modern imports.
+  // @ts-expect-error Case is handled by bundler
+  = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const typedBuild = build as unknown as ServerBuild;
 
@@ -12,15 +21,9 @@ export default function makeApp(): express.Express {
     res.redirect('/static/favicon.ico');
   });
 
-  // The /static/* routing is configured on Cloudfront.
-  // This saves us from having to use `assetStoreBaseUrl` as an env
-  // variable on the lambda running express
-  // app.use('/static/*', (req, res) => {
-  //   const params = req.originalUrl.slice('/static/'.length);
-  //   res.redirect(`${assetStoreBaseUrl}/${params}`)
-  // });
+  app.use('/static', express.static(path.join(__dirname, '../public')));
 
-  app.use(
+  app.all(
     '*',
     createRequestHandler({
       build: typedBuild,

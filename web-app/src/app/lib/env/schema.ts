@@ -4,9 +4,7 @@ import { dappInfoSchema } from '../loaders/dappInfo/schema';
 import { blockExplorerInfoSchema } from '../loaders/blockExplorerInfo/schema';
 
 export const envSchema = z.object({
-  NODE_ENV: z.union([
-    z.literal('development'), z.literal('production'), z.literal('test'),
-  ]) satisfies z.ZodType<typeof process.env.NODE_ENV>,
+  NODE_ENV: z.enum(['production', 'development', 'test']) satisfies z.ZodType<typeof process.env.NODE_ENV>,
   TZ: z.string().optional() satisfies z.ZodType<typeof process.env.TZ>,
 
   // dappInfo
