@@ -8,6 +8,7 @@ import { useRequestMetamaskAddressMutation } from '~/redux/services/metamask';
 import useStickyNavbar from './lib/useStickyNavbar';
 import GithubIcon from '~/lib/assets/GithubIcon';
 import { FINTHETIX_GITHUB_URL } from '~/lib/constants';
+import { Link, useLocation } from '@remix-run/react';
 
 const OVERLAP_THRESHOLD_FOR_STICKY_NAVBAR = 1;
 
@@ -24,6 +25,9 @@ export default function Navbar() {
     else requestMetamaskAddress();
   }, [activeAddress, dispatch, requestMetamaskAddress]);
 
+  const { pathname } = useLocation();
+  const isOnDashboardPage = pathname === '/dashboard';
+
   return (
     <>
       <div ref={dummyRef} className="h-16 w-full absolute" />
@@ -34,8 +38,17 @@ export default function Navbar() {
             isNavStuck && 'shadow-sm shadow-primary-foreground/90')
         }
       >
-        <div className="mr-auto font-bold text-2xl cursor-default">Finthetix</div>
-        <a href={FINTHETIX_GITHUB_URL}>
+        {isOnDashboardPage
+          ? <div className="mr-auto font-bold text-2xl cursor-default">Finthetix</div>
+          : (
+            <Link
+              to={activeAddress ? '/dashboard' : '/'}
+              className="mr-auto font-bold text-2xl"
+            >
+              Finthetix
+            </Link>
+            )}
+        <a target="_blank" href={FINTHETIX_GITHUB_URL} rel="noreferrer">
           <GithubIcon />
         </a>
         <Button onClick={handleClick} className="min-w-16 hover:bg-destructive group">

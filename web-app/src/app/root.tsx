@@ -95,7 +95,7 @@ export function ErrorBoundary() {
         <Links />
       </head>
       <body>
-        <div className="h-screen flex flex-col justify-center items-center text-center gap-y-2">
+        <div className="h-dvh flex flex-col justify-center items-center text-center gap-y-2">
           <h1 className="text-3xl font-semibold">
             Oops! Something went wrong (
             {validatedError.status }
