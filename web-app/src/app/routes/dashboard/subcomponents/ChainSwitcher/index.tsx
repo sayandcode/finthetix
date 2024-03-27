@@ -1,4 +1,4 @@
-import { useAppDispatch, useAppSelector } from '~/redux/hooks';
+import { useAppSelector } from '~/redux/hooks';
 import { selectActiveChainId } from '~/redux/features/user/slice';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/ui/dialog';
 import { Button } from '~/components/ui/button';
@@ -16,10 +16,9 @@ export default function ChainSwitcher() {
 
   // redux related
   const activeChainId = useAppSelector(selectActiveChainId);
-  const dispatch = useAppDispatch();
 
-  useSyncInitialChainId(chainIdForFinthetixDapp, dispatch);
-  useAutoSwitchActiveChainId(chainIdForFinthetixDapp, dispatch);
+  useSyncInitialChainId();
+  useAutoSwitchActiveChainId();
   const { switchToCorrectChain, isSwitchingChain } = useSwitchToCorrectChain();
 
   const isDialogOpen

@@ -1,22 +1,24 @@
 import { useEffect } from 'react';
-import { ChainInfo } from '~/lib/loaders/chainInfo/schema';
-import { setActiveChainId } from '~/redux/features/user/slice';
-import { useAppDispatch } from '~/redux/hooks';
+import { selectIsUserLoggedIn, setActiveChainId } from '~/redux/features/user/slice';
+import { useAppDispatch, useAppSelector } from '~/redux/hooks';
 import MetamaskHandler from '~/redux/services/lib/Metamask';
 
 /**
  * Fetches the initial Id and sets it to global state
  */
-export default function useSyncInitialChainId(
-  chainIdForFinthetixDapp: ChainInfo['chainId'],
-  dispatch: ReturnType<typeof useAppDispatch>,
-) {
+export default function useSyncInitialChainId() {
+  const dispatch = useAppDispatch();
+  const isUserLoggedIn = useAppSelector(selectIsUserLoggedIn);
+
   useEffect(() => {
     (async () => {
+      // don't fetch the initial chainId until user is logged in
+      if (!isUserLoggedIn) return;
+
       const metamask = new MetamaskHandler();
       const newActiveChainId = await metamask.getActiveChainId();
 
       dispatch(setActiveChainId(newActiveChainId));
     })();
-  }, [dispatch, chainIdForFinthetixDapp]);
+  }, [dispatch, isUserLoggedIn]);
 }

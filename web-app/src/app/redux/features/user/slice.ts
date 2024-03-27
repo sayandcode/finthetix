@@ -74,7 +74,8 @@ export const selectActiveAddress
 export const selectIsUserLoading
   = (state: RootState) => state.user.isLoading;
 export const selectIsUserLoggedIn
-  = ({ user }: RootState) => !user.isLoading && !!user.activeAddress;
+  = ({ user }: RootState) =>
+    !user.isLoading && !user.isFromLocalStorage && !!user.activeAddress;
 export const selectIsUserFromLocalStorage
   = ({ user }: RootState) => user.isFromLocalStorage;
 export const selectActiveChainId

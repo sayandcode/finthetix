@@ -1,4 +1,10 @@
-import { selectActiveAddress, selectIsUserFromLocalStorage, setActiveAddress, setIsUserLoading } from '~/redux/features/user/slice';
+import {
+  selectActiveAddress,
+  selectIsUserFromLocalStorage,
+  selectIsUserLoggedIn,
+  setActiveAddress,
+  setIsUserLoading,
+} from '~/redux/features/user/slice';
 import { useEffect } from 'react';
 import { useRefreshActiveMetamaskAddressMutation } from '~/redux/services/metamask';
 import { useAppDispatch, useAppSelector } from '~/redux/hooks';
@@ -37,11 +43,15 @@ function useRefreshAddressWhenAutoLoggedIn() {
 
 /** Change account automatically when user changes on metamask */
 function useAutoAccountSwitch() {
+  const isUserLoggedIn = useAppSelector(selectIsUserLoggedIn);
   const [refreshActiveMetamaskAddress]
     = useRefreshActiveMetamaskAddressMutation();
 
   const dispatch = useAppDispatch();
   useEffect(() => {
+    // don't set up the account change handler until user is logged in
+    if (!isUserLoggedIn) return;
+
     const metamask = new MetamaskHandler();
     const refreshAddress = (lastActiveAddresses: string[]) => {
       const newAddress = lastActiveAddresses[0];
@@ -53,5 +63,5 @@ function useAutoAccountSwitch() {
     return () => {
       metamask.ethereum.off('accountsChanged', refreshAddress);
     };
-  }, [dispatch, refreshActiveMetamaskAddress]);
+  }, [dispatch, refreshActiveMetamaskAddress, isUserLoggedIn]);
 }

@@ -1,14 +1,20 @@
 import { useEffect } from 'react';
 import MetamaskHandler from '~/redux/services/lib/Metamask';
-import { useAppDispatch } from '~/redux/hooks';
-import { setActiveChainId } from '~/redux/features/user/slice';
-import { ChainInfo } from '~/lib/loaders/chainInfo/schema';
+import { useAppDispatch, useAppSelector } from '~/redux/hooks';
+import { selectIsUserLoggedIn, setActiveChainId } from '~/redux/features/user/slice';
+import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
 
-export default function useAutoSwitchActiveChainId(
-  chainIdForFinthetixDapp: ChainInfo['chainId'],
-  dispatch: ReturnType<typeof useAppDispatch>,
-) {
+export default function useAutoSwitchActiveChainId() {
+  const { chainInfo } = useRootLoaderData();
+  const chainIdForFinthetixDapp = chainInfo.chainId;
+
+  const dispatch = useAppDispatch();
+  const isUserLoggedIn = useAppSelector(selectIsUserLoggedIn);
+
   useEffect(() => {
+    // don't set up the chain change handler until user is logged in
+    if (!isUserLoggedIn) return;
+
     const metamask = new MetamaskHandler();
     const handleChainSwitched = (newChainId: string) => {
       dispatch(setActiveChainId(newChainId));
@@ -17,5 +23,5 @@ export default function useAutoSwitchActiveChainId(
     return () => {
       metamask.ethereum.off('chainChanged', handleChainSwitched);
     };
-  }, [chainIdForFinthetixDapp, dispatch]);
+  }, [isUserLoggedIn, chainIdForFinthetixDapp, dispatch]);
 }
