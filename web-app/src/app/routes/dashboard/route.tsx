@@ -2,24 +2,32 @@ import { MetaFunction } from '@remix-run/node';
 import { useNavigate } from '@remix-run/react';
 import { useEffect } from 'react';
 import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
-import { selectActiveAddress, selectIsUserLoading } from '~/redux/features/user/slice';
+import { selectActiveAddress, selectIsUserLoading, selectActiveChainId } from '~/redux/features/user/slice';
 import { useAppSelector } from '~/redux/hooks';
-import { useFinthetixStatusQuery, useLazyFetchFinthetixLogDataQuery, useLazyFetchFinthetixUserInfoQuery } from '~/redux/services/metamask';
+import { useLazyFinthetixStatusQuery, useLazyFetchFinthetixLogDataQuery, useLazyFetchFinthetixUserInfoQuery } from '~/redux/services/metamask';
 import SampleTokensBanner from './subcomponents/SampleTokensBanner';
 import StakingCard from './subcomponents/StakingCard';
 import RewardsCard from './subcomponents/RewardsCard';
 import UserLogDataGraph from './subcomponents/UserLogDataGraph';
 import CooldownBanner from './subcomponents/CooldownBanner';
 import useTimeLeftToCooldownMs from './lib/useTimeLeftToCooldownMs';
+import ChainSwitcher from './subcomponents/ChainSwitcher';
 
 export const meta: MetaFunction = () => {
   return [{ title: 'Dashboard | Finthetix', dashboard: 'View your stake and rewards' }];
 };
 
 export default function Route() {
-  const { finthetixMetadata } = useRootLoaderData();
-  const { data: _finthetixStatus = null, isFetching: isFetchingFinthetixStatus }
-    = useFinthetixStatusQuery();
+  // remix hooks
+  const navigate = useNavigate();
+  const { finthetixMetadata, chainInfo } = useRootLoaderData();
+
+  // RTK query hooks
+  const [
+    triggerFinthetixStatusQuery,
+    { data: _finthetixStatus = null, isFetching: isFetchingFinthetixStatus },
+  ]
+    = useLazyFinthetixStatusQuery();
   const finthetixStatus = isFetchingFinthetixStatus ? null : _finthetixStatus;
 
   const [
@@ -34,9 +42,14 @@ export default function Route() {
   ] = useLazyFetchFinthetixLogDataQuery();
   const logData = isFetchingLogData ? null : _logData;
 
+  // redux state hooks
   const activeAddress = useAppSelector(selectActiveAddress);
   const isUserLoading = useAppSelector(selectIsUserLoading);
-  const navigate = useNavigate();
+  const activeChainId = useAppSelector(selectActiveChainId);
+
+  // convenience variables
+  const chainIdForFinthetixDapp = chainInfo.chainId;
+  const isUserInCorrectChain = activeChainId !== chainIdForFinthetixDapp;
 
   // fetch the users' info
   useEffect(() => {
@@ -49,7 +62,11 @@ export default function Route() {
       return;
     }
 
+    // don't load data until user is in correct chain
+    if (isUserInCorrectChain) return;
+
     // else fetch data
+    triggerFinthetixStatusQuery(undefined, true);
     triggerFetchUserInfo(undefined, true);
     triggerFetchLogData(undefined, true);
   },
@@ -57,8 +74,10 @@ export default function Route() {
     activeAddress,
     navigate,
     isUserLoading,
+    isUserInCorrectChain,
     triggerFetchUserInfo,
     triggerFetchLogData,
+    triggerFinthetixStatusQuery,
   ]);
 
   const timeLeftToCooldownMs
@@ -67,6 +86,7 @@ export default function Route() {
 
   return (
     <div className="m-4">
+      <ChainSwitcher />
       <SampleTokensBanner />
       <CooldownBanner timeLeftToCooldownMs={timeLeftToCooldownMs} />
       <div className="flex flex-col sm:flex-row gap-y-2 sm:gap-x-2 mb-4">

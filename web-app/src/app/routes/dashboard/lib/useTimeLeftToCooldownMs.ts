@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 const INTERVAL_TO_RUN_TIMER_MS = 1000;
 
 export default function useTimeLeftToCooldownMs(
-  cooldownAtMs: number = -Infinity,
+  cooldownAtMs: number = -Infinity, // assume we are not cooling down
 ) {
   const [timeLeftToCooldownMs, setTimeLeftToCooldownMs]
     = useState(() => getTimeFromNowToCooldownMs(cooldownAtMs));

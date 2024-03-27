@@ -11,12 +11,14 @@ export type UserState = {
   isFromLocalStorage: boolean
   activeAddress: ActiveAddress
   isLoading: boolean
+  activeChainId: string | null // null indicates that it's still loading
 };
 
 const initialState: UserState = {
   isFromLocalStorage: false,
   activeAddress: null,
   isLoading: true,
+  activeChainId: null,
 };
 
 export const userSlice = createSlice({
@@ -33,6 +35,11 @@ export const userSlice = createSlice({
     setIsUserLoading: (state, action: PayloadAction<UserState['isLoading']>) => {
       state.isLoading = action.payload;
     },
+
+    setActiveChainId: (state, action: PayloadAction<NonNullable<UserState['activeChainId']>>) => {
+      state.activeChainId = action.payload;
+    },
+
     remember: (state, action: PayloadAction<DataToPersist>) => {
       const activeAddress = action.payload?.activeAddress;
       state.activeAddress = activeAddress || null;
@@ -42,7 +49,8 @@ export const userSlice = createSlice({
 });
 
 /* Actions */
-export const { setActiveAddress, setIsUserLoading } = userSlice.actions;
+export const { setActiveAddress, setIsUserLoading, setActiveChainId }
+  = userSlice.actions;
 
 /* Persister */
 type DataToPersist = { activeAddress: UserState['activeAddress'] } | null;
@@ -69,6 +77,8 @@ export const selectIsUserLoggedIn
   = ({ user }: RootState) => !user.isLoading && !!user.activeAddress;
 export const selectIsUserFromLocalStorage
   = ({ user }: RootState) => user.isFromLocalStorage;
+export const selectActiveChainId
+  = ({ user }: RootState) => user.activeChainId;
 
 /* Reducer */
 const userReducer = userSlice.reducer;

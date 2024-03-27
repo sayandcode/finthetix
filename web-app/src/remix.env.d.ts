@@ -1,18 +1,16 @@
 /// <reference types="@remix-run/dev" />
 /// <reference types="@remix-run/node" />
 
-type AccountsChangedEventName = 'accountsChanged';
+type MetamaskEventHandler<Name extends string, CallbackArgs extends unknown[]>
+  = (eventName: Name, callback: (...args: CallbackArgs) => void) => void;
+
+type AccountsChangedEventHandler = MetamaskEventHandler<'accountsChanged', [lastActiveAddresses: string[]]>;
+type ChainChangedEventHandler = MetamaskEventHandler<'chainChanged', [newChainId: string]>;
 
 interface Window {
   ethereum?:
     import('ethers').Eip1193Provider & {
-      on: (
-        eventName: AccountsChangedEventName,
-        callbackFn: (lastActiveAddresses: string[]) => void
-      ) => void
-      off: (
-        eventName: AccountsChangedEventName,
-        callbackFn: (lastActiveAddresses: string[]) => void
-      ) => void
+      on: AccountsChangedEventHandler & ChainChangedEventHandler
+      off: AccountsChangedEventHandler & ChainChangedEventHandler
     }
 }

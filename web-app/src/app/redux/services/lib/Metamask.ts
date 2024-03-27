@@ -42,4 +42,9 @@ export default class MetamaskHandler {
     const activeAddress = accounts[0] || null;
     return activeAddress;
   }
+
+  async getActiveChainId(): Promise<ChainInfo['chainId']> {
+    const chainId = await this.provider.send('eth_chainId', []);
+    return chainId;
+  }
 }

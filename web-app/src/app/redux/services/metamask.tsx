@@ -470,5 +470,5 @@ export const {
   useUnstakeWithFinthetixMutation,
   useWithdrawRewardsFromFinthetixMutation,
   useLazyFetchFinthetixLogDataQuery,
-  useFinthetixStatusQuery,
+  useLazyFinthetixStatusQuery,
 } = metamaskApi;
