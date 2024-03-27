@@ -36,7 +36,7 @@ export const userSlice = createSlice({
       state.isLoading = action.payload;
     },
 
-    setActiveChainId: (state, action: PayloadAction<NonNullable<UserState['activeChainId']>>) => {
+    setActiveChainId: (state, action: PayloadAction<UserState['activeChainId']>) => {
       state.activeChainId = action.payload;
     },
 

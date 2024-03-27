@@ -49,7 +49,7 @@ export default function Route() {
 
   // convenience variables
   const chainIdForFinthetixDapp = chainInfo.chainId;
-  const isUserInCorrectChain = activeChainId !== chainIdForFinthetixDapp;
+  const isUserInWrongChain = activeChainId !== chainIdForFinthetixDapp;
 
   // fetch the users' info
   useEffect(() => {
@@ -63,7 +63,7 @@ export default function Route() {
     }
 
     // don't load data until user is in correct chain
-    if (isUserInCorrectChain) return;
+    if (isUserInWrongChain) return;
 
     // else fetch data
     triggerFinthetixStatusQuery(undefined, true);
@@ -74,7 +74,7 @@ export default function Route() {
     activeAddress,
     navigate,
     isUserLoading,
-    isUserInCorrectChain,
+    isUserInWrongChain,
     triggerFetchUserInfo,
     triggerFetchLogData,
     triggerFinthetixStatusQuery,

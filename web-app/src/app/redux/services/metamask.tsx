@@ -1,13 +1,14 @@
 import { createApi, fakeBaseQuery } from '@reduxjs/toolkit/query/react';
 import MetamaskHandler from '~/redux/services/lib/Metamask';
 import stringifyBigIntsInObj, { WithStringifiedBigints } from '~/lib/utils/stringifyBigIntsInObj';
-import { setIsUserLoading, type ActiveAddress, setActiveAddress } from '../features/user/slice';
+import { setIsUserLoading, type ActiveAddress, setActiveAddress, setActiveChainId } from '../features/user/slice';
 import { toast } from '~/components/ui/use-toast';
 import FinthetixStakingContractHandler, { FinthetixStatus, FinthetixUserData, HistoricalRewardAmtData, HistoricalStakedAmtData, TxnHash } from '~/contracts/FinthetixStakingContract';
 import { UI_ERRORS } from '~/lib/ui-errors';
 import { getIsEndpointError, makeErrorableQueryFn } from './lib/utils';
 import UnderlineLink from '~/components/ui/underline-link';
 import { getBrowserEnv } from '~/components/root/BrowserEnv';
+import { ChainInfo } from '~/lib/loaders/chainInfo/schema';
 
 const FALLBACK_ERROR_DESCRIPTION = 'Something went wrong when interacting with the Blockchain';
 
@@ -458,6 +459,48 @@ export const metamaskApi = createApi({
 
         providesTags: ['FinthetixStatus'],
       }),
+
+    syncActiveChainId:
+      builder.mutation<ChainInfo['chainId'], void>({
+        queryFn: makeErrorableQueryFn(
+          async () => {
+            const metamaskHandler = new MetamaskHandler();
+            return metamaskHandler.getActiveChainId();
+          },
+          (internalErr) => {
+            // default error paths
+            if (internalErr.startsWith('Metamask not installed'))
+              return 'Install Metamask browser extension and try again';
+
+            // as of now the following request has no expected error paths
+            // other than default paths which are handled above
+            else
+              return FALLBACK_ERROR_DESCRIPTION;
+          },
+          FALLBACK_ERROR_DESCRIPTION,
+        ),
+
+        onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
+          try {
+            const { data: newActiveChainId } = await queryFulfilled;
+            dispatch(setActiveChainId(newActiveChainId));
+          }
+          catch (err) {
+            const isEndpointError = getIsEndpointError(err);
+            const errDescription
+              = isEndpointError ? err.error : FALLBACK_ERROR_DESCRIPTION;
+            toast({
+              variant: 'destructive',
+              title: UI_ERRORS.ERR9,
+              description: errDescription,
+            });
+            dispatch(setActiveChainId(null));
+          }
+        },
+        // refresh everything when chainId i.e. RPC updates
+        invalidatesTags: ['User', 'FinthetixStatus'],
+      }),
+
   }),
 });
 
@@ -471,4 +514,5 @@ export const {
   useWithdrawRewardsFromFinthetixMutation,
   useLazyFetchFinthetixLogDataQuery,
   useLazyFinthetixStatusQuery,
+  useSyncActiveChainIdMutation,
 } = metamaskApi;

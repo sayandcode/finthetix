@@ -7,4 +7,5 @@ export const UI_ERRORS = {
   ERR6: 'ERR6: Could not unstake tokens',
   ERR7: 'ERR7: Could not withdraw rewards',
   ERR8: 'ERR8: Could not fetch Finthetix Status',
+  ERR9: 'ERR9: Could not synchronize the Active Chain ID',
 } as const;
