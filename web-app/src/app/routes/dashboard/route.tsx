@@ -1,4 +1,4 @@
-import { MetaFunction } from '@remix-run/node';
+import { HeadersFunction, MetaFunction } from '@remix-run/node';
 import { useNavigate } from '@remix-run/react';
 import { useEffect } from 'react';
 import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
@@ -12,9 +12,18 @@ import UserLogDataGraph from './subcomponents/UserLogDataGraph';
 import CooldownBanner from './subcomponents/CooldownBanner';
 import useTimeLeftToCooldownMs from './lib/useTimeLeftToCooldownMs';
 import ChainSwitcher from './subcomponents/ChainSwitcher';
+import getCacheConfig from '~/lib/loaders/cacheConfig';
 
 export const meta: MetaFunction = () => {
   return [{ title: 'Dashboard | Finthetix', dashboard: 'View your stake and rewards' }];
+};
+
+export const headers: HeadersFunction = () => {
+  const { serverMaxAge, staleWhileRevalidate } = getCacheConfig();
+
+  return {
+    'Cache-Control': `s-maxage=${serverMaxAge}; stale-while-revalidate=${staleWhileRevalidate}`,
+  };
 };
 
 export default function Route() {

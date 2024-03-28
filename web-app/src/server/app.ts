@@ -4,6 +4,7 @@ import { ServerBuild } from '@remix-run/node';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as build from '../build/index';
+import getCacheConfig from '~/lib/loaders/cacheConfig';
 
 const __filename
   // Our production bundler (esbuild) and local production server bundler(tsx)
@@ -18,6 +19,8 @@ export default function makeApp(): express.Express {
   const app = express();
 
   app.get('/favicon.ico', (req, res) => {
+    const { serverMaxAge, staleWhileRevalidate } = getCacheConfig();
+    res.setHeader('Cache-Control', `s-maxage=${serverMaxAge}; stale-while-revalidate=${staleWhileRevalidate}`);
     res.redirect('/static/favicon.ico');
   });
 

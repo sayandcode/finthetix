@@ -10,4 +10,4 @@ const urlSchema = z.string().url().endsWith('/');
 export const blockExplorerInfoSchema = z.object({
   txUrl: urlSchema,
   addressUrl: urlSchema,
-});
+}) satisfies z.ZodType<BlockExplorerInfo>;

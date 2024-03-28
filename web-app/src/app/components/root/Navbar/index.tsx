@@ -43,6 +43,7 @@ export default function Navbar() {
           : (
             <Link
               to={activeAddress ? '/dashboard' : '/'}
+              prefetch="intent"
               className="mr-auto font-bold text-2xl"
             >
               Finthetix

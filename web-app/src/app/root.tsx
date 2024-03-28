@@ -26,6 +26,7 @@ import { ReadonlyFinthetixStakingContractHandler } from './contracts/FinthetixSt
 import stringifyBigIntsInObj from './lib/utils/stringifyBigIntsInObj';
 import BrowserEnv from './components/root/BrowserEnv';
 import getBlockExplorerInfo from './lib/loaders/blockExplorerInfo';
+import getCacheConfig from './lib/loaders/cacheConfig';
 
 export const ROUTE_PATH = 'root';
 
@@ -46,7 +47,18 @@ export const loader = async () => {
     );
   const finthetixMetadata
     = stringifyBigIntsInObj(await fscReadonlyHandler.getMetadata());
-  return json({ chainInfo, dappInfo, finthetixMetadata, blockExplorerInfo });
+
+  // cache info
+  const { serverMaxAge, staleWhileRevalidate } = getCacheConfig();
+
+  return json(
+    { chainInfo, dappInfo, finthetixMetadata, blockExplorerInfo },
+    {
+      headers: {
+        'Cache-Control': `s-maxage=${serverMaxAge}; stale-while-revalidate=${staleWhileRevalidate}`,
+      },
+    },
+  );
 };
 
 export default function App() {

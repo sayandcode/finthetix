@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { chainInfoSchema } from '../loaders/chainInfo/schema';
 import { dappInfoSchema } from '../loaders/dappInfo/schema';
 import { blockExplorerInfoSchema } from '../loaders/blockExplorerInfo/schema';
+import { cacheAgeSchema } from '../loaders/cacheConfig/schema';
 
 export const envSchema = z.object({
   NODE_ENV: z.enum(['production', 'development', 'test']) satisfies z.ZodType<typeof process.env.NODE_ENV>,
@@ -21,4 +22,7 @@ export const envSchema = z.object({
   // blockExplorer
   BLOCK_EXPLORER_TX_URL: blockExplorerInfoSchema.shape.txUrl,
   BLOCK_EXPLORER_ADDRESS_URL: blockExplorerInfoSchema.shape.addressUrl,
+
+  // cache-control
+  STATIC_CACHE_TIME_IN_S: cacheAgeSchema,
 });

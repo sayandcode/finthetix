@@ -1,6 +1,8 @@
 import UnderlineLink from '~/components/ui/underline-link';
 import img404 from './assets/404-robot.svg';
 import { MetaFunction, useLocation } from '@remix-run/react';
+import { HeadersFunction } from '@remix-run/node';
+import getCacheConfig from '~/lib/loaders/cacheConfig';
 
 export const meta: MetaFunction = ({ location }) => [
   { title: 'Page not found | Finthetix' },
@@ -9,6 +11,14 @@ export const meta: MetaFunction = ({ location }) => [
     content: `'${location.pathname}' is not a valid page`,
   },
 ];
+
+export const headers: HeadersFunction = () => {
+  const { serverMaxAge, staleWhileRevalidate } = getCacheConfig();
+
+  return {
+    'Cache-Control': `s-maxage=${serverMaxAge}; stale-while-revalidate=${staleWhileRevalidate}`,
+  };
+};
 
 export default function SplatRoute() {
   const { pathname } = useLocation();
