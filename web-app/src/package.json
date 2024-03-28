@@ -8,7 +8,7 @@
     "build": "remix build && node scripts/build.production.cjs",
     "dev": "remix dev --manual",
     "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
-    "start": "NODE_ENV=production env-cmd -f .env tsx server/index.production.local.ts",
+    "start": "NODE_ENV=production IS_RUNNING_LOCALLY=true env-cmd -f .env tsx server/index.production.local.ts",
     "typecheck": "tsc",
     "compile-contracts": "cd ../../contracts && forge build",
     "generate-abi-types": "typechain --target ethers-v6 --out-dir \"app/contracts/types\" \"../../contracts/out/**/*.json\"",

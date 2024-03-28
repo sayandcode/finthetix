@@ -25,4 +25,8 @@ export const envSchema = z.object({
 
   // cache-control
   STATIC_CACHE_TIME_IN_S: cacheAgeSchema,
+
+  // express server config
+  /// used to run production server locally (serve static assets)
+  IS_RUNNING_LOCALLY: z.enum(['true', 'false']).transform(val => val === 'true').optional(),
 });
