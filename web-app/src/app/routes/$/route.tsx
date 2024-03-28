@@ -1,6 +1,14 @@
 import UnderlineLink from '~/components/ui/underline-link';
 import img404 from './assets/404-robot.svg';
-import { useLocation } from '@remix-run/react';
+import { MetaFunction, useLocation } from '@remix-run/react';
+
+export const meta: MetaFunction = ({ location }) => [
+  { title: 'Page not found | Finthetix' },
+  {
+    name: 'description',
+    content: `'${location.pathname}' is not a valid page`,
+  },
+];
 
 export default function SplatRoute() {
   const { pathname } = useLocation();
@@ -16,7 +24,7 @@ export default function SplatRoute() {
       <h1 className="text-2xl md:text-3xl">
         &apos;
         {pathname}
-        &apos; Route not found
+        &apos; route not found
       </h1>
     </div>
   );
