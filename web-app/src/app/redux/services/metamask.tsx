@@ -51,6 +51,8 @@ export const metamaskApi = createApi({
               /reason="rejected".*wallet_switchEthereumChain/,
             ))
               return 'Please accept the request to switch to the correct chain';
+            else if (internalErr === 'User rejected switching to previously added network')
+              return 'Please accept the request to switch to the correct chain';
             else
               return FALLBACK_ERROR_DESCRIPTION;
           },
