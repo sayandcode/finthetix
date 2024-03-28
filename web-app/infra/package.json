@@ -9,9 +9,9 @@
     "build": "cd ../src && npm run build",
     "predeploy": "npm run build",
     "predeploy:ci": "npm run build",
-    "deploy": "cdk deploy",
-    "deploy:ci": "cdk deploy --require-approval never",
-    "undeploy": "cdk destroy",
+    "deploy": "env-cmd -f .env cdk deploy",
+    "deploy:ci": "env-cmd -f .env cdk deploy --require-approval never",
+    "undeploy": "env-cmd -f .env cdk destroy",
     "lint": "eslint . --ext '.ts' --ignore-path .gitignore"
   },
   "devDependencies": {
@@ -20,6 +20,7 @@
     "@typescript-eslint/eslint-plugin": "^7.3.1",
     "@typescript-eslint/parser": "^7.3.1",
     "aws-cdk": "2.133.0",
+    "env-cmd": "^10.1.0",
     "eslint": "^8.57.0",
     "typescript": "~5.3.3"
   },
