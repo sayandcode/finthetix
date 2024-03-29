@@ -55,6 +55,11 @@ jobs:
         with:
           version: nightly
 
+      - name: Setup Node v20.10
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.10
+
       - name: Install node dependencies
         run: |
           cd web-app/infra
