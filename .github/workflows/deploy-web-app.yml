@@ -1,0 +1,29 @@
+name: Deploy Web app and Infrastructure
+on: workflow_dispatch
+
+jobs:
+  main:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # We need foundry for contract types
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Install node dependencies
+        run: |
+          cd web-app/infra
+          npm ci
+
+      - name: Deploy
+        env:
+          WEB_APP_INFRA_ENV: ${{ secrets.WEB_APP_INFRA_ENV }}
+        run: |
+          cd web-app/infra
+          echo "$WEB_APP_INFRA_ENV" > .env
+          npm run deploy
