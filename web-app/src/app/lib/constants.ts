@@ -12,6 +12,7 @@ export const LOCAL_CHAIN_INFO: ChainInfo = {
   ],
   chainId: `0x${(31337).toString(16)}`,
   chainName: 'Anvil',
+  blockExplorerUrls: [],
 };
 
 export const FINTHETIX_GITHUB_URL = 'https://www.github.com/sayandcode/finthetix';

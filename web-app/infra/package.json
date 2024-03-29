@@ -6,13 +6,15 @@
   },
   "scripts": {
     "preinstall": "cd ../src && npm ci",
-    "build": "cd ../src && npm run build",
+    "prebuild": "cd ../src && npm run build",
+    "build": "env-cmd -f .env cdk synth -q",
     "predeploy": "npm run build",
     "predeploy:ci": "npm run build",
     "deploy": "env-cmd -f .env cdk deploy",
     "deploy:ci": "env-cmd -f .env cdk deploy --require-approval never",
     "undeploy": "env-cmd -f .env cdk destroy",
-    "lint": "eslint . --ext '.ts' --ignore-path .gitignore"
+    "lint": "eslint . --ext '.ts' --ignore-path .gitignore",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@stylistic/eslint-plugin": "^1.7.0",
