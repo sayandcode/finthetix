@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { envSchema } from '~/lib/env/schema';
 import useRootLoaderData from '~/lib/hooks/useRootLoaderData';
 import { BlockExplorerInfo, blockExplorerInfoSchema } from '~/lib/loaders/blockExplorerInfo/schema';
 import { ChainInfo, chainInfoSchema } from '~/lib/loaders/chainInfo/schema';
@@ -8,20 +9,32 @@ type EnvVars = {
   chainInfo: ChainInfo
   dappInfo: DappInfo
   blockExplorerInfo: BlockExplorerInfo
+  rpcQueryMaxBlockCount: z.infer<typeof envSchema['shape']['RPC_QUERY_MAX_BLOCK_COUNT']>
 };
 
-const envVarsSchema = z.object({
+const browserEnvVarsSchema = z.object({
   chainInfo: chainInfoSchema,
   dappInfo: dappInfoSchema,
   blockExplorerInfo: blockExplorerInfoSchema,
+  rpcQueryMaxBlockCount: envSchema.shape.RPC_QUERY_MAX_BLOCK_COUNT,
 }) satisfies z.ZodType<EnvVars>;
 
 const ENV_VAR_KEY_ON_WINDOW_OBJ = 'ENV';
 
 export default function BrowserEnv() {
-  const { chainInfo, dappInfo, blockExplorerInfo } = useRootLoaderData();
+  const {
+    chainInfo,
+    dappInfo,
+    blockExplorerInfo,
+    rpcQueryMaxBlockCount,
+  } = useRootLoaderData();
 
-  const envVars: EnvVars = { chainInfo, dappInfo, blockExplorerInfo };
+  const envVars: EnvVars = {
+    chainInfo,
+    dappInfo,
+    blockExplorerInfo,
+    rpcQueryMaxBlockCount,
+  };
 
   return (
     <script
@@ -46,5 +59,5 @@ export function getBrowserEnv(): EnvVars {
     );
   }
 
-  return envVarsSchema.parse(window.ENV);
+  return browserEnvVarsSchema.parse(window.ENV);
 }

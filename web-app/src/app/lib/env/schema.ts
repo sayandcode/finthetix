@@ -26,6 +26,11 @@ export const envSchema = z.object({
   // cache-control
   STATIC_CACHE_TIME_IN_S: cacheAgeSchema,
 
+  // rpc server
+  /** The maximum number of blocks queryable by the RPC  */
+  RPC_QUERY_MAX_BLOCK_COUNT:
+    z.coerce.number().gt(0),
+
   // express server config
   /// used to run production server locally (serve static assets)
   IS_RUNNING_LOCALLY: z.enum(['true', 'false']).transform(val => val === 'true').optional(),

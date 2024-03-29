@@ -393,12 +393,23 @@ export const metamaskApi = createApi({
       builder.query<FinthetixLogDataQueryResult, void>({
         queryFn: makeErrorableQueryFn(
           async () => {
-            const fscHandler = await FinthetixStakingContractHandler.make();
+            const metamaskHandler = new MetamaskHandler();
+            const fscHandler
+              = await FinthetixStakingContractHandler.make(metamaskHandler);
 
+            const lastBlockNo = await metamaskHandler.provider.getBlockNumber();
+            const { rpcQueryMaxBlockCount } = getBrowserEnv();
+            const earliestQueryableBlock = lastBlockNo - rpcQueryMaxBlockCount;
+            const logStartingBlock
+              = earliestQueryableBlock < 0 ? 0 : earliestQueryableBlock;
             const historicalStakedAmtPromise
-              = fscHandler.getHistoricalStakedAmt();
+              = fscHandler.getHistoricalStakedAmt(
+                logStartingBlock, lastBlockNo,
+              );
             const historicalRewardAmtPromise
-              = fscHandler.getHistoricalRewardAmt();
+              = fscHandler.getHistoricalRewardAmt(
+                logStartingBlock, lastBlockNo,
+              );
             const [historicalStakedAmt, historicalRewardAmt]
               = await Promise.all(
                 [historicalStakedAmtPromise, historicalRewardAmtPromise],

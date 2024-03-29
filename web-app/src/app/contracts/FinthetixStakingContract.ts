@@ -90,8 +90,7 @@ class Base {
  * this class
  */
 export default class FinthetixStakingContractHandler extends Base {
-  static async make() {
-    const metamaskHandler = new MetamaskHandler();
+  static async make(metamaskHandler: MetamaskHandler = new MetamaskHandler()) {
     const signer = await metamaskHandler.provider.getSigner();
     // can read from env, as this is used only on client
     const { dappInfo } = getBrowserEnv();
@@ -161,11 +160,14 @@ export default class FinthetixStakingContractHandler extends Base {
     return txn.hash;
   }
 
-  async getHistoricalStakedAmt(): Promise<HistoricalStakedAmtData> {
+  async getHistoricalStakedAmt(fromBlockNo: number, toBlockNo: number):
+  Promise<HistoricalStakedAmtData> {
     const senderAddr = this._signer.address;
     const eventFilter
       = this._stakingContract.filters.StakeBalChanged(senderAddr);
-    const eventLogs = await this._stakingContract.queryFilter(eventFilter);
+    const eventLogs = await this._stakingContract.queryFilter(
+      eventFilter, fromBlockNo, toBlockNo,
+    );
 
     // process the logs
     const decodeLogsPromises = eventLogs.map(async (log) => {
@@ -189,11 +191,14 @@ export default class FinthetixStakingContractHandler extends Base {
     return decodedLogs;
   }
 
-  async getHistoricalRewardAmt(): Promise<HistoricalRewardAmtData> {
+  async getHistoricalRewardAmt(fromBlockNo: number, toBlockNo: number):
+  Promise<HistoricalRewardAmtData> {
     const senderAddr = this._signer.address;
     const eventFilter
       = this._stakingContract.filters.UserRewardUpdated(senderAddr);
-    const eventLogs = await this._stakingContract.queryFilter(eventFilter);
+    const eventLogs = await this._stakingContract.queryFilter(
+      eventFilter, fromBlockNo, toBlockNo,
+    );
 
     // process the logs
     const decodeLogPromises = eventLogs.map(async (log) => {

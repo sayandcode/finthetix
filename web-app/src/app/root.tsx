@@ -27,6 +27,7 @@ import stringifyBigIntsInObj from './lib/utils/stringifyBigIntsInObj';
 import BrowserEnv from './components/root/BrowserEnv';
 import getBlockExplorerInfo from './lib/loaders/blockExplorerInfo';
 import getCacheConfig from './lib/loaders/cacheConfig';
+import getServerEnv from './lib/env';
 
 export const ROUTE_PATH = 'root';
 
@@ -48,11 +49,18 @@ export const loader = async () => {
   const finthetixMetadata
     = stringifyBigIntsInObj(await fscReadonlyHandler.getMetadata());
 
-  // cache info
   const { serverMaxAge, staleWhileRevalidate } = getCacheConfig();
 
+  const { RPC_QUERY_MAX_BLOCK_COUNT: rpcQueryMaxBlockCount } = getServerEnv();
+
   return json(
-    { chainInfo, dappInfo, finthetixMetadata, blockExplorerInfo },
+    {
+      chainInfo,
+      dappInfo,
+      finthetixMetadata,
+      blockExplorerInfo,
+      rpcQueryMaxBlockCount,
+    },
     {
       headers: {
         'Cache-Control': `s-maxage=${serverMaxAge}; stale-while-revalidate=${staleWhileRevalidate}`,

@@ -46,9 +46,9 @@ export default function StakeAndRewardAmtGraphs(
   const isDatasetEmpty = graphData.readableTimestamps.length === 0;
 
   return (
-    <div className="w-full h-72 bg-white shadow-sm border border-black px-4 py-6 relative flex justify-center items-center">
+    <>
       {isDatasetEmpty ? <div className="absolute "><EmptyChartDatasetMsg /></div> : null}
       <Chart type="line" data={data} options={options} />
-    </div>
+    </>
   );
 }

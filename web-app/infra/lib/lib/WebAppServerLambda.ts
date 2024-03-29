@@ -21,6 +21,8 @@ const lambdaEnv = {
           JSON.stringify(parsedEnv.STATIC_CACHE_TIME_IN_S),
   BLOCK_EXPLORER_ADDRESS_URL: parsedEnv.BLOCK_EXPLORER_ADDRESS_URL,
   BLOCK_EXPLORER_TX_URL: parsedEnv.BLOCK_EXPLORER_TX_URL,
+  RPC_QUERY_MAX_BLOCK_COUNT:
+    JSON.stringify(parsedEnv.RPC_QUERY_MAX_BLOCK_COUNT),
 } satisfies {
   [k in keyof AppEnv]:
   AppEnv extends object ? string : string | undefined
