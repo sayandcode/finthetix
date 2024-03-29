@@ -10,6 +10,7 @@ export type ChainInfo = {
   rpcUrls: [string, ...string[]]
   chainId: string
   chainName: string
+  blockExplorerUrls: string[]
 };
 
 export const chainInfoSchema = z.object({
@@ -22,4 +23,5 @@ export const chainInfoSchema = z.object({
   rpcUrls: z.array(z.string()).nonempty(),
   chainId: z.string(),
   chainName: z.string(),
+  blockExplorerUrls: z.array(z.string()),
 }) satisfies z.ZodType<ChainInfo>;
