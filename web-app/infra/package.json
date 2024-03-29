@@ -1,0 +1,36 @@
+{
+  "name": "infra",
+  "version": "0.1.0",
+  "bin": {
+    "infra": "bin/infra.js"
+  },
+  "scripts": {
+    "preinstall": "cd ../src && npm ci",
+    "prebuild": "cd ../src && npm run build",
+    "build": "env-cmd -f .env cdk synth -q",
+    "predeploy": "npm run build",
+    "predeploy:ci": "npm run build",
+    "deploy": "env-cmd -f .env cdk deploy",
+    "deploy:ci": "env-cmd -f .env cdk deploy --require-approval never",
+    "undeploy": "env-cmd -f .env cdk destroy",
+    "lint": "eslint . --ext '.ts' --ignore-path .gitignore",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@stylistic/eslint-plugin": "^1.7.0",
+    "@types/node": "20.11.19",
+    "@typescript-eslint/eslint-plugin": "^7.3.1",
+    "@typescript-eslint/parser": "^7.3.1",
+    "aws-cdk": "2.133.0",
+    "env-cmd": "^10.1.0",
+    "eslint": "^8.57.0",
+    "typescript": "~5.3.3"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "2.133.0",
+    "constructs": "^10.0.0",
+    "source-map-support": "^0.5.21",
+    "tsx": "^4.7.1",
+    "zod": "^3.22.4"
+  }
+}

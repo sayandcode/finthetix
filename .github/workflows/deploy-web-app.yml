@@ -1,0 +1,45 @@
+name: Deploy Web app and Infrastructure
+on: workflow_dispatch
+
+permissions: 
+  id-token: write
+  contents: read
+
+jobs:
+  main:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node v20.10
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.10
+
+      # We need foundry for contract types
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Setup AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ap-south-1
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          role-session-name: FinthetixDeploymentSession
+
+      - name: Install node dependencies
+        run: |
+          cd web-app/infra
+          npm ci
+
+      - name: Deploy
+        env:
+          WEB_APP_INFRA_ENV: ${{ secrets.WEB_APP_INFRA_ENV }}
+        run: |
+          cd web-app/infra
+          echo "$WEB_APP_INFRA_ENV" > .env
+          npm run deploy

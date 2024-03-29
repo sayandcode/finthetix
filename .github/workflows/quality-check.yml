@@ -1,0 +1,88 @@
+name: Quality Check
+
+on: 
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - edited
+
+jobs: 
+  test-contracts:
+    name: Test contracts
+    env:
+      FOUNDRY_PROFILE: ci
+    defaults:
+      run:
+        working-directory: contracts
+    strategy:
+      fail-fast: true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          sparse-checkout: contracts
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Run Forge build
+        run: |
+          forge --version
+          forge build --sizes
+        id: build
+
+      - name: Run Forge tests
+        run: |
+          forge test -vvv
+        id: test
+
+  build-typecheck-lint:
+    name: Build, typecheck and lint web app
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # We need foundry for contract types
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Setup Node v20.10
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.10
+
+      - name: Install node dependencies
+        run: |
+          cd web-app/infra
+          npm ci
+
+      - name: Build infra and src
+        env:
+          WEB_APP_INFRA_ENV: ${{ secrets.WEB_APP_INFRA_ENV }}
+        run: |
+          cd web-app/infra
+          echo "$WEB_APP_INFRA_ENV" > .env
+          npm run build
+
+      - name: Lint
+        run: |
+          cd web-app/infra
+          npm run lint
+          cd ../src
+          npm run lint
+
+      - name: Typecheck
+        run: |
+          cd web-app/infra
+          npm run typecheck
+          cd ../src
+          npm run typecheck

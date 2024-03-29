@@ -7,8 +7,7 @@ import {FinthetixStakingContract} from "src/FinthetixStakingContract.sol";
 
 contract DappDeployer is Script {
     function run() public returns (address stakingTokenAddr, address stakingContractAddr, address rewardTokenAddr) {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
+        vm.startBroadcast();
         FinthetixStakingToken stakingToken = new FinthetixStakingToken();
         FinthetixStakingContract stakingContract = new FinthetixStakingContract(address(stakingToken));
         vm.stopBroadcast();
