@@ -23,7 +23,7 @@ export const headers: HeadersFunction = () => {
 export default function SplatRoute() {
   const { pathname } = useLocation();
   return (
-    <div className="flex flex-col justify-center items-center h-[80dvh] gap-4 px-2">
+    <div className="flex flex-col justify-center items-center h-[80svh] gap-4 px-2">
       <img src={img404} alt="" className="max-w-xs w-2/3 md:w-full" />
       <UnderlineLink
         className="text-sm mx-auto text-center block"

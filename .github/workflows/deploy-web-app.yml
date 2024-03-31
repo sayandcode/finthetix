@@ -42,4 +42,4 @@ jobs:
         run: |
           cd web-app/infra
           echo "$WEB_APP_INFRA_ENV" > .env
-          npm run deploy
+          npm run deploy:ci

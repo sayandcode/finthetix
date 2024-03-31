@@ -17,7 +17,7 @@ export default function HeroSection() {
   const isBtnDisabled = isUserLoading || isUserLoggedIn;
 
   return (
-    <section className="flex flex-col gap-y-2 items-center justify-center h-dvh text-center">
+    <section className="flex flex-col gap-y-2 items-center justify-center h-svh text-center">
       <h1 className="text-5xl sm:text-6xl font-bold">Finthetix</h1>
       <p className="text-xl">Earn rewards by staking tokens</p>
       <Button onClick={login} disabled={isBtnDisabled}>
