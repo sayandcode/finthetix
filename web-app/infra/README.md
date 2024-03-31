@@ -1,14 +1,12 @@
-# Welcome to your CDK TypeScript project
+# @dev README - Infrastructure as Code
 
-This is a blank project for CDK development with TypeScript.
-
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+## Prerequisites
+Create a _.env_ file with the secrets defined as per [.env schema](/web-app/infra/lib/utils/env.ts)
 
 ## Useful commands
-
-* `npm run build`   compile typescript to js
-* `npm run watch`   watch for changes and compile
-* `npm run test`    perform the jest unit tests
-* `npx cdk deploy`  deploy this stack to your default AWS account/region
-* `npx cdk diff`    compare deployed stack with current state
-* `npx cdk synth`   emits the synthesized CloudFormation template
+* `npm run build` - Builds the application src and the infrastructure template
+* `npm run deploy` - Deploy this stack 
+* `npm run deploy:ci` - Deploy this stack while on CI server
+* `npm run undeploy` - Destroys the stack
+* `npm run typecheck` - Runs typescript compiler for typechecking (doesn't emit compiled files)
+* `npm run lint` - Lints with ESLint
