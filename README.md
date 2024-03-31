@@ -3,6 +3,7 @@
 Finthetix is a Staking Dapp heavily inspired by [Synthetix Stakng Rewards Contract](https://github.com/Synthetixio/synthetix/blob/develop/contracts/StakingRewards.sol). It uses Solidity (Foundry) for the Smart Contracts, and Remix-React and EthersJs for the web application. The web app is deployed on AWS Lambda and S3 (static assets), with AWS Cloudfront as the CDN. For more details, check out the [System Diagram](#system-diagram) below.
 
 ## Table of Contents
+- [Motivation](#)
 - [System Diagram](#system-diagram)
 - [Staking Contract](#staking-contract)
   - [Whitepaper](#cool-stuff-now-tell-me-how-whitepaper)
@@ -18,6 +19,14 @@ Finthetix is a Staking Dapp heavily inspired by [Synthetix Stakng Rewards Contra
   - [Type Layer](#type-layer)
   - [UI Layer](#ui-layer)
 - [Closing Thoughts](#closing-thoughts)
+
+## Motivation
+I was going through the [Synthetix Stakng Rewards Contract](https://github.com/Synthetixio/synthetix/blob/develop/contracts/StakingRewards.sol), and all I could think is
+> This is so unreadable. I'm having to jump around here and there; no proper control flow.
+
+Naturally, with my hubris I thought I could do better. 
+
+In hindsight, I have a great deal of appreciation for the devs who wrote that contract. Truly marvelous. I still feel that my initial remarks hold true, yet that doesn't mean I can't appreciate their ingenuity elsewhere. In Finthetix, I have tried to address first and foremost, these readability concerns on the smart contract. I think I have succeeded to some degree. But having to strike a balance between readability and gas optimization, I've optimized the contract as much as I could.
 
 ## System Diagram
 <a href="https://raw.githubusercontent.com/sayandcode/finthetix/main/documentation/readme-pics/system-diagram.png" target="_blank">
