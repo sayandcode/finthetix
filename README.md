@@ -3,7 +3,7 @@
 Finthetix is a Staking Dapp heavily inspired by [Synthetix Stakng Rewards Contract](https://github.com/Synthetixio/synthetix/blob/develop/contracts/StakingRewards.sol). It uses Solidity (Foundry) for the Smart Contracts, and Remix-React and EthersJs for the web application. The web app is deployed on AWS Lambda and S3 (static assets), with AWS Cloudfront as the CDN. For more details, check out the [System Diagram](#system-diagram) below.
 
 ## Table of Contents
-- [Motivation](#)
+- [Motivation](#motivation)
 - [System Diagram](#system-diagram)
 - [Staking Contract](#staking-contract)
   - [Whitepaper](#cool-stuff-now-tell-me-how-whitepaper)
@@ -13,7 +13,7 @@ Finthetix is a Staking Dapp heavily inspired by [Synthetix Stakng Rewards Contra
 - [Web App](#web-app)
   - [Framework Layer](#framework-layer)
   - [Infrastructure Layer](#infrastructure-layer)
-  - [Global State Management Layer]()
+  - [Global State Management Layer](#global-state-management-layer)
   - [API Layer](#api-layer)
   - [API Cache Layer](#api-cache-layer)
   - [Type Layer](#type-layer)
