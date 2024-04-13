@@ -3,7 +3,7 @@
 Finthetix is a Staking Dapp heavily inspired by [Synthetix Stakng Rewards Contract](https://github.com/Synthetixio/synthetix/blob/develop/contracts/StakingRewards.sol). It uses Solidity (Foundry) for the Smart Contracts, and Remix-React and EthersJs for the web application. The web app is deployed on AWS Lambda and S3 (static assets), with AWS Cloudfront as the CDN. For more details, check out the [System Diagram](#system-diagram) below.
 
 ## Table of Contents
-- [Motivation](#)
+- [Motivation](#motivation)
 - [System Diagram](#system-diagram)
 - [Staking Contract](#staking-contract)
   - [Whitepaper](#cool-stuff-now-tell-me-how-whitepaper)
@@ -13,7 +13,7 @@ Finthetix is a Staking Dapp heavily inspired by [Synthetix Stakng Rewards Contra
 - [Web App](#web-app)
   - [Framework Layer](#framework-layer)
   - [Infrastructure Layer](#infrastructure-layer)
-  - [Global State Management Layer]()
+  - [Global State Management Layer](#global-state-management-layer)
   - [API Layer](#api-layer)
   - [API Cache Layer](#api-cache-layer)
   - [Type Layer](#type-layer)
@@ -264,9 +264,11 @@ Having to write the test cases in Solidity was probably a huge driver in getting
 
 ### Production Deployment
 
-<img src="documentation/readme-pics/polygon-eth.webp" alt="Foundry Logo" style="width:100%;max-height:300px;object-fit:contain;" />
+<img src="documentation/readme-pics/arbitrum-eth.webp" alt="Foundry Logo" style="width:100%;max-height:300px;object-fit:contain;" />
 
-Initially, I deployed this Smart Contract to [Sepolia Testnet](https://www.alchemy.com/overviews/sepolia-testnet). However the transactions were so slow, that I understood that realistically, noone would sit through this just to try out the Dapp. So I deployed it to [Polygon Mumbai Testnet](https://www.alchemy.com/overviews/mumbai-testnet). Gotta say, I'm super happy. The gas fees are really low, and the transactions are super quick. I hope the mainnet experience is the same!
+Initially, I deployed this Smart Contract to [Sepolia Testnet](https://www.alchemy.com/overviews/sepolia-testnet). However the transactions were so slow, that I understood that realistically, noone would sit through this just to try out the Dapp. So I deployed it to [Polygon Mumbai Testnet](https://www.alchemy.com/overviews/mumbai-testnet). ~~Gotta say, I'm super happy. The gas fees are really low, and the transactions are super quick. I hope the mainnet experience is the same!~~ Aaand they decided to deprecate Mumbai Testnet 😕. I tried migrating to Amoy, but polygonscan doesn't support it yet, and I wanted to keep using `forge script`'s verify functionality. Cardona-zkEVM testnet was also considered, but it doesn't support EIP1559 yet (and foundry doesn't recognize the `--chain` name either). 
+
+Finally I decided to go with Arbitrum Sepolia - native etherscan explorer, all the features of mainnet, nuff said.
 
 Deployments are done using Foundry's `forge script` tool. We source the secret keys from our cast wallet, for maximum security. [Thanks Patrick Collins!](https://www.youtube.com/watch?v=VQe7cIpaE54). The script itself is used as part of our Foundry tests, so we know it's legit.
 
