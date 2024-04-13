@@ -12,5 +12,5 @@ deploy-prod: $(DEPLOY_SCRIPT)
 	@forge script $(DEPLOY_SCRIPT) --rpc-url ${RPC_URL} --broadcast \
 		--account ${DEPLOYER_ACC_NAME} \
 		--sender $$(cast wallet address --account ${DEPLOYER_ACC_NAME}) \
-		--verify --chain ${CHAIN_NAME} --etherscan-api-key ${ETHER_SCAN_API_KEY}
+		--verify --chain ${CHAIN_NAME} --etherscan-api-key ${ETHERSCAN_API_KEY}
 	
